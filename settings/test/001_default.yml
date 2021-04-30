@@ -1,0 +1,15 @@
+grpc_client:
+  tls:
+    ca_certificate_file: "$DIR/certs/rootCA.crt"
+    certificate_file: "$DIR/certs/grpc-client.crt"
+    key_file: "$DIR/certs/grpc-client.key"
+grpc_server:
+  tls:
+    ca_certificate_file: "$DIR/certs/rootCA.crt"
+    certificate_file: "$DIR/certs/grpc-server.crt"
+    key_file: "$DIR/certs/grpc-server.key"
+jsonrpc_server:
+  tls:
+    ca_certificate_file: "$DIR/certs/rootCA.crt"
+    certificate_file: "$DIR/certs/jsonrpc-server.crt"
+    key_file: "$DIR/certs/jsonrpc-server.key"

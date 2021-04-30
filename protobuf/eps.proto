@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = "github.com/iris-gateway/eps/protobuf";
+
+message Message {
+	bytes id = 1;
+}
+
+service EPS {
+	rpc MessageExchange(stream Message) returns (stream Message) {}
+}
