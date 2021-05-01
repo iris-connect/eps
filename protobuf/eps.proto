@@ -7,5 +7,6 @@ message Message {
 }
 
 service EPS {
-	rpc MessageExchange(stream Message) returns (stream Message) {}
+	rpc Call(Message) returns (Message) {}
+	rpc Stream(stream Message) returns (stream Message) {}
 }

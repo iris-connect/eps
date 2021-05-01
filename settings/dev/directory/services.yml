@@ -3,4 +3,3 @@
   url: grpc://localhost:4444
   services:
     - '*'
-    

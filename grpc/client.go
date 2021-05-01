@@ -66,20 +66,20 @@ func (c *Client) SendMessage() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	msgClient, err := client.MessageExchange(ctx)
+	streamClient, err := client.Stream(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	peer, ok := peer.FromContext(msgClient.Context())
+	peer, ok := peer.FromContext(streamClient.Context())
 	if ok {
 		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
 		v := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
 		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
 	}
 
-	msgClient.Send(message)
+	streamClient.Send(message)
 
 	return nil
 

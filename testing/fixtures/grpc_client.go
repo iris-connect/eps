@@ -14,32 +14,34 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package helpers
+package fixtures
 
 import (
 	"fmt"
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/helpers"
 )
 
-func GetChannelSettings(settings *eps.Settings, name string) (*eps.ChannelSettings, error) {
-	for _, channel := range settings.Channels {
-		if channel.Name == name {
-			return channel, nil
-		}
-	}
-	return nil, fmt.Errorf("channel not found")
+type GRPCClient struct {
+	Name string
 }
 
-func InitializeChannels(settings *eps.Settings) ([]eps.Channel, error) {
-	channels := make([]eps.Channel, 0)
-	for _, channel := range settings.Channels {
-		eps.Log.Debugf("Initializing channel '%s' of type '%s'", channel.Name, channel.Type)
-		definition := settings.Definitions.ChannelDefinitions[channel.Type]
-		if channel, err := definition.Maker(channel.Settings); err != nil {
-			return nil, err
-		} else {
-			channels = append(channels, channel)
-		}
+func (c GRPCClient) Setup(fixtures map[string]interface{}) (interface{}, error) {
+	settings, ok := fixtures["settings"].(*eps.Settings)
+
+	if !ok {
+		return nil, fmt.Errorf("settings missing")
 	}
-	return channels, nil
+
+	channelSettings, err := helpers.GetChannelSettings(settings, "test")
+
+	if err != nil {
+		return nil, err
+	}
+
+	return channelSettings, nil
+}
+
+func (c GRPCClient) Teardown(fixture interface{}) error {
+	return nil
 }

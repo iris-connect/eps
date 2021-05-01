@@ -14,4 +14,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package helpers
+package channels_test
+
+import (
+	th "github.com/iris-gateway/eps/testing"
+	"github.com/iris-gateway/eps/testing/fixtures"
+	"testing"
+)
+
+func TestGRPCClientConnection(t *testing.T) {
+
+	fixtures := []th.FC{
+		{fixtures.Settings{}, "settings"},
+	}
+
+	fc, err := th.SetupFixtures(fixtures)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer th.TeardownFixtures(fixtures, fc)
+}

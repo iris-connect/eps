@@ -45,6 +45,23 @@ func MakeJSONRPCClientChannel(settings interface{}) (eps.Channel, error) {
 }
 
 func (c *JSONRPCClientChannel) Open() error {
+
+	/*
+		client, err := grpc.MakeClient(settings.GRPCClient, "localhost:4444", "grpc-server")
+
+		if err != nil {
+			eps.Log.Fatal(err)
+		}
+
+		if err := client.Connect(); err != nil {
+			eps.Log.Fatal(err)
+		}
+
+		if err := client.SendMessage(); err != nil {
+			eps.Log.Fatal(err)
+		}
+	*/
+
 	return nil
 }
 

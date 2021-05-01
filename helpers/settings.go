@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// This code was extracted from the Kodex CE project
+// (https://github.com/kiprotect/kodex), the author has
+// the copyright to the code so no attribution is necessary.
+
 package helpers
 
 import (

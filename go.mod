@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/kiprotect/go-helpers v0.0.0-20210501145914-13b1725b2075
+	github.com/kiprotect/go-helpers v0.0.0-20210501184624-677c272d4158
 	github.com/protocolbuffers/protobuf v3.15.8+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.5
@@ -14,4 +14,4 @@ require (
 )
 
 // for local testing against a modified go-helpers library
-replace github.com/kiprotect/go-helpers => ../../../geordi/kiprotect/go-helpers
+// replace github.com/kiprotect/go-helpers => ../../../geordi/kiprotect/go-helpers

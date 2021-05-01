@@ -14,32 +14,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package helpers
+package fixtures
 
 import (
-	"fmt"
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/definitions"
+	"github.com/iris-gateway/eps/helpers"
 )
 
-func GetChannelSettings(settings *eps.Settings, name string) (*eps.ChannelSettings, error) {
-	for _, channel := range settings.Channels {
-		if channel.Name == name {
-			return channel, nil
-		}
-	}
-	return nil, fmt.Errorf("channel not found")
+type Settings struct {
 }
 
-func InitializeChannels(settings *eps.Settings) ([]eps.Channel, error) {
-	channels := make([]eps.Channel, 0)
-	for _, channel := range settings.Channels {
-		eps.Log.Debugf("Initializing channel '%s' of type '%s'", channel.Name, channel.Type)
-		definition := settings.Definitions.ChannelDefinitions[channel.Type]
-		if channel, err := definition.Maker(channel.Settings); err != nil {
-			return nil, err
-		} else {
-			channels = append(channels, channel)
-		}
+func (c Settings) Setup(fixtures map[string]interface{}) (interface{}, error) {
+	// we set the loglevel to 'debug' so we can see which settings files are being loaded
+	var defs *eps.Definitions
+	var ok bool
+	if defs, ok = fixtures["definitions"].(*eps.Definitions); !ok {
+		defs = &definitions.Default
 	}
-	return channels, nil
+	eps.Log.SetLevel(eps.DebugLogLevel)
+	return helpers.Settings(helpers.SettingsPaths(), defs)
+}
+
+func (c Settings) Teardown(fixture interface{}) error {
+	return nil
 }

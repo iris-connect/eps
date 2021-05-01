@@ -25,6 +25,30 @@ import (
 	"syscall"
 )
 
+func openChannels(settings *eps.Settings) []eps.Channel {
+
+	channels, err := helpers.InitializeChannels(settings)
+
+	if err != nil {
+		eps.Log.Fatal(err)
+	} else {
+		for _, channel := range channels {
+			if err := channel.Open(); err != nil {
+				eps.Log.Fatal(err)
+			}
+		}
+	}
+	return channels
+}
+
+func closeChannels(channels []eps.Channel) {
+	for _, channel := range channels {
+		if err := channel.Close(); err != nil {
+			eps.Log.Error(err)
+		}
+	}
+}
+
 func Server(settings *eps.Settings) ([]cli.Command, error) {
 
 	return []cli.Command{
@@ -35,23 +59,18 @@ func Server(settings *eps.Settings) ([]cli.Command, error) {
 			Usage:   "Run the server.",
 			Subcommands: []cli.Command{
 				{
-					Name:  "run",
-					Flags: []cli.Flag{},
-					Usage: "Run the server.",
+					Name: "run",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "messages",
+							Value: "",
+							Usage: "optional: a YAML file with messages to send into the broker",
+						},
+					}, Usage: "Run the server.",
 					Action: func(c *cli.Context) error {
 						eps.Log.Info("Opening all channels...")
 
-						channels, err := helpers.InitializeChannels(settings)
-
-						if err != nil {
-							eps.Log.Fatal(err)
-						} else {
-							for _, channel := range channels {
-								if err := channel.Open(); err != nil {
-									eps.Log.Fatal(err)
-								}
-							}
-						}
+						channels := openChannels(settings)
 
 						// we wait for CTRL-C / Interrupt
 						sigchan := make(chan os.Signal, 1)
@@ -63,11 +82,7 @@ func Server(settings *eps.Settings) ([]cli.Command, error) {
 
 						eps.Log.Info("Stopping channels...")
 
-						for _, channel := range channels {
-							if err := channel.Close(); err != nil {
-								eps.Log.Error(err)
-							}
-						}
+						closeChannels(channels)
 
 						return nil
 					},

@@ -17,6 +17,7 @@
 package grpc
 
 import (
+	"context"
 	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/protobuf"
@@ -25,11 +26,34 @@ import (
 	"io"
 )
 
-type EPSServer struct {
-	protobuf.UnimplementedEPSServer
+type EPSClient struct {
+	Operator string
+	Services []string
 }
 
-func (s *EPSServer) MessageExchange(stream protobuf.EPS_MessageExchangeServer) error {
+type EPSServer struct {
+	protobuf.UnimplementedEPSServer
+	connectedClients []EPSClient
+}
+
+func (s *EPSServer) Call(context context.Context, message *protobuf.Message) (*protobuf.Message, error) {
+
+	// this is a bidirectional message stream
+
+	peer, ok := peer.FromContext(context)
+	if ok {
+		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
+		v := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
+		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
+	}
+
+	return nil, nil
+
+}
+
+func (s *EPSServer) Stream(stream protobuf.EPS_StreamServer) error {
+
+	// this is a bidirectional message stream
 
 	peer, ok := peer.FromContext(stream.Context())
 	if ok {

@@ -32,7 +32,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EPSClient interface {
-	MessageExchange(ctx context.Context, opts ...grpc.CallOption) (EPS_MessageExchangeClient, error)
+	Call(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Message, error)
+	Stream(ctx context.Context, opts ...grpc.CallOption) (EPS_StreamClient, error)
 }
 
 type ePSClient struct {
@@ -43,30 +44,39 @@ func NewEPSClient(cc grpc.ClientConnInterface) EPSClient {
 	return &ePSClient{cc}
 }
 
-func (c *ePSClient) MessageExchange(ctx context.Context, opts ...grpc.CallOption) (EPS_MessageExchangeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &EPS_ServiceDesc.Streams[0], "/EPS/MessageExchange", opts...)
+func (c *ePSClient) Call(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Message, error) {
+	out := new(Message)
+	err := c.cc.Invoke(ctx, "/EPS/Call", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &ePSMessageExchangeClient{stream}
+	return out, nil
+}
+
+func (c *ePSClient) Stream(ctx context.Context, opts ...grpc.CallOption) (EPS_StreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &EPS_ServiceDesc.Streams[0], "/EPS/Stream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &ePSStreamClient{stream}
 	return x, nil
 }
 
-type EPS_MessageExchangeClient interface {
+type EPS_StreamClient interface {
 	Send(*Message) error
 	Recv() (*Message, error)
 	grpc.ClientStream
 }
 
-type ePSMessageExchangeClient struct {
+type ePSStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *ePSMessageExchangeClient) Send(m *Message) error {
+func (x *ePSStreamClient) Send(m *Message) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *ePSMessageExchangeClient) Recv() (*Message, error) {
+func (x *ePSStreamClient) Recv() (*Message, error) {
 	m := new(Message)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -78,7 +88,8 @@ func (x *ePSMessageExchangeClient) Recv() (*Message, error) {
 // All implementations must embed UnimplementedEPSServer
 // for forward compatibility
 type EPSServer interface {
-	MessageExchange(EPS_MessageExchangeServer) error
+	Call(context.Context, *Message) (*Message, error)
+	Stream(EPS_StreamServer) error
 	mustEmbedUnimplementedEPSServer()
 }
 
@@ -86,8 +97,11 @@ type EPSServer interface {
 type UnimplementedEPSServer struct {
 }
 
-func (UnimplementedEPSServer) MessageExchange(EPS_MessageExchangeServer) error {
-	return status.Errorf(codes.Unimplemented, "method MessageExchange not implemented")
+func (UnimplementedEPSServer) Call(context.Context, *Message) (*Message, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Call not implemented")
+}
+func (UnimplementedEPSServer) Stream(EPS_StreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method Stream not implemented")
 }
 func (UnimplementedEPSServer) mustEmbedUnimplementedEPSServer() {}
 
@@ -102,25 +116,43 @@ func RegisterEPSServer(s grpc.ServiceRegistrar, srv EPSServer) {
 	s.RegisterService(&EPS_ServiceDesc, srv)
 }
 
-func _EPS_MessageExchange_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(EPSServer).MessageExchange(&ePSMessageExchangeServer{stream})
+func _EPS_Call_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Message)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EPSServer).Call(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/EPS/Call",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EPSServer).Call(ctx, req.(*Message))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type EPS_MessageExchangeServer interface {
+func _EPS_Stream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(EPSServer).Stream(&ePSStreamServer{stream})
+}
+
+type EPS_StreamServer interface {
 	Send(*Message) error
 	Recv() (*Message, error)
 	grpc.ServerStream
 }
 
-type ePSMessageExchangeServer struct {
+type ePSStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *ePSMessageExchangeServer) Send(m *Message) error {
+func (x *ePSStreamServer) Send(m *Message) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *ePSMessageExchangeServer) Recv() (*Message, error) {
+func (x *ePSStreamServer) Recv() (*Message, error) {
 	m := new(Message)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -134,11 +166,16 @@ func (x *ePSMessageExchangeServer) Recv() (*Message, error) {
 var EPS_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "EPS",
 	HandlerType: (*EPSServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Call",
+			Handler:    _EPS_Call_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "MessageExchange",
-			Handler:       _EPS_MessageExchange_Handler,
+			StreamName:    "Stream",
+			Handler:       _EPS_Stream_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

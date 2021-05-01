@@ -1,0 +1,4 @@
+directory:
+  type: file
+  settings:
+    path: "$DIR/directory/services.yml"
