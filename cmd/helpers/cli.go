@@ -44,7 +44,7 @@ func Settings(definitions *eps.Definitions) (*eps.Settings, error) {
 	return helpers.Settings(settingsPaths, definitions)
 }
 
-func CLI(definitions *eps.Definitions, settings *eps.Settings) {
+func CLI(settings *eps.Settings) {
 
 	var err error
 
@@ -87,8 +87,8 @@ func CLI(definitions *eps.Definitions, settings *eps.Settings) {
 	bareCommands := []cli.Command{}
 
 	// we add commands from the definitions
-	for _, commandsDefinition := range definitions.CommandsDefinitions {
-		if commands, err := commandsDefinition.Maker(definitions, settings); err != nil {
+	for _, commandsDefinition := range settings.Definitions.CommandsDefinitions {
+		if commands, err := commandsDefinition.Maker(settings); err != nil {
 			eps.Log.Fatal(err)
 		} else {
 			bareCommands = append(bareCommands, commands...)

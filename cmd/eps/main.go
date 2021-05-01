@@ -27,6 +27,6 @@ func main() {
 		eps.Log.Error(err)
 		return
 	} else {
-		helpers.CLI(&definitions.Default, settings)
+		helpers.CLI(settings)
 	}
 }

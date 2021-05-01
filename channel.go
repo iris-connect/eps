@@ -26,8 +26,8 @@ type ChannelDefinition struct {
 }
 
 type ChannelDefinitions map[string]ChannelDefinition
-type SettingsValidator func(definitions *Definitions, settings map[string]interface{}) (interface{}, error)
-type ChannelMaker func(definitions *Definitions, settings interface{}) (Channel, error)
+type SettingsValidator func(settings map[string]interface{}) (interface{}, error)
+type ChannelMaker func(settings interface{}) (Channel, error)
 
 // A channel can deliver and accept message
 type Channel interface {

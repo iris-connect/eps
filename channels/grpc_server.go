@@ -26,8 +26,8 @@ type GRPCServerChannel struct {
 	Settings *grpc.GRPCServerSettings
 }
 
-func GRPCServerSettingsValidator(definitions *eps.Definitions, settings map[string]interface{}) (interface{}, error) {
-	if params, err := grpc.GRPCServerSettingsForm.ValidateWithContext(settings, map[string]interface{}{"definitions": definitions}); err != nil {
+func GRPCServerSettingsValidator(settings map[string]interface{}) (interface{}, error) {
+	if params, err := grpc.GRPCServerSettingsForm.Validate(settings); err != nil {
 		return nil, err
 	} else {
 		validatedSettings := &grpc.GRPCServerSettings{}
@@ -38,7 +38,7 @@ func GRPCServerSettingsValidator(definitions *eps.Definitions, settings map[stri
 	}
 }
 
-func MakeGRPCServerChannel(definitions *eps.Definitions, settings interface{}) (eps.Channel, error) {
+func MakeGRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	return &GRPCServerChannel{
 		Settings: settings.(*grpc.GRPCServerSettings),
 	}, nil

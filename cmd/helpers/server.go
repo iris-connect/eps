@@ -21,7 +21,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func Server(definitions *eps.Definitions, settings *eps.Settings) ([]cli.Command, error) {
+func Server(settings *eps.Settings) ([]cli.Command, error) {
 
 	return []cli.Command{
 		/*

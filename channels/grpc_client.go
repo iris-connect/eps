@@ -26,11 +26,11 @@ type GRPCClientChannel struct {
 	Settings *grpc.GRPCClientSettings
 }
 
-func GRPCClientSettingsValidator(definitions *eps.Definitions, settings map[string]interface{}) (interface{}, error) {
+func GRPCClientSettingsValidator(settings map[string]interface{}) (interface{}, error) {
 	return settings, nil
 }
 
-func MakeGRPCClientChannel(definitions *eps.Definitions, settings interface{}) (eps.Channel, error) {
+func MakeGRPCClientChannel(settings interface{}) (eps.Channel, error) {
 	return &GRPCClientChannel{
 		Settings: settings.(*grpc.GRPCClientSettings),
 	}, nil

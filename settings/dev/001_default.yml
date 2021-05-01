@@ -13,8 +13,8 @@ channels: # defines all the channels that we want to open when starting the serv
         ca_certificate_file: "$DIR/certs/rootCA.crt"
         certificate_file: "$DIR/certs/grpc-client.crt"
         key_file: "$DIR/certs/grpc-client.key"
-  - name: main JSON-RPC server
-    type: jsonrpc_server # accepts incoming JSONRPC connections to deliver and receive messages
+  - name: main JSON-RPC server # accepts incoming JSONRPC connections to deliver and receive messages
+    type: jsonrpc_server 
     settings:
       tls:
         ca_certificate_file: "$DIR/certs/rootCA.crt"

@@ -23,5 +23,6 @@ type ChannelSettings struct {
 }
 
 type Settings struct {
-	Channels []*ChannelSettings `json:"channels"`
+	Definitions *Definitions       `json:"definitions"`
+	Channels    []*ChannelSettings `json:"channels"`
 }

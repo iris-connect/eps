@@ -41,7 +41,7 @@ func (f AreValidSettings) ValidateWithContext(input interface{}, inputs map[stri
 		return nil, fmt.Errorf("invalid channel type: '%s'", channelType)
 	} else if definition.SettingsValidator == nil {
 		return nil, fmt.Errorf("cannot validate settings for channel of type '%s'", channelType)
-	} else if validatedSettings, err := definition.SettingsValidator(definitions, settings); err != nil {
+	} else if validatedSettings, err := definition.SettingsValidator(settings); err != nil {
 		return nil, err
 	} else {
 		return validatedSettings, nil

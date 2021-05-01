@@ -49,7 +49,9 @@ func Settings(settingsPaths []string, definitions *eps.Definitions) (*eps.Settin
 	} else if params, err := epsForms.SettingsForm.ValidateWithContext(rawSettings.Values, map[string]interface{}{"definitions": definitions}); err != nil {
 		return nil, err
 	} else {
-		settings := &eps.Settings{}
+		settings := &eps.Settings{
+			Definitions: definitions,
+		}
 		if err := forms.Coerce(settings, params); err != nil {
 			// this should not happen if the forms are correct...
 			return nil, err

@@ -20,6 +20,15 @@ import (
 	"github.com/iris-gateway/eps"
 )
 
-func InitializeChannels(settings *eps.Settings, definitions *eps.Definitions) ([]eps.Channel, error) {
-	return nil, nil
+func InitializeChannels(settings *eps.Settings) ([]eps.Channel, error) {
+	channels := make([]eps.Channel, 0)
+	for _, channel := range settings.Channels {
+		definition := settings.Definitions.ChannelDefinitions[channel.Name]
+		if channel, err := definition.Maker(channel.Settings); err != nil {
+			return nil, err
+		} else {
+			channels = append(channels, channel)
+		}
+	}
+	return channels, nil
 }

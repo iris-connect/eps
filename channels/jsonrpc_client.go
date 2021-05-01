@@ -26,8 +26,8 @@ type JSONRPCClientChannel struct {
 	Settings *jsonrpc.JSONRPCClientSettings
 }
 
-func JSONRPCClientSettingsValidator(definitions *eps.Definitions, settings map[string]interface{}) (interface{}, error) {
-	if params, err := jsonrpc.JSONRPCClientSettingsForm.ValidateWithContext(settings, map[string]interface{}{"definitions": definitions}); err != nil {
+func JSONRPCClientSettingsValidator(settings map[string]interface{}) (interface{}, error) {
+	if params, err := jsonrpc.JSONRPCClientSettingsForm.Validate(settings); err != nil {
 		return nil, err
 	} else {
 		validatedSettings := &jsonrpc.JSONRPCClientSettings{}
@@ -38,7 +38,7 @@ func JSONRPCClientSettingsValidator(definitions *eps.Definitions, settings map[s
 	}
 }
 
-func MakeJSONRPCClientChannel(definitions *eps.Definitions, settings interface{}) (eps.Channel, error) {
+func MakeJSONRPCClientChannel(settings interface{}) (eps.Channel, error) {
 	return &JSONRPCClientChannel{
 		Settings: settings.(*jsonrpc.JSONRPCClientSettings),
 	}, nil

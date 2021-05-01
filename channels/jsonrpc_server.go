@@ -26,8 +26,8 @@ type JSONRPCServerChannel struct {
 	Settings *jsonrpc.JSONRPCServerSettings
 }
 
-func JSONRPCServerSettingsValidator(definitions *eps.Definitions, settings map[string]interface{}) (interface{}, error) {
-	if params, err := jsonrpc.JSONRPCServerSettingsForm.ValidateWithContext(settings, map[string]interface{}{"definitions": definitions}); err != nil {
+func JSONRPCServerSettingsValidator(settings map[string]interface{}) (interface{}, error) {
+	if params, err := jsonrpc.JSONRPCServerSettingsForm.Validate(settings); err != nil {
 		return nil, err
 	} else {
 		validatedSettings := &jsonrpc.JSONRPCServerSettings{}
@@ -38,7 +38,7 @@ func JSONRPCServerSettingsValidator(definitions *eps.Definitions, settings map[s
 	}
 }
 
-func MakeJSONRPCServerChannel(definitions *eps.Definitions, settings interface{}) (eps.Channel, error) {
+func MakeJSONRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	return &JSONRPCServerChannel{
 		Settings: settings.(*jsonrpc.JSONRPCServerSettings),
 	}, nil
