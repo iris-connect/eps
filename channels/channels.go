@@ -21,6 +21,12 @@ import (
 )
 
 var Channels = eps.ChannelDefinitions{
+	"stdout": eps.ChannelDefinition{
+		Name:              "Stdout Channel",
+		Description:       "Prints messages to stdout (just for testing and debugging)",
+		Maker:             MakeStdoutChannel,
+		SettingsValidator: StdoutSettingsValidator,
+	},
 	"jsonrpc_client": eps.ChannelDefinition{
 		Name:              "JSONRPC Client Channel",
 		Description:       "Creates outgoing JSONRPC connections to deliver and receive messages",

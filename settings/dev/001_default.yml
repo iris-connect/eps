@@ -1,8 +1,11 @@
 directory:
   type: file
   settings:
-    path: "$DIR/services.yml"
+    path: "$DIR/directory/services.yml"
 channels: # defines all the channels that we want to open when starting the server
+  - name: Stdout channel
+    type: stdout
+    settings: {}
   - name: main gRPC server # accepts incoming gRPC connections to deliver and receive messages
     type: grpc_server
     settings:

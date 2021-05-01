@@ -1,0 +1,6 @@
+# An example service directory that defines various services
+- operator: grpc-server
+  url: grpc://localhost:4444
+  services:
+    - '*'
+    
