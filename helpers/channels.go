@@ -21,13 +21,14 @@ import (
 	"github.com/iris-gateway/eps"
 )
 
-func GetChannelSettings(settings *eps.Settings, name string) (*eps.ChannelSettings, error) {
+func GetChannelSettingsAndDefinition(settings *eps.Settings, name string) (*eps.ChannelSettings, *eps.ChannelDefinition, error) {
 	for _, channel := range settings.Channels {
 		if channel.Name == name {
-			return channel, nil
+			def := settings.Definitions.ChannelDefinitions[channel.Type]
+			return channel, &def, nil
 		}
 	}
-	return nil, fmt.Errorf("channel not found")
+	return nil, nil, fmt.Errorf("channel not found")
 }
 
 func InitializeChannels(settings *eps.Settings) ([]eps.Channel, error) {

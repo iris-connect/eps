@@ -14,48 +14,34 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package channels_test
+package fixtures
 
 import (
+	"fmt"
 	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/channels"
-	th "github.com/iris-gateway/eps/testing"
-	"github.com/iris-gateway/eps/testing/fixtures"
-	"testing"
+	"github.com/iris-gateway/eps/helpers"
 )
 
-func TestGRPCClientConnection(t *testing.T) {
+type Channel struct {
+	Name string
+}
 
-	fixtures := []th.FC{
-		{fixtures.Settings{}, "settings"},
-		{fixtures.Channel{"test gRPC client"}, "client"},
-		{fixtures.Channel{"test gRPC server"}, "server"},
+func (c Channel) Setup(fixtures map[string]interface{}) (interface{}, error) {
+	settings, ok := fixtures["settings"].(*eps.Settings)
+
+	if !ok {
+		return nil, fmt.Errorf("settings missing")
 	}
 
-	fc, err := th.SetupFixtures(fixtures)
+	channelSettings, definition, err := helpers.GetChannelSettingsAndDefinition(settings, c.Name)
 
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
 
-	defer th.TeardownFixtures(fixtures, fc)
+	return definition.Maker(channelSettings.Settings)
+}
 
-	client := fc["client"].(*channels.GRPCClientChannel)
-
-	server := fc["server"].(*channels.GRPCServerChannel)
-
-	if err := server.Open(); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := client.Open(); err != nil {
-		t.Fatal(err)
-	}
-
-	message := &eps.Message{}
-
-	if _, err := client.Deliver(message); err != nil {
-		t.Fatal(err)
-	}
-
+func (c Channel) Teardown(fixture interface{}) error {
+	return nil
 }

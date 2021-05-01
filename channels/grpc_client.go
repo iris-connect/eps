@@ -23,6 +23,7 @@ import (
 
 type GRPCClientChannel struct {
 	eps.BaseChannel
+	client   *grpc.Client
 	Settings grpc.GRPCClientSettings
 }
 
@@ -45,6 +46,10 @@ func MakeGRPCClientChannel(settings interface{}) (eps.Channel, error) {
 }
 
 func (c *GRPCClientChannel) Open() error {
+	var err error
+	if c.client, err = grpc.MakeClient(&c.Settings); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -53,7 +58,14 @@ func (c *GRPCClientChannel) Close() error {
 }
 
 func (c *GRPCClientChannel) Deliver(message *eps.Message) (*eps.Message, error) {
-	return nil, nil
+	/*
+		- Determine the address of the gRPC sever that the message should go to
+		- Connect to the server and try to deliver it
+	*/
+	if err := c.client.Connect("localhost:4444", "grpc-server"); err != nil {
+		return nil, err
+	}
+	return nil, c.client.SendMessage(message)
 }
 
 func (c *GRPCClientChannel) CanDeliver(message *eps.Message) bool {

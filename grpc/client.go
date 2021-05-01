@@ -18,8 +18,8 @@ package grpc
 
 import (
 	"context"
-	cryptoTls "crypto/tls"
 	"fmt"
+	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/protobuf"
 	"github.com/iris-gateway/eps/tls"
 	"google.golang.org/grpc"
@@ -29,21 +29,23 @@ import (
 )
 
 type Client struct {
-	tlsConfig  *cryptoTls.Config
-	address    string
-	serverName string
 	connection *grpc.ClientConn
 	settings   *GRPCClientSettings
 }
 
-func (c *Client) Connect() error {
+func (c *Client) Connect(address, serverName string) error {
 	var err error
-
 	var opts []grpc.DialOption
 
-	opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(c.tlsConfig)))
+	tlsConfig, err := tls.TLSClientConfig(c.settings.TLS, serverName)
 
-	c.connection, err = grpc.Dial(c.address, opts...)
+	if err != nil {
+		return err
+	}
+
+	opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+
+	c.connection, err = grpc.Dial(address, opts...)
 
 	if err != nil {
 		return err
@@ -57,11 +59,11 @@ func (c *Client) Close() error {
 	return c.connection.Close()
 }
 
-func (c *Client) SendMessage() error {
+func (c *Client) SendMessage(message *eps.Message) error {
 
 	client := protobuf.NewEPSClient(c.connection)
 
-	message := &protobuf.Message{}
+	pbMessage := &protobuf.Message{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -79,25 +81,14 @@ func (c *Client) SendMessage() error {
 		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
 	}
 
-	streamClient.Send(message)
-
-	return nil
+	return streamClient.Send(pbMessage)
 
 }
 
-func MakeClient(settings *GRPCClientSettings, address, serverName string) (*Client, error) {
-
-	tlsConfig, err := tls.TLSClientConfig(settings.TLS, serverName)
-
-	if err != nil {
-		return nil, err
-	}
+func MakeClient(settings *GRPCClientSettings) (*Client, error) {
 
 	return &Client{
-		tlsConfig:  tlsConfig,
-		settings:   settings,
-		address:    address,
-		serverName: serverName,
+		settings: settings,
 	}, nil
 
 }

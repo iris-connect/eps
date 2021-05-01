@@ -22,26 +22,19 @@ import (
 	"github.com/iris-gateway/eps/helpers"
 )
 
-type GRPCClient struct {
-	Name string
+type Channels struct {
 }
 
-func (c GRPCClient) Setup(fixtures map[string]interface{}) (interface{}, error) {
+func (c Channels) Setup(fixtures map[string]interface{}) (interface{}, error) {
 	settings, ok := fixtures["settings"].(*eps.Settings)
 
 	if !ok {
 		return nil, fmt.Errorf("settings missing")
 	}
 
-	channelSettings, err := helpers.GetChannelSettings(settings, "test")
-
-	if err != nil {
-		return nil, err
-	}
-
-	return channelSettings, nil
+	return helpers.InitializeChannels(settings)
 }
 
-func (c GRPCClient) Teardown(fixture interface{}) error {
+func (c Channels) Teardown(fixture interface{}) error {
 	return nil
 }
