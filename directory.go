@@ -18,36 +18,19 @@ package eps
 
 import ()
 
-type ChannelDefinition struct {
+type DirectoryDefinition struct {
 	Name              string            `json:"name"`
 	Description       string            `json:"description"`
-	Maker             ChannelMaker      `json:"-"`
+	Maker             DirectoryMaker    `json:"-"`
 	SettingsValidator SettingsValidator `json:"-"`
 }
 
-type ChannelDefinitions map[string]ChannelDefinition
-type ChannelMaker func(settings interface{}) (Channel, error)
+type DirectoryDefinitions map[string]DirectoryDefinition
+type DirectoryMaker func(settings interface{}) (Directory, error)
 
-// A channel can deliver and accept message
-type Channel interface {
-	MessageBroker() MessageBroker
-	SetMessageBroker(MessageBroker) error
-	CanDeliver(*Message) bool
-	CanHandle(*Message) bool
-	Deliver(*Message) (*Message, error)
-	Close() error
-	Open() error
+// A directory can deliver and accept message
+type Directory interface {
 }
 
-type BaseChannel struct {
-	messageBroker MessageBroker
-}
-
-func (b *BaseChannel) MessageBroker() MessageBroker {
-	return b.messageBroker
-}
-
-func (b *BaseChannel) SetMessageBroker(messageBroker MessageBroker) error {
-	b.messageBroker = messageBroker
-	return nil
+type BaseDirectory struct {
 }

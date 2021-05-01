@@ -23,16 +23,24 @@ import (
 
 type GRPCClientChannel struct {
 	eps.BaseChannel
-	Settings *grpc.GRPCClientSettings
+	Settings grpc.GRPCClientSettings
 }
 
 func GRPCClientSettingsValidator(settings map[string]interface{}) (interface{}, error) {
-	return settings, nil
+	if params, err := grpc.GRPCClientSettingsForm.Validate(settings); err != nil {
+		return nil, err
+	} else {
+		validatedSettings := &grpc.GRPCClientSettings{}
+		if err := grpc.GRPCClientSettingsForm.Coerce(validatedSettings, params); err != nil {
+			return nil, err
+		}
+		return validatedSettings, nil
+	}
 }
 
 func MakeGRPCClientChannel(settings interface{}) (eps.Channel, error) {
 	return &GRPCClientChannel{
-		Settings: settings.(*grpc.GRPCClientSettings),
+		Settings: settings.(grpc.GRPCClientSettings),
 	}, nil
 }
 

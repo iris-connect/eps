@@ -23,7 +23,8 @@ import (
 func InitializeChannels(settings *eps.Settings) ([]eps.Channel, error) {
 	channels := make([]eps.Channel, 0)
 	for _, channel := range settings.Channels {
-		definition := settings.Definitions.ChannelDefinitions[channel.Name]
+		eps.Log.Debugf("Initializing channel '%s' of type '%s'", channel.Name, channel.Type)
+		definition := settings.Definitions.ChannelDefinitions[channel.Type]
 		if channel, err := definition.Maker(channel.Settings); err != nil {
 			return nil, err
 		} else {

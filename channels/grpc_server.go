@@ -23,7 +23,8 @@ import (
 
 type GRPCServerChannel struct {
 	eps.BaseChannel
-	Settings *grpc.GRPCServerSettings
+	server   *grpc.Server
+	Settings grpc.GRPCServerSettings
 }
 
 func GRPCServerSettingsValidator(settings map[string]interface{}) (interface{}, error) {
@@ -40,12 +41,16 @@ func GRPCServerSettingsValidator(settings map[string]interface{}) (interface{}, 
 
 func MakeGRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	return &GRPCServerChannel{
-		Settings: settings.(*grpc.GRPCServerSettings),
+		Settings: settings.(grpc.GRPCServerSettings),
 	}, nil
 }
 
 func (c *GRPCServerChannel) Open() error {
-	return nil
+	var err error
+	if c.server, err = grpc.MakeServer(&c.Settings); err != nil {
+		return err
+	}
+	return c.server.Start()
 }
 
 func (c *GRPCServerChannel) Close() error {

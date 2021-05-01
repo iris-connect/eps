@@ -20,9 +20,11 @@ import (
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/channels"
 	"github.com/iris-gateway/eps/cmd"
+	"github.com/iris-gateway/eps/directories"
 )
 
 var Default = eps.Definitions{
-	CommandsDefinitions: cmd.Commands,
-	ChannelDefinitions:  channels.Channels,
+	DirectoryDefinitions: directories.Directories,
+	CommandsDefinitions:  cmd.Commands,
+	ChannelDefinitions:   channels.Channels,
 }

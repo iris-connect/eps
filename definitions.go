@@ -21,6 +21,7 @@ import (
 )
 
 type Definitions struct {
+	DirectoryDefinitions
 	CommandsDefinitions
 	ChannelDefinitions
 }
@@ -47,6 +48,9 @@ func MergeDefinitions(a, b Definitions) Definitions {
 		}
 		for k, v := range obj.ChannelDefinitions {
 			c.ChannelDefinitions[k] = v
+		}
+		for k, v := range obj.DirectoryDefinitions {
+			c.DirectoryDefinitions[k] = v
 		}
 	}
 	return c

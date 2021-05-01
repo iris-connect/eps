@@ -14,23 +14,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package eps
+package directories
 
-type ChannelSettings struct {
-	Name     string      `json:"name"`
-	Type     string      `json:"type"`
-	Settings interface{} `json:"settings"`
+import (
+	"github.com/iris-gateway/eps"
+)
+
+var Directories = eps.DirectoryDefinitions{
+	"file": eps.DirectoryDefinition{
+		Name:              "File-Based Service Directory",
+		Description:       "Loads the service directory from a YAML file",
+		Maker:             MakeFileDirectory,
+		SettingsValidator: FileDirectorySettingsValidator,
+	},
 }
-
-type DirectorySettings struct {
-	Type     string      `json:"type"`
-	Settings interface{} `json:"settings"`
-}
-
-type Settings struct {
-	Definitions *Definitions       `json:"definitions"`
-	Channels    []*ChannelSettings `json:"channels"`
-	Directory   *DirectorySettings `json:"directory"`
-}
-
-type SettingsValidator func(settings map[string]interface{}) (interface{}, error)

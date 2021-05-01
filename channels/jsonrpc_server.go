@@ -23,7 +23,7 @@ import (
 
 type JSONRPCServerChannel struct {
 	eps.BaseChannel
-	Settings *jsonrpc.JSONRPCServerSettings
+	Settings jsonrpc.JSONRPCServerSettings
 }
 
 func JSONRPCServerSettingsValidator(settings map[string]interface{}) (interface{}, error) {
@@ -40,7 +40,7 @@ func JSONRPCServerSettingsValidator(settings map[string]interface{}) (interface{
 
 func MakeJSONRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	return &JSONRPCServerChannel{
-		Settings: settings.(*jsonrpc.JSONRPCServerSettings),
+		Settings: settings.(jsonrpc.JSONRPCServerSettings),
 	}, nil
 }
 

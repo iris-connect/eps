@@ -18,57 +18,61 @@ package helpers
 
 import (
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/helpers"
 	"github.com/urfave/cli"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func Server(settings *eps.Settings) ([]cli.Command, error) {
 
 	return []cli.Command{
-		/*
-			{
-				Name:    "server",
-				Aliases: []string{"s"},
-				Flags:   []cli.Flag{},
-				Usage:   "Run the server.",
-				Subcommands: []cli.Command{
-					{
-						Name:  "run",
-						Flags: []cli.Flag{},
-						Usage: "Run the server.",
-						Action: func(c *cli.Context) error {
-							eps.Log.Info("Starting the server...")
+		{
+			Name:    "server",
+			Aliases: []string{"s"},
+			Flags:   []cli.Flag{},
+			Usage:   "Run the server.",
+			Subcommands: []cli.Command{
+				{
+					Name:  "run",
+					Flags: []cli.Flag{},
+					Usage: "Run the server.",
+					Action: func(c *cli.Context) error {
+						eps.Log.Info("Opening all channels...")
 
-							if settings.GRPCServer == nil {
-								eps.Log.Fatalf("gRPC server settings missing!")
+						channels, err := helpers.InitializeChannels(settings)
+
+						if err != nil {
+							eps.Log.Fatal(err)
+						} else {
+							for _, channel := range channels {
+								if err := channel.Open(); err != nil {
+									eps.Log.Fatal(err)
+								}
 							}
+						}
 
-							server, err := grpc.MakeServer(settings.GRPCServer)
+						// we wait for CTRL-C / Interrupt
+						sigchan := make(chan os.Signal, 1)
+						signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
-							if err != nil {
-								eps.Log.Fatal(err)
+						eps.Log.Info("Waiting for CTRL-C...")
+
+						<-sigchan
+
+						eps.Log.Info("Stopping channels...")
+
+						for _, channel := range channels {
+							if err := channel.Close(); err != nil {
+								eps.Log.Error(err)
 							}
+						}
 
-							if err := server.Start(); err != nil {
-								eps.Log.Fatal(err)
-							}
-
-							// we wait for CTRL-C / Interrupt
-							sigchan := make(chan os.Signal, 1)
-							signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
-
-							eps.Log.Info("Waiting for CTRL-C...")
-
-							<-sigchan
-
-							eps.Log.Info("Stopping server...")
-
-							server.Stop()
-
-							return nil
-						},
+						return nil
 					},
 				},
 			},
-		*/
+		},
 	}, nil
 }
