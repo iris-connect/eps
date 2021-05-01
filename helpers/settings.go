@@ -18,6 +18,7 @@ package helpers
 
 import (
 	"github.com/iris-gateway/eps"
+	epsForms "github.com/iris-gateway/eps/forms"
 	"github.com/kiprotect/go-helpers/forms"
 	"github.com/kiprotect/go-helpers/settings"
 	"os"
@@ -42,10 +43,10 @@ func SettingsPaths() []string {
 	return sanitizedValues
 }
 
-func Settings(settingsPaths []string) (*eps.Settings, error) {
+func Settings(settingsPaths []string, definitions *eps.Definitions) (*eps.Settings, error) {
 	if rawSettings, err := settings.MakeSettings(settingsPaths); err != nil {
 		return nil, err
-	} else if params, err := eps.SettingsForm.Validate(rawSettings.Values); err != nil {
+	} else if params, err := epsForms.SettingsForm.ValidateWithContext(rawSettings.Values, map[string]interface{}{"definitions": definitions}); err != nil {
 		return nil, err
 	} else {
 		settings := &eps.Settings{}

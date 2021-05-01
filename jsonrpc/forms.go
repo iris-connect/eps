@@ -14,19 +14,42 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package main
+package jsonrpc
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/cmd/helpers"
-	"github.com/iris-gateway/eps/definitions"
+	"github.com/iris-gateway/eps/tls"
+	"github.com/kiprotect/go-helpers/forms"
 )
 
-func main() {
-	if settings, err := helpers.Settings(&definitions.Default); err != nil {
-		eps.Log.Error(err)
-		return
-	} else {
-		helpers.CLI(&definitions.Default, settings)
-	}
+var JSONRPCServerSettingsForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "tls",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &tls.TLSSettingsForm,
+				},
+			},
+		},
+	},
+}
+
+var JSONRPCClientSettingsForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "endpoint",
+			Validators: []forms.Validator{
+				forms.IsString{}, // to do: add URL validation
+			},
+		},
+		{
+			Name: "tls",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsStringMap{
+					Form: &tls.TLSSettingsForm,
+				},
+			},
+		},
+	},
 }

@@ -20,7 +20,6 @@ import (
 	"context"
 	cryptoTls "crypto/tls"
 	"fmt"
-	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/protobuf"
 	"github.com/iris-gateway/eps/tls"
 	"google.golang.org/grpc"
@@ -34,7 +33,7 @@ type Client struct {
 	address    string
 	serverName string
 	connection *grpc.ClientConn
-	settings   *eps.GRPCClientSettings
+	settings   *GRPCClientSettings
 }
 
 func (c *Client) Connect() error {
@@ -86,7 +85,7 @@ func (c *Client) SendMessage() error {
 
 }
 
-func MakeClient(settings *eps.GRPCClientSettings, address, serverName string) (*Client, error) {
+func MakeClient(settings *GRPCClientSettings, address, serverName string) (*Client, error) {
 
 	tlsConfig, err := tls.TLSClientConfig(settings.TLS, serverName)
 

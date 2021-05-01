@@ -14,19 +14,31 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package main
+package tls
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/cmd/helpers"
-	"github.com/iris-gateway/eps/definitions"
+	"github.com/kiprotect/go-helpers/forms"
 )
 
-func main() {
-	if settings, err := helpers.Settings(&definitions.Default); err != nil {
-		eps.Log.Error(err)
-		return
-	} else {
-		helpers.CLI(&definitions.Default, settings)
-	}
+var TLSSettingsForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "ca_certificate_file",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "certificate_file",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "key_file",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
 }

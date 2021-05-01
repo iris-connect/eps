@@ -18,59 +18,57 @@ package helpers
 
 import (
 	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/grpc"
 	"github.com/urfave/cli"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func Server(definitions *eps.Definitions, settings *eps.Settings) ([]cli.Command, error) {
 
 	return []cli.Command{
-		{
-			Name:    "server",
-			Aliases: []string{"s"},
-			Flags:   []cli.Flag{},
-			Usage:   "Run the server.",
-			Subcommands: []cli.Command{
-				{
-					Name:  "run",
-					Flags: []cli.Flag{},
-					Usage: "Run the server.",
-					Action: func(c *cli.Context) error {
-						eps.Log.Info("Starting the server...")
+		/*
+			{
+				Name:    "server",
+				Aliases: []string{"s"},
+				Flags:   []cli.Flag{},
+				Usage:   "Run the server.",
+				Subcommands: []cli.Command{
+					{
+						Name:  "run",
+						Flags: []cli.Flag{},
+						Usage: "Run the server.",
+						Action: func(c *cli.Context) error {
+							eps.Log.Info("Starting the server...")
 
-						if settings.GRPCServer == nil {
-							eps.Log.Fatalf("gRPC server settings missing!")
-						}
+							if settings.GRPCServer == nil {
+								eps.Log.Fatalf("gRPC server settings missing!")
+							}
 
-						server, err := grpc.MakeServer(settings.GRPCServer)
+							server, err := grpc.MakeServer(settings.GRPCServer)
 
-						if err != nil {
-							eps.Log.Fatal(err)
-						}
+							if err != nil {
+								eps.Log.Fatal(err)
+							}
 
-						if err := server.Start(); err != nil {
-							eps.Log.Fatal(err)
-						}
+							if err := server.Start(); err != nil {
+								eps.Log.Fatal(err)
+							}
 
-						// we wait for CTRL-C / Interrupt
-						sigchan := make(chan os.Signal, 1)
-						signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
+							// we wait for CTRL-C / Interrupt
+							sigchan := make(chan os.Signal, 1)
+							signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
-						eps.Log.Info("Waiting for CTRL-C...")
+							eps.Log.Info("Waiting for CTRL-C...")
 
-						<-sigchan
+							<-sigchan
 
-						eps.Log.Info("Stopping server...")
+							eps.Log.Info("Stopping server...")
 
-						server.Stop()
+							server.Stop()
 
-						return nil
+							return nil
+						},
 					},
 				},
 			},
-		},
+		*/
 	}, nil
 }

@@ -20,11 +20,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/iris-gateway/eps"
 	"io/ioutil"
 )
 
-func TLSConfig(settings *eps.TLSSettings) (*tls.Config, error) {
+func TLSConfig(settings *TLSSettings) (*tls.Config, error) {
 
 	bs, err := ioutil.ReadFile(settings.CACertificateFile)
 
@@ -58,7 +57,7 @@ func TLSConfig(settings *eps.TLSSettings) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-func TLSClientConfig(settings *eps.TLSSettings, serverName string) (*tls.Config, error) {
+func TLSClientConfig(settings *TLSSettings, serverName string) (*tls.Config, error) {
 
 	if config, err := TLSConfig(settings); err != nil {
 		return nil, err
@@ -68,7 +67,7 @@ func TLSClientConfig(settings *eps.TLSSettings, serverName string) (*tls.Config,
 	}
 }
 
-func TLSServerConfig(settings *eps.TLSSettings) (*tls.Config, error) {
+func TLSServerConfig(settings *TLSSettings) (*tls.Config, error) {
 
 	if config, err := TLSConfig(settings); err != nil {
 		return nil, err

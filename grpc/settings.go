@@ -14,19 +14,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package main
+package grpc
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/cmd/helpers"
-	"github.com/iris-gateway/eps/definitions"
+	"github.com/iris-gateway/eps/tls"
 )
 
-func main() {
-	if settings, err := helpers.Settings(&definitions.Default); err != nil {
-		eps.Log.Error(err)
-		return
-	} else {
-		helpers.CLI(&definitions.Default, settings)
-	}
+// Settings for the gRPC client
+type GRPCClientSettings struct {
+	TLS     *tls.TLSSettings `json:"tls"`
+	Enabled bool             `json:"enabled"`
+}
+
+// Settings for the gRPC server
+type GRPCServerSettings struct {
+	TLS         *tls.TLSSettings `json:"tls"`
+	BindAddress string           `json:"bind_address"`
+	Enabled     bool             `json:"enabled"`
 }

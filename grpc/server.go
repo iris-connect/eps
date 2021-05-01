@@ -17,7 +17,6 @@
 package grpc
 
 import (
-	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/protobuf"
 	"github.com/iris-gateway/eps/tls"
 	"google.golang.org/grpc"
@@ -27,7 +26,7 @@ import (
 
 type Server struct {
 	server   *grpc.Server
-	settings *eps.GRPCServerSettings
+	settings *GRPCServerSettings
 }
 
 func (s *Server) Start() error {
@@ -50,7 +49,7 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func MakeServer(settings *eps.GRPCServerSettings) (*Server, error) {
+func MakeServer(settings *GRPCServerSettings) (*Server, error) {
 	var opts []grpc.ServerOption
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
 		return nil, err

@@ -18,61 +18,59 @@ package helpers
 
 import (
 	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/grpc"
 	"github.com/urfave/cli"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func Client(definitions *eps.Definitions, settings *eps.Settings) ([]cli.Command, error) {
 
 	return []cli.Command{
-		{
-			Name:    "client",
-			Aliases: []string{"s"},
-			Flags:   []cli.Flag{},
-			Usage:   "gRPC client functionality.",
-			Subcommands: []cli.Command{
-				{
-					Name:  "test",
-					Flags: []cli.Flag{},
-					Usage: "Test the server connection.",
-					Action: func(c *cli.Context) error {
-						eps.Log.Info("Starting the client...")
+		/*
+			{
+				Name:    "client",
+				Aliases: []string{"s"},
+				Flags:   []cli.Flag{},
+				Usage:   "gRPC client functionality.",
+				Subcommands: []cli.Command{
+					{
+						Name:  "test",
+						Flags: []cli.Flag{},
+						Usage: "Test the server connection.",
+						Action: func(c *cli.Context) error {
+							eps.Log.Info("Starting the client...")
 
-						if settings.GRPCClient == nil {
-							eps.Log.Fatalf("gRPC client settings missing!")
-						}
+							if settings.GRPCClient == nil {
+								eps.Log.Fatalf("gRPC client settings missing!")
+							}
 
-						client, err := grpc.MakeClient(settings.GRPCClient, "localhost:4444", "grpc-server")
+							client, err := grpc.MakeClient(settings.GRPCClient, "localhost:4444", "grpc-server")
 
-						if err != nil {
-							eps.Log.Fatal(err)
-						}
+							if err != nil {
+								eps.Log.Fatal(err)
+							}
 
-						if err := client.Connect(); err != nil {
-							eps.Log.Fatal(err)
-						}
+							if err := client.Connect(); err != nil {
+								eps.Log.Fatal(err)
+							}
 
-						if err := client.SendMessage(); err != nil {
-							eps.Log.Fatal(err)
-						}
+							if err := client.SendMessage(); err != nil {
+								eps.Log.Fatal(err)
+							}
 
-						// we wait for CTRL-C / Interrupt
-						sigchan := make(chan os.Signal, 1)
-						signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
+							// we wait for CTRL-C / Interrupt
+							sigchan := make(chan os.Signal, 1)
+							signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
-						eps.Log.Info("Waiting for CTRL-C...")
+							eps.Log.Info("Waiting for CTRL-C...")
 
-						<-sigchan
+							<-sigchan
 
-						eps.Log.Info("Stopping client...")
+							eps.Log.Info("Stopping client...")
 
-						return nil
+							return nil
+						},
 					},
 				},
 			},
-		},
+		*/
 	}, nil
 }

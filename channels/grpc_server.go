@@ -15,3 +15,50 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package channels
+
+import (
+	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/grpc"
+)
+
+type GRPCServerChannel struct {
+	eps.BaseChannel
+	Settings *grpc.GRPCServerSettings
+}
+
+func GRPCServerSettingsValidator(definitions *eps.Definitions, settings map[string]interface{}) (interface{}, error) {
+	if params, err := grpc.GRPCServerSettingsForm.ValidateWithContext(settings, map[string]interface{}{"definitions": definitions}); err != nil {
+		return nil, err
+	} else {
+		validatedSettings := &grpc.GRPCServerSettings{}
+		if err := grpc.GRPCServerSettingsForm.Coerce(validatedSettings, params); err != nil {
+			return nil, err
+		}
+		return validatedSettings, nil
+	}
+}
+
+func MakeGRPCServerChannel(definitions *eps.Definitions, settings interface{}) (eps.Channel, error) {
+	return &GRPCServerChannel{
+		Settings: settings.(*grpc.GRPCServerSettings),
+	}, nil
+}
+
+func (c *GRPCServerChannel) Open() error {
+	return nil
+}
+
+func (c *GRPCServerChannel) Close() error {
+	return nil
+}
+
+func (c *GRPCServerChannel) Deliver(message *eps.Message) (*eps.Message, error) {
+	return nil, nil
+}
+
+func (c *GRPCServerChannel) CanDeliver(message *eps.Message) bool {
+	return false
+}
+func (c *GRPCServerChannel) CanHandle(message *eps.Message) bool {
+	return false
+}

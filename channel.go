@@ -16,19 +16,39 @@
 
 package eps
 
+import ()
+
 type ChannelDefinition struct {
-	Name        string       `json:"name"`
-	Description string       `json:"description"`
-	Maker       ChannelMaker `json:"-"`
+	Name              string            `json:"name"`
+	Description       string            `json:"description"`
+	Maker             ChannelMaker      `json:"-"`
+	SettingsValidator SettingsValidator `json:"-"`
 }
 
-type ChannelDefinitions []ChannelDefinition
-
-type ChannelMaker func(definitions *Definitions, settings *Settings) (Channel, error)
+type ChannelDefinitions map[string]ChannelDefinition
+type SettingsValidator func(definitions *Definitions, settings map[string]interface{}) (interface{}, error)
+type ChannelMaker func(definitions *Definitions, settings interface{}) (Channel, error)
 
 // A channel can deliver and accept message
 type Channel interface {
 	MessageBroker() MessageBroker
 	SetMessageBroker(MessageBroker) error
-	Send(Message)
+	CanDeliver(*Message) bool
+	CanHandle(*Message) bool
+	Deliver(*Message) (*Message, error)
+	Close() error
+	Open() error
+}
+
+type BaseChannel struct {
+	messageBroker MessageBroker
+}
+
+func (b *BaseChannel) MessageBroker() MessageBroker {
+	return b.messageBroker
+}
+
+func (b *BaseChannel) SetMessageBroker(messageBroker MessageBroker) error {
+	b.messageBroker = messageBroker
+	return nil
 }

@@ -21,44 +21,44 @@ import (
 	"github.com/iris-gateway/eps/jsonrpc"
 )
 
-type JSONRPCServerChannel struct {
+type JSONRPCClientChannel struct {
 	eps.BaseChannel
-	Settings *jsonrpc.JSONRPCServerSettings
+	Settings *jsonrpc.JSONRPCClientSettings
 }
 
-func JSONRPCServerSettingsValidator(definitions *eps.Definitions, settings map[string]interface{}) (interface{}, error) {
-	if params, err := jsonrpc.JSONRPCServerSettingsForm.ValidateWithContext(settings, map[string]interface{}{"definitions": definitions}); err != nil {
+func JSONRPCClientSettingsValidator(definitions *eps.Definitions, settings map[string]interface{}) (interface{}, error) {
+	if params, err := jsonrpc.JSONRPCClientSettingsForm.ValidateWithContext(settings, map[string]interface{}{"definitions": definitions}); err != nil {
 		return nil, err
 	} else {
-		validatedSettings := &jsonrpc.JSONRPCServerSettings{}
-		if err := jsonrpc.JSONRPCServerSettingsForm.Coerce(validatedSettings, params); err != nil {
+		validatedSettings := &jsonrpc.JSONRPCClientSettings{}
+		if err := jsonrpc.JSONRPCClientSettingsForm.Coerce(validatedSettings, params); err != nil {
 			return nil, err
 		}
 		return validatedSettings, nil
 	}
 }
 
-func MakeJSONRPCServerChannel(definitions *eps.Definitions, settings interface{}) (eps.Channel, error) {
-	return &JSONRPCServerChannel{
-		Settings: settings.(*jsonrpc.JSONRPCServerSettings),
+func MakeJSONRPCClientChannel(definitions *eps.Definitions, settings interface{}) (eps.Channel, error) {
+	return &JSONRPCClientChannel{
+		Settings: settings.(*jsonrpc.JSONRPCClientSettings),
 	}, nil
 }
 
-func (c *JSONRPCServerChannel) Open() error {
+func (c *JSONRPCClientChannel) Open() error {
 	return nil
 }
 
-func (c *JSONRPCServerChannel) Close() error {
+func (c *JSONRPCClientChannel) Close() error {
 	return nil
 }
 
-func (c *JSONRPCServerChannel) Deliver(message *eps.Message) (*eps.Message, error) {
+func (c *JSONRPCClientChannel) Deliver(message *eps.Message) (*eps.Message, error) {
 	return nil, nil
 }
 
-func (c *JSONRPCServerChannel) CanDeliver(message *eps.Message) bool {
+func (c *JSONRPCClientChannel) CanDeliver(message *eps.Message) bool {
 	return false
 }
-func (c *JSONRPCServerChannel) CanHandle(message *eps.Message) bool {
+func (c *JSONRPCClientChannel) CanHandle(message *eps.Message) bool {
 	return false
 }

@@ -20,4 +20,29 @@ import (
 	"github.com/iris-gateway/eps"
 )
 
-var Channels = eps.ChannelDefinitions{}
+var Channels = eps.ChannelDefinitions{
+	"jsonrpc_client": eps.ChannelDefinition{
+		Name:              "JSONRPC Client Channel",
+		Description:       "Creates outgoing JSONRPC connections to deliver and receive messages",
+		Maker:             MakeJSONRPCClientChannel,
+		SettingsValidator: JSONRPCClientSettingsValidator,
+	},
+	"grpc_client": eps.ChannelDefinition{
+		Name:              "gRPC Client Channel",
+		Description:       "Creates outgoing gRPC connections to deliver and receive messages",
+		Maker:             MakeGRPCClientChannel,
+		SettingsValidator: GRPCClientSettingsValidator,
+	},
+	"jsonrpc_server": eps.ChannelDefinition{
+		Name:              "JSONRPC Server Channel",
+		Description:       "Accepts incoming JSONRPC connections to deliver and receive messages",
+		Maker:             MakeJSONRPCServerChannel,
+		SettingsValidator: JSONRPCServerSettingsValidator,
+	},
+	"grpc_server": eps.ChannelDefinition{
+		Name:              "gRPC Server Channel",
+		Description:       "Accepts incoming gRPC connections to deliver and receive messages",
+		Maker:             MakeGRPCServerChannel,
+		SettingsValidator: GRPCServerSettingsValidator,
+	},
+}

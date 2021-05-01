@@ -39,9 +39,9 @@ func decorate(commands []cli.Command, decorator decorator) []cli.Command {
 	return newCommands
 }
 
-func Settings() (*eps.Settings, error) {
+func Settings(definitions *eps.Definitions) (*eps.Settings, error) {
 	settingsPaths := helpers.SettingsPaths()
-	return helpers.Settings(settingsPaths)
+	return helpers.Settings(settingsPaths, definitions)
 }
 
 func CLI(definitions *eps.Definitions, settings *eps.Settings) {

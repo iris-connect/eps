@@ -10,6 +10,6 @@ grpc_server:
     key_file: "$DIR/certs/grpc-server.key"
 jsonrpc_server:
   tls:
-    ca_certificate_file: "$DIR/certs/rootCA.crt"
+    ca_certificate_files: "$DIR/certs/rootCA.crt"
     certificate_file: "$DIR/certs/jsonrpc-server.crt"
     key_file: "$DIR/certs/jsonrpc-server.key"

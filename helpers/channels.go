@@ -14,19 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package main
+package helpers
 
 import (
 	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/cmd/helpers"
-	"github.com/iris-gateway/eps/definitions"
 )
 
-func main() {
-	if settings, err := helpers.Settings(&definitions.Default); err != nil {
-		eps.Log.Error(err)
-		return
-	} else {
-		helpers.CLI(&definitions.Default, settings)
-	}
+func InitializeChannels(settings *eps.Settings, definitions *eps.Definitions) ([]eps.Channel, error) {
+	return nil, nil
 }

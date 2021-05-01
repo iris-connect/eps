@@ -34,6 +34,8 @@ github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/kiprotect/go-helpers v0.0.0-20210301183135-5033586c0c62 h1:l0bs9OqgLi6peAIT0uJFwYFQlDP1unRwJr02x7gEwmA=
 github.com/kiprotect/go-helpers v0.0.0-20210301183135-5033586c0c62/go.mod h1:0LFiASSWLhyJjr452sbxRap2Klyv3GMDckMiESuC1ok=
+github.com/kiprotect/go-helpers v0.0.0-20210501145914-13b1725b2075 h1:/0vcYWgzV0DvIJAbqqjuk7xx8DYvn95RAIThIZcJs6A=
+github.com/kiprotect/go-helpers v0.0.0-20210501145914-13b1725b2075/go.mod h1:0LFiASSWLhyJjr452sbxRap2Klyv3GMDckMiESuC1ok=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
