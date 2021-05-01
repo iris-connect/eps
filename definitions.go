@@ -22,6 +22,7 @@ import (
 
 type Definitions struct {
 	CommandsDefinitions
+	ChannelDefinitions
 }
 
 func (d Definitions) Marshal() map[string]interface{} {
@@ -43,6 +44,9 @@ func MergeDefinitions(a, b Definitions) Definitions {
 	for _, obj := range []Definitions{a, b} {
 		for _, v := range obj.CommandsDefinitions {
 			c.CommandsDefinitions = append(c.CommandsDefinitions, v)
+		}
+		for k, v := range obj.ChannelDefinitions {
+			c.ChannelDefinitions[k] = v
 		}
 	}
 	return c

@@ -14,42 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package grpc
+package eps
 
-import (
-	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/protobuf"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/peer"
-	"io"
-)
-
-type EPSServer struct {
-	protobuf.UnimplementedEPSServer
-}
-
-func (s *EPSServer) MessageExchange(stream protobuf.EPS_MessageExchangeServer) error {
-
-	peer, ok := peer.FromContext(stream.Context())
-	if ok {
-		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
-		v := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
-		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
-	}
-
-	for {
-		_, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		eps.Log.Info("Received message!")
-	}
-}
-
-func MakeEPSServer() *EPSServer {
-	return &EPSServer{}
+type MessageBroker interface {
 }

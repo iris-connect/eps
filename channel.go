@@ -14,42 +14,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package grpc
+package eps
 
-import (
-	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/protobuf"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/peer"
-	"io"
-)
-
-type EPSServer struct {
-	protobuf.UnimplementedEPSServer
+type ChannelDefinition struct {
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	Maker       ChannelMaker `json:"-"`
 }
 
-func (s *EPSServer) MessageExchange(stream protobuf.EPS_MessageExchangeServer) error {
+type ChannelDefinitions []ChannelDefinition
 
-	peer, ok := peer.FromContext(stream.Context())
-	if ok {
-		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
-		v := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
-		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
-	}
+type ChannelMaker func(definitions *Definitions, settings *Settings) (Channel, error)
 
-	for {
-		_, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		eps.Log.Info("Received message!")
-	}
-}
-
-func MakeEPSServer() *EPSServer {
-	return &EPSServer{}
+// A channel can deliver and accept message
+type Channel interface {
+	MessageBroker() MessageBroker
+	SetMessageBroker(MessageBroker) error
+	Send(Message)
 }

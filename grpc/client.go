@@ -1,13 +1,31 @@
+// IRIS Endpoint-Server (EPS)
+// Copyright (C) 2021-2021 The IRIS Endpoint-Server Authors (see AUTHORS.md)
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 package grpc
 
 import (
 	"context"
 	cryptoTls "crypto/tls"
+	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/protobuf"
 	"github.com/iris-gateway/eps/tls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
 	"time"
 )
 
@@ -53,6 +71,13 @@ func (c *Client) SendMessage() error {
 
 	if err != nil {
 		return err
+	}
+
+	peer, ok := peer.FromContext(msgClient.Context())
+	if ok {
+		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
+		v := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
+		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
 	}
 
 	msgClient.Send(message)

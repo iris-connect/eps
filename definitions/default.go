@@ -18,9 +18,11 @@ package definitions
 
 import (
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/channels"
 	"github.com/iris-gateway/eps/cmd"
 )
 
 var Default = eps.Definitions{
 	CommandsDefinitions: cmd.Commands,
+	ChannelDefinitions:  channels.Channels,
 }
