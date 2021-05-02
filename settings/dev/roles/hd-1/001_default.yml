@@ -34,5 +34,4 @@ channels: # defines all the channels that we want to open when starting the serv
   - name: main JSON-RPC client # creates outgoing JSONRPC connections to deliver and receive messages
     type: jsonrpc_client
     settings:
-      operator: hd-1
       endpoint: http://localhost:5555/jsonrpc
