@@ -27,7 +27,7 @@ import (
 )
 
 func handler(context *jsonrpc.Context) *jsonrpc.Response {
-	return context.Result("wow")
+	return context.Result("that's ok")
 }
 
 func main() {

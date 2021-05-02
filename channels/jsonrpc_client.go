@@ -54,7 +54,15 @@ func (c *JSONRPCClientChannel) Close() error {
 }
 
 func (c *JSONRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
-	return &eps.Response{Result: map[string]interface{}{"foo": "bar"}, ID: &request.ID}, nil
+	client := jsonrpc.MakeClient(c.Settings.Endpoint)
+	eps.Log.Info("Calling!")
+	jsonrpcRequest := &jsonrpc.Request{}
+	jsonrpcRequest.FromEPSRequest(request)
+	jsonrpcResponse, err := client.Call(jsonrpcRequest)
+	if err != nil {
+		return nil, err
+	}
+	return jsonrpcResponse.ToEPSResponse(), nil
 }
 
 func (c *JSONRPCClientChannel) DeliverResponse(response *eps.Response) error {

@@ -16,6 +16,10 @@
 
 package jsonrpc
 
+import (
+	"github.com/iris-gateway/eps"
+)
+
 type Request struct {
 	JSONRPC string                 `json:"jsonrpc"`
 	Method  string                 `json:"method"`
@@ -23,11 +27,49 @@ type Request struct {
 	ID      string                 `json:"id"`
 }
 
+func (r *Request) FromEPSRequest(request *eps.Request) {
+	r.JSONRPC = "2.0"
+	r.Method = request.Method
+	r.ID = request.ID
+	r.Params = request.Params
+}
+
 type Response struct {
 	JSONRPC string      `json:"jsonrpc"`
 	Result  interface{} `json:"result,omitempty"`
 	Error   *Error      `json:"error,omitempty"`
 	ID      *string     `json:"id"`
+}
+
+func (r *Response) ToEPSResponse() *eps.Response {
+
+	response := &eps.Response{
+		ID: r.ID,
+	}
+
+	if r.Result != nil {
+		mapResult, ok := r.Result.(map[string]interface{})
+		if !ok {
+			mapResult = map[string]interface{}{"_": r.Result}
+		}
+		response.Result = mapResult
+	}
+
+	if r.Error != nil {
+		error := &eps.Error{
+			Code:    r.Error.Code,
+			Message: r.Error.Message,
+		}
+		if r.Error.Data != nil {
+			mapErrorData, ok := r.Error.Data.(map[string]interface{})
+			if !ok {
+				mapErrorData = map[string]interface{}{"_": r.Error.Data}
+			}
+			error.Data = mapErrorData
+		}
+		response.Error = error
+	}
+	return response
 }
 
 type Error struct {
