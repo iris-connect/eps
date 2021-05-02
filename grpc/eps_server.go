@@ -43,8 +43,6 @@ func (s *EPSServer) Call(context context.Context, pbRequest *protobuf.Request) (
 		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
 	}
 
-	eps.Log.Infof("ID: %s", pbRequest.Id)
-
 	request := &eps.Request{
 		ID:     pbRequest.Id,
 		Params: pbRequest.Params.AsMap(),
@@ -54,14 +52,31 @@ func (s *EPSServer) Call(context context.Context, pbRequest *protobuf.Request) (
 	if response, err := s.handler(request); err != nil {
 		return nil, err
 	} else {
-		eps.Log.Info("success!")
-		resultStruct, err := structpb.NewStruct(response.Result)
-		if err != nil {
-			return nil, err
-		}
+
 		pbResponse := &protobuf.Response{
-			Result: resultStruct,
-			Id:     pbRequest.Id,
+			Id: pbRequest.Id,
+		}
+		if response.Result != nil {
+			resultStruct, err := structpb.NewStruct(response.Result)
+			if err != nil {
+				return nil, err
+			}
+			pbResponse.Result = resultStruct
+		}
+		if response.Error != nil {
+			pbResponse.Error = &protobuf.Error{
+				Code:    int32(response.Error.Code),
+				Message: response.Error.Message,
+			}
+
+			if response.Error.Data != nil {
+				errorStruct, err := structpb.NewStruct(response.Error.Data)
+				if err != nil {
+					return nil, err
+				}
+				pbResponse.Error.Data = errorStruct
+			}
+
 		}
 
 		return pbResponse, nil
@@ -89,7 +104,6 @@ func (s *EPSServer) Stream(stream protobuf.EPS_AsyncUpstreamServer) error {
 		if err != nil {
 			return err
 		}
-		eps.Log.Info("Received message!")
 	}
 }
 

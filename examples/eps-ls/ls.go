@@ -19,6 +19,7 @@
 package main
 
 import (
+	"github.com/kiprotect/go-helpers/forms"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"github.com/iris-gateway/eps"
 	"os"
@@ -26,8 +27,69 @@ import (
 	"syscall"
 )
 
+var locationsDB = make(map[string]*Location)
+
 func handler(context *jsonrpc.Context) *jsonrpc.Response {
-	return context.Result("that's ok")
+	switch context.Request.Method {
+	case "add":
+		if params, err := AddLocationForm.Validate(context.Request.Params); err != nil {
+			return context.InvalidParams(err)
+		} else {
+			location := &Location{}
+			if err := AddLocationForm.Coerce(location, params); err != nil {
+				eps.Log.Error(err)
+				return context.InternalError()
+			}
+			locationsDB[params["id"].(string)] = location
+			return context.Result("ok")
+		}
+	case "lookup":
+		if params, err := LookupLocationForm.Validate(context.Request.Params); err != nil {
+			return context.InvalidParams(err)
+		} else {
+			name := params["name"].(string)
+			for _, location := range locationsDB {
+				if location.Name == name {
+					return context.Result(location)
+				}
+			}
+			return context.Error(2, "not found", "foo")
+		}
+	}
+	return context.MethodNotFound()
+}
+
+var LookupLocationForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
+
+var AddLocationForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "id",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
+
+type Location struct {
+	Name string `json:"name"`
+	ID string `json:"id"`
 }
 
 func main() {
