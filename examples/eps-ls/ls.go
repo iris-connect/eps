@@ -18,5 +18,40 @@
 
 package main
 
+import (
+	"github.com/iris-gateway/eps/jsonrpc"
+	"github.com/iris-gateway/eps"
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+func handler(context *jsonrpc.Context) *jsonrpc.Response {
+	return context.Result("wow")
+}
+
 func main() {
+
+	settings := &jsonrpc.JSONRPCServerSettings{
+		BindAddress: "localhost:6666",
+	}
+
+	if server, err := jsonrpc.MakeJSONRPCServer(settings, handler); err != nil {
+		eps.Log.Fatal(err)
+	} else {
+		server.Start()
+
+		// we wait for CTRL-C / Interrupt
+		sigchan := make(chan os.Signal, 1)
+		signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
+
+		eps.Log.Info("Waiting for CTRL-C...")
+
+		<-sigchan
+
+		eps.Log.Info("Stopping server...")
+
+		server.Stop()
+
+	}
 }

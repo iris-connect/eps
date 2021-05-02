@@ -135,9 +135,21 @@ func (s *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request
 
 func (s *HTTPServer) Start() error {
 
+	var listener func() error
+
+	if s.settings.TLS != nil {
+		listener = func() error {
+			return s.server.ListenAndServeTLS(s.settings.TLS.CertificateFile, s.settings.TLS.KeyFile)
+		}
+	} else {
+		listener = func() error {
+			return s.server.ListenAndServe()
+		}
+	}
+
 	go func() {
 		// always returns error. ErrServerClosed on graceful close
-		if err := s.server.ListenAndServeTLS(s.settings.TLS.CertificateFile, s.settings.TLS.KeyFile); err != http.ErrServerClosed {
+		if err := listener(); err != http.ErrServerClosed {
 
 			// something went wrong, we log and store the error...
 
