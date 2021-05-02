@@ -36,7 +36,39 @@ type MessageBroker interface {
 	MessageStore() MessageStore
 	SetMessageStore(MessageStore) error
 	AddChannel(Channel) error
-	RemoveChannel(Channel) error
 	Channels() []Channel
 	Deliver(*Message) (*Message, error)
+}
+
+type BasicMessageBroker struct {
+	messageStore MessageStore
+	channels     []Channel
+}
+
+func MakeBasicMessageBroker() (*BasicMessageBroker, error) {
+	return &BasicMessageBroker{
+		channels: make([]Channel, 0),
+	}, nil
+}
+
+func (b *BasicMessageBroker) MessageStore() MessageStore {
+	return b.messageStore
+}
+
+func (b *BasicMessageBroker) SetMessageStore(messageStore MessageStore) error {
+	b.messageStore = messageStore
+	return nil
+}
+
+func (b *BasicMessageBroker) AddChannel(channel Channel) error {
+	b.channels = append(b.channels, channel)
+	return nil
+}
+
+func (b *BasicMessageBroker) Deliver(*Message) (*Message, error) {
+	return nil, nil
+}
+
+func (b *BasicMessageBroker) Channels() []Channel {
+	return b.channels
 }

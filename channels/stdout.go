@@ -48,9 +48,10 @@ func StdoutSettingsValidator(settings map[string]interface{}) (interface{}, erro
 	}
 }
 
-func MakeStdoutChannel(settings interface{}) (eps.Channel, error) {
+func MakeStdoutChannel(broker eps.MessageBroker, settings interface{}) (eps.Channel, error) {
 	return &StdoutChannel{
-		Settings: settings.(StdoutSettings),
+		BaseChannel: eps.BaseChannel{Broker: broker},
+		Settings:    settings.(StdoutSettings),
 	}, nil
 }
 

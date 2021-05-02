@@ -33,13 +33,19 @@ func (c Channel) Setup(fixtures map[string]interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("settings missing")
 	}
 
+	broker, ok := fixtures["broker"].(eps.MessageBroker)
+
+	if !ok {
+		return nil, fmt.Errorf("message broker missing")
+	}
+
 	channelSettings, definition, err := helpers.GetChannelSettingsAndDefinition(settings, c.Name)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return definition.Maker(channelSettings.Settings)
+	return definition.Maker(broker, channelSettings.Settings)
 }
 
 func (c Channel) Teardown(fixture interface{}) error {

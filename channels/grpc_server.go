@@ -39,9 +39,10 @@ func GRPCServerSettingsValidator(settings map[string]interface{}) (interface{}, 
 	}
 }
 
-func MakeGRPCServerChannel(settings interface{}) (eps.Channel, error) {
+func MakeGRPCServerChannel(broker eps.MessageBroker, settings interface{}) (eps.Channel, error) {
 	return &GRPCServerChannel{
-		Settings: settings.(grpc.GRPCServerSettings),
+		BaseChannel: eps.BaseChannel{Broker: broker},
+		Settings:    settings.(grpc.GRPCServerSettings),
 	}, nil
 }
 

@@ -26,7 +26,7 @@ type ChannelDefinition struct {
 }
 
 type ChannelDefinitions map[string]ChannelDefinition
-type ChannelMaker func(settings interface{}) (Channel, error)
+type ChannelMaker func(broker MessageBroker, settings interface{}) (Channel, error)
 
 // A channel can deliver and accept message
 type Channel interface {
@@ -40,14 +40,14 @@ type Channel interface {
 }
 
 type BaseChannel struct {
-	messageBroker MessageBroker
+	Broker MessageBroker
 }
 
 func (b *BaseChannel) MessageBroker() MessageBroker {
-	return b.messageBroker
+	return b.Broker
 }
 
-func (b *BaseChannel) SetMessageBroker(messageBroker MessageBroker) error {
-	b.messageBroker = messageBroker
+func (b *BaseChannel) SetMessageBroker(broker MessageBroker) error {
+	b.Broker = broker
 	return nil
 }

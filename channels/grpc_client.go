@@ -39,9 +39,10 @@ func GRPCClientSettingsValidator(settings map[string]interface{}) (interface{}, 
 	}
 }
 
-func MakeGRPCClientChannel(settings interface{}) (eps.Channel, error) {
+func MakeGRPCClientChannel(broker eps.MessageBroker, settings interface{}) (eps.Channel, error) {
 	return &GRPCClientChannel{
-		Settings: settings.(grpc.GRPCClientSettings),
+		BaseChannel: eps.BaseChannel{Broker: broker},
+		Settings:    settings.(grpc.GRPCClientSettings),
 	}, nil
 }
 

@@ -157,7 +157,7 @@ func (s *HTTPServer) Start() error {
 		}
 	}()
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Millisecond * 100)
 	s.mutex.Lock()
 	running := s.running
 	s.mutex.Unlock()

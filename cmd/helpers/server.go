@@ -25,9 +25,9 @@ import (
 	"syscall"
 )
 
-func openChannels(settings *eps.Settings) []eps.Channel {
+func openChannels(broker eps.MessageBroker, settings *eps.Settings) []eps.Channel {
 
-	channels, err := helpers.InitializeChannels(settings)
+	channels, err := helpers.InitializeChannels(broker, settings)
 
 	if err != nil {
 		eps.Log.Fatal(err)
@@ -70,7 +70,13 @@ func Server(settings *eps.Settings) ([]cli.Command, error) {
 					Action: func(c *cli.Context) error {
 						eps.Log.Info("Opening all channels...")
 
-						channels := openChannels(settings)
+						broker, err := helpers.InitializeMessageBroker(settings)
+
+						if err != nil {
+							eps.Log.Fatal(err)
+						}
+
+						channels := openChannels(broker, settings)
 
 						// we wait for CTRL-C / Interrupt
 						sigchan := make(chan os.Signal, 1)

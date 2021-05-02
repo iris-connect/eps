@@ -39,19 +39,31 @@ func JSONRPCServerSettingsValidator(settings map[string]interface{}) (interface{
 	}
 }
 
-func MakeJSONRPCServerChannel(settings interface{}) (eps.Channel, error) {
+func MakeJSONRPCServerChannel(broker eps.MessageBroker, settings interface{}) (eps.Channel, error) {
 	rpcSettings := settings.(jsonrpc.JSONRPCServerSettings)
 
-	methods := []*jsonrpc.Method{}
+	s := &JSONRPCServerChannel{
+		BaseChannel: eps.BaseChannel{Broker: broker},
+		Settings:    &rpcSettings,
+	}
+
+	methods := []*jsonrpc.Method{
+		{
+			Name:    "submit",
+			Handler: s.submitData,
+		},
+	}
 
 	if server, err := jsonrpc.MakeJSONRPCServer(&rpcSettings, methods); err != nil {
 		return nil, err
 	} else {
-		return &JSONRPCServerChannel{
-			Settings: &rpcSettings,
-			Server:   server,
-		}, nil
+		s.Server = server
+		return s, nil
 	}
+}
+
+func (c *JSONRPCServerChannel) submitData(context *jsonrpc.Context) *jsonrpc.Response {
+	return context.Error(200, "test", nil)
 }
 
 func (c *JSONRPCServerChannel) Open() error {

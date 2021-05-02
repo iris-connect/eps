@@ -14,32 +14,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package jsonrpc
+package fixtures
 
-type Context struct {
-	Request *Request
+import (
+	"fmt"
+	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/helpers"
+)
+
+type MessageBroker struct {
+	Name string
 }
 
-func (c *Context) Error(code int, message string, data interface{}) *Response {
-	return &Response{
-		Error: &Error{
-			Code:    code,
-			Message: message,
-			Data:    data,
-		},
-		JSONRPC: "2.0",
-		ID:      &c.Request.ID,
+func (c MessageBroker) Setup(fixtures map[string]interface{}) (interface{}, error) {
+	settings, ok := fixtures["settings"].(*eps.Settings)
+
+	if !ok {
+		return nil, fmt.Errorf("settings missing")
 	}
+
+	return helpers.InitializeMessageBroker(settings)
 }
 
-func (c *Context) MethodNotFound() *Response {
-	return c.Error(-32601, "method not found", nil)
-}
-
-func (c *Context) InvalidParams(err error) *Response {
-	return c.Error(-32602, "invalid params", err)
-}
-
-func (c *Context) InternalError() *Response {
-	return c.Error(-32603, "intenal error", nil)
+func (c MessageBroker) Teardown(fixture interface{}) error {
+	return nil
 }

@@ -38,9 +38,10 @@ func JSONRPCClientSettingsValidator(settings map[string]interface{}) (interface{
 	}
 }
 
-func MakeJSONRPCClientChannel(settings interface{}) (eps.Channel, error) {
+func MakeJSONRPCClientChannel(broker eps.MessageBroker, settings interface{}) (eps.Channel, error) {
 	return &JSONRPCClientChannel{
-		Settings: settings.(jsonrpc.JSONRPCClientSettings),
+		BaseChannel: eps.BaseChannel{Broker: broker},
+		Settings:    settings.(jsonrpc.JSONRPCClientSettings),
 	}, nil
 }
 

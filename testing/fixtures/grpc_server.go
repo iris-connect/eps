@@ -17,9 +17,9 @@
 package fixtures
 
 import (
-	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/helpers"
+//	"fmt"
+//	"github.com/iris-gateway/eps"
+//	"github.com/iris-gateway/eps/helpers"
 )
 
 type GRPCServer struct {
@@ -27,19 +27,21 @@ type GRPCServer struct {
 }
 
 func (c GRPCServer) Setup(fixtures map[string]interface{}) (interface{}, error) {
-	settings, ok := fixtures["settings"].(*eps.Settings)
+	/*	settings, ok := fixtures["settings"].(*eps.Settings)
 
-	if !ok {
-		return nil, fmt.Errorf("settings missing")
-	}
+		if !ok {
+			return nil, fmt.Errorf("settings missing")
+		}
 
-	channelSettings, definition, err := helpers.GetChannelSettingsAndDefinition(settings, c.Name)
+		channelSettings, definition, err := helpers.GetChannelSettingsAndDefinition(settings, c.Name)
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
 
-	return definition.Maker(channelSettings.Settings)
+		return definition.Maker(channelSettings.Settings)
+	*/
+	return nil, nil
 }
 
 func (c GRPCServer) Teardown(fixture interface{}) error {
