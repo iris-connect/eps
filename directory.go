@@ -35,14 +35,51 @@ type OperatorChannel struct {
 	Settings map[string]interface{} `json:"settings,omitempty"`
 }
 
+type DirectoryQuery struct {
+	Operator string
+	Channels []string
+}
+
 type DirectoryEntries []*DirectoryEntry
 type DirectoryDefinitions map[string]DirectoryDefinition
 type DirectoryMaker func(settings interface{}) (Directory, error)
 
 // A directory can deliver and accept message
 type Directory interface {
-	Entries() []*DirectoryEntry
+	Entries(*DirectoryQuery) []*DirectoryEntry
 }
 
 type BaseDirectory struct {
+}
+
+// helper function that can be used by directory implementations that
+// have a list of local directory entries
+func FilterDirectoryEntriesByQuery(entries []*DirectoryEntry, query *DirectoryQuery) []*DirectoryEntry {
+	relevantEntries := make([]*DirectoryEntry, 0)
+	for _, entry := range entries {
+		// we filter the entries by the specified operator name
+		if query.Operator != "" && entry.Name != query.Operator {
+			continue
+		}
+		// we filter the entries by the specified channel types
+		found := false
+		if query.Channels != nil {
+			for _, queryChannel := range query.Channels {
+				for _, entryChannel := range entry.Channels {
+					if entryChannel.Type == queryChannel {
+						found = true
+						break
+					}
+				}
+				if found {
+					break
+				}
+			}
+		}
+		if !found {
+			continue
+		}
+		relevantEntries = append(relevantEntries, entry)
+	}
+	return relevantEntries
 }

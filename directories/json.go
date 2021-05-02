@@ -146,8 +146,8 @@ func (f *JSONDirectory) load() error {
 	}
 }
 
-func (f *JSONDirectory) Entries() []*eps.DirectoryEntry {
-	return nil
+func (f *JSONDirectory) Entries(query *eps.DirectoryQuery) []*eps.DirectoryEntry {
+	return eps.FilterDirectoryEntriesByQuery(f.Directory.Entries, query)
 }
 
 type Directory struct {
