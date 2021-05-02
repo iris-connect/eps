@@ -7,8 +7,9 @@ L="Berlin"
 C="DE"
 OU="IT"
 CN="Testing-Development"
-# using less than 1024 here will result in a TLS handshake failure
-LEN="1024"
+# using less than 1024 here will result in a TLS handshake failure in Go
+# using less than 2048 will cause e.g. 'curl' to complain that the ciper is too weak
+LEN="2048"
 
 
 openssl genrsa -out rootCA.key ${LEN}

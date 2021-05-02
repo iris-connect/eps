@@ -21,8 +21,98 @@ import (
 	"github.com/kiprotect/go-helpers/forms"
 )
 
+var JSONRPCRequestForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "jsonrpc",
+			Validators: []forms.Validator{
+				forms.IsString{},
+				forms.IsIn{
+					// we only support JSONRPC-2.0 right now
+					Choices: []interface{}{"2.0"},
+				},
+			},
+		},
+		{
+			Name: "method",
+			Validators: []forms.Validator{
+				forms.IsString{
+					MinLength: 1,
+					MaxLength: 100,
+				},
+			},
+		},
+		{
+			Name: "params",
+			Validators: []forms.Validator{
+				// we only support string-map style parameter passing
+				forms.IsStringMap{},
+			},
+		},
+		{
+			Name: "id",
+			Validators: []forms.Validator{
+				// we only support string IDs
+				forms.IsString{
+					MinLength: 1,
+					MaxLength: 100,
+				},
+			},
+		},
+	},
+}
+
+var CorsSettingsForm = forms.Form{
+	ErrorMsg: "invalid data encountered in the CORS settings form",
+	Fields: []forms.Field{
+		{
+			Name: "allowed_hosts",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: []string{}},
+				forms.IsStringList{},
+			},
+		},
+		{
+			Name: "allowed_headers",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: []string{}},
+				forms.IsStringList{},
+			},
+		},
+		{
+			Name: "allowed_methods",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"}},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsIn{
+							Choices: []interface{}{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
+						},
+					},
+				},
+				forms.IsStringList{},
+			},
+		},
+	},
+}
+
 var JSONRPCServerSettingsForm = forms.Form{
 	Fields: []forms.Field{
+		{
+			Name: "cors",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsStringMap{
+					Form: &CorsSettingsForm,
+				},
+			},
+		},
+		{
+			Name: "bind_address",
+			Validators: []forms.Validator{
+				forms.IsString{}, // to do: add URL validation
+			},
+		},
 		{
 			Name: "tls",
 			Validators: []forms.Validator{

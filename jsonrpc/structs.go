@@ -16,27 +16,9 @@
 
 package jsonrpc
 
-import (
-	"github.com/iris-gateway/eps/tls"
-)
-
-// Settings for the JSON-RPC server
-type JSONRPCClientSettings struct {
-	TLS      *tls.TLSSettings `json:"tls"`
-	Endpoint string           `json:"endpoint"`
-	Enabled  bool             `json:"enabled"`
-}
-
-type CorsSettings struct {
-	AllowedHeaders []string `json:"allowed_headers"`
-	AllowedHosts   []string `json:"allowed_hosts"`
-	AllowedMethods []string `json:"allowed_methods"`
-}
-
-// Settings for the JSON-RPC server
-type JSONRPCServerSettings struct {
-	Cors        *CorsSettings    `json:"cors"`
-	TLS         *tls.TLSSettings `json:"tls"`
-	BindAddress string           `json:"bind_address"`
-	Enabled     bool             `json:"enabled"`
+type RequestData struct {
+	JSONRPC string                 `json:"jsonrpc"`
+	Method  string                 `json:"method"`
+	Params  map[string]interface{} `json:"params"`
+	ID      string                 `json:"id"`
 }

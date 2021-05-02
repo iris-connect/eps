@@ -14,29 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package jsonrpc
+package http
 
 import (
 	"github.com/iris-gateway/eps/tls"
 )
 
 // Settings for the JSON-RPC server
-type JSONRPCClientSettings struct {
-	TLS      *tls.TLSSettings `json:"tls"`
-	Endpoint string           `json:"endpoint"`
-	Enabled  bool             `json:"enabled"`
-}
-
-type CorsSettings struct {
-	AllowedHeaders []string `json:"allowed_headers"`
-	AllowedHosts   []string `json:"allowed_hosts"`
-	AllowedMethods []string `json:"allowed_methods"`
-}
-
-// Settings for the JSON-RPC server
-type JSONRPCServerSettings struct {
-	Cors        *CorsSettings    `json:"cors"`
+type HTTPServerSettings struct {
 	TLS         *tls.TLSSettings `json:"tls"`
 	BindAddress string           `json:"bind_address"`
-	Enabled     bool             `json:"enabled"`
 }

@@ -41,7 +41,6 @@ func TestGRPCClientConnection(t *testing.T) {
 	defer th.TeardownFixtures(fixtures, fc)
 
 	client := fc["client"].(*channels.GRPCClientChannel)
-
 	server := fc["server"].(*channels.GRPCServerChannel)
 
 	if err := server.Open(); err != nil {

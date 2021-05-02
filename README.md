@@ -15,7 +15,7 @@ make
 For testing and development you'll also need TLS certificates, which you can generate with
 
 ```
-make test-and-dev-certs
+make certs
 ```
 
 Please note that you need `openssl` on your system for this to work. This will generate all required certificates and put them in the `settings/dev/certs` and `settings/dev/test` folders. Please do not use these certificates in a production setting and do not check them into version control.

@@ -40,6 +40,6 @@ protobuf:
     --go-grpc_out=. --go-grpc_opt=paths=source_relative \
     protobuf/eps.proto
 
-test-and-dev-certs:
+certs:
 	(cd settings/dev/certs; ../../../.scripts/make_certs.sh)
 	(cd settings/test/certs; ../../../.scripts/make_certs.sh)
