@@ -20,6 +20,14 @@ type Context struct {
 	Request *Request
 }
 
+func (c *Context) Result(data interface{}) *Response {
+	return &Response{
+		ID:      &c.Request.ID,
+		Result:  data,
+		JSONRPC: "2.0",
+	}
+}
+
 func (c *Context) Error(code int, message string, data interface{}) *Response {
 	return &Response{
 		Error: &Error{

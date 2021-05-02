@@ -23,40 +23,41 @@ import (
 
 type Handler func(*Context) *Response
 
-type Method struct {
-	Name    string
-	Handler Handler
-}
-
 type JSONRPCServer struct {
 	settings *JSONRPCServerSettings
 	server   *http.HTTPServer
-	methods  []*Method
+	handler  Handler
 }
 
-func JSONRPC(methods []*Method) http.Handler {
+func JSONRPC(handler Handler) http.Handler {
 	return func(c *http.Context) {
 		// the request data has been validated by the 'ExtractJSONRequest' handler
 		request := c.Get("request").(*Request)
+
 		context := &Context{
 			Request: request,
 		}
-		for _, method := range methods {
-			if method.Name == request.Method {
-				response := method.Handler(context)
-				// people will forget this so we add it here in that case
-				if response.JSONRPC == "" {
-					response.JSONRPC = "2.0"
-				}
-				c.JSON(200, response)
-				return
-			}
+
+		response := handler(context)
+
+		// people will forget this so we add it here in that case
+		if response.JSONRPC == "" {
+			response.JSONRPC = "2.0"
 		}
-		c.JSON(400, context.MethodNotFound())
+
+		code := 200
+
+		// if there was an error we return a 400 status instead of 200
+		if response.Error != nil {
+			code = 400
+		}
+
+		c.JSON(code, response)
+
 	}
 }
 
-func MakeJSONRPCServer(settings *JSONRPCServerSettings, methods []*Method) (*JSONRPCServer, error) {
+func MakeJSONRPCServer(settings *JSONRPCServerSettings, handler Handler) (*JSONRPCServer, error) {
 	routeGroups := []*http.RouteGroup{
 		{
 			// these handlers will be executed for all routes in the group
@@ -68,7 +69,7 @@ func MakeJSONRPCServer(settings *JSONRPCServerSettings, methods []*Method) (*JSO
 					Pattern: "^/jsonrpc$",
 					Handlers: []http.Handler{
 						ExtractJSONRequest,
-						JSONRPC(methods),
+						JSONRPC(handler),
 					},
 				},
 			},

@@ -46,14 +46,7 @@ func MakeJSONRPCServerChannel(settings interface{}) (eps.Channel, error) {
 		Settings: &rpcSettings,
 	}
 
-	methods := []*jsonrpc.Method{
-		{
-			Name:    "submit",
-			Handler: s.submitData,
-		},
-	}
-
-	if server, err := jsonrpc.MakeJSONRPCServer(&rpcSettings, methods); err != nil {
+	if server, err := jsonrpc.MakeJSONRPCServer(&rpcSettings, s.handler); err != nil {
 		return nil, err
 	} else {
 		s.Server = server
@@ -61,8 +54,8 @@ func MakeJSONRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	}
 }
 
-func (c *JSONRPCServerChannel) submitData(context *jsonrpc.Context) *jsonrpc.Response {
-	return context.Error(200, "test", nil)
+func (c *JSONRPCServerChannel) handler(context *jsonrpc.Context) *jsonrpc.Response {
+	return context.Result("test")
 }
 
 func (c *JSONRPCServerChannel) Open() error {
