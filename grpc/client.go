@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/protobuf/types/known/structpb"
 	"time"
 )
 
@@ -59,29 +60,55 @@ func (c *Client) Close() error {
 	return c.connection.Close()
 }
 
-func (c *Client) SendRequest(request *eps.Request) error {
+func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 
 	client := protobuf.NewEPSClient(c.connection)
-
-	pbMessage := &protobuf.Request{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	streamClient, err := client.AsyncUpstream(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	peer, ok := peer.FromContext(streamClient.Context())
+	peer, ok := peer.FromContext(ctx)
 	if ok {
 		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
 		v := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
 		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
 	}
 
-	return streamClient.Send(pbMessage)
+	paramsStruct, err := structpb.NewStruct(request.Params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	pbRequest := &protobuf.Request{
+		Params: paramsStruct,
+		Method: request.Method,
+		Id:     request.ID,
+	}
+
+	pbResponse, err := client.Call(ctx, pbRequest)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var responseError *eps.Error
+
+	if pbResponse.Error != nil {
+		responseError = &eps.Error{
+			Code:    int(pbResponse.Error.Code),
+			Data:    pbResponse.Error.Data.AsMap(),
+			Message: pbResponse.Error.Message,
+		}
+	}
+
+	response := &eps.Response{
+		Result: pbResponse.Result.AsMap(),
+		ID:     &pbResponse.Id,
+		Error:  responseError,
+	}
+
+	return response, nil
 
 }
 

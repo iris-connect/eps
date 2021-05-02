@@ -76,6 +76,7 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 }
 
 func (b *BasicMessageBroker) DeliverRequest(request *Request) (*Response, error) {
+
 	address, err := GetAddress(request.ID)
 
 	if err != nil {

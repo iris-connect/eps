@@ -35,16 +35,6 @@ var JSONDirectorySettingsForm = forms.Form{
 	},
 }
 
-type DirectoryEntry struct {
-	Name     string             `json:"string"`
-	Channels []*OperatorChannel `json:"channels"`
-}
-
-type OperatorChannel struct {
-	Type     string                 `json:"type"`
-	Settings map[string]interface{} `json:"settings,omitempty"`
-}
-
 var JSONOperatorChannelForm = forms.Form{
 	Fields: []forms.Field{
 		{
@@ -128,8 +118,11 @@ func JSONDirectorySettingsValidator(settings map[string]interface{}) (interface{
 	}
 }
 
-func MakeJSONDirectory(settings interface{}) (eps.Directory, error) {
+func MakeJSONDirectory(name string, settings interface{}) (eps.Directory, error) {
 	d := &JSONDirectory{
+		BaseDirectory: eps.BaseDirectory{
+			Name_: name,
+		},
 		Settings: settings.(JSONDirectorySettings),
 	}
 
@@ -173,7 +166,7 @@ func LoadJSONDirectory(path string) (*Directory, error) {
 					// this should not happen if the forms are correct...
 					return nil, err
 				}
-				// directory is valid
+				// directory is validate
 				return directory, nil
 			}
 		}

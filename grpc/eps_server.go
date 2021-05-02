@@ -23,20 +23,18 @@ import (
 	"github.com/iris-gateway/eps/protobuf"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/protobuf/types/known/structpb"
 	"io"
 )
 
-type EPSClient struct {
-	Operator string
-	Services []string
-}
-
 type EPSServer struct {
 	protobuf.UnimplementedEPSServer
-	connectedClients []EPSClient
+	handler Handler
 }
 
-func (s *EPSServer) Call(context context.Context, request *protobuf.Request) (*protobuf.Response, error) {
+type Handler func(*eps.Request) (*eps.Response, error)
+
+func (s *EPSServer) Call(context context.Context, pbRequest *protobuf.Request) (*protobuf.Response, error) {
 
 	peer, ok := peer.FromContext(context)
 	if ok {
@@ -45,7 +43,30 @@ func (s *EPSServer) Call(context context.Context, request *protobuf.Request) (*p
 		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
 	}
 
-	return nil, nil
+	eps.Log.Infof("ID: %s", pbRequest.Id)
+
+	request := &eps.Request{
+		ID:     pbRequest.Id,
+		Params: pbRequest.Params.AsMap(),
+		Method: pbRequest.Method,
+	}
+
+	if response, err := s.handler(request); err != nil {
+		return nil, err
+	} else {
+		eps.Log.Info("success!")
+		resultStruct, err := structpb.NewStruct(response.Result)
+		if err != nil {
+			return nil, err
+		}
+		pbResponse := &protobuf.Response{
+			Result: resultStruct,
+			Id:     pbRequest.Id,
+		}
+
+		return pbResponse, nil
+
+	}
 
 }
 
@@ -72,6 +93,8 @@ func (s *EPSServer) Stream(stream protobuf.EPS_AsyncUpstreamServer) error {
 	}
 }
 
-func MakeEPSServer() *EPSServer {
-	return &EPSServer{}
+func MakeEPSServer(handler Handler) *EPSServer {
+	return &EPSServer{
+		handler: handler,
+	}
 }

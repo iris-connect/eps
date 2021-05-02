@@ -23,7 +23,7 @@
       ]
     },
     {
-      "name": "h1-1",
+      "name": "hd-1",
       "channels" : [
         {
           "type" : "grpc_server"

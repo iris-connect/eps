@@ -69,6 +69,12 @@ var ChannelForm = forms.Form{
 var SettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
 			Name: "directory",
 			Validators: []forms.Validator{
 				forms.IsStringMap{

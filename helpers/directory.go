@@ -22,5 +22,5 @@ import (
 
 func InitializeDirectory(settings *eps.Settings) (eps.Directory, error) {
 	definition := settings.Definitions.DirectoryDefinitions[settings.Directory.Type]
-	return definition.Maker(settings.Directory.Settings)
+	return definition.Maker(settings.Name, settings.Directory.Settings)
 }

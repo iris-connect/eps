@@ -45,9 +45,13 @@ func MakeGRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	}, nil
 }
 
+func (c *GRPCServerChannel) handle(request *eps.Request) (*eps.Response, error) {
+	return c.MessageBroker().DeliverRequest(request)
+}
+
 func (c *GRPCServerChannel) Open() error {
 	var err error
-	if c.server, err = grpc.MakeServer(&c.Settings); err != nil {
+	if c.server, err = grpc.MakeServer(&c.Settings, c.handle); err != nil {
 		return err
 	}
 	return c.server.Start()

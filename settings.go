@@ -31,6 +31,7 @@ type Settings struct {
 	Definitions *Definitions       `json:"definitions"`
 	Channels    []*ChannelSettings `json:"channels"`
 	Directory   *DirectorySettings `json:"directory"`
+	Name        string             `json:"name"`
 }
 
 type SettingsValidator func(settings map[string]interface{}) (interface{}, error)

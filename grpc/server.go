@@ -49,7 +49,7 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func MakeServer(settings *GRPCServerSettings) (*Server, error) {
+func MakeServer(settings *GRPCServerSettings, handler Handler) (*Server, error) {
 	var opts []grpc.ServerOption
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func MakeServer(settings *GRPCServerSettings) (*Server, error) {
 		opts = append(opts, grpc.Creds(credentials.NewTLS(tlsConfig)))
 	}
 	grpcServer := grpc.NewServer(opts...)
-	protobuf.RegisterEPSServer(grpcServer, MakeEPSServer())
+	protobuf.RegisterEPSServer(grpcServer, MakeEPSServer(handler))
 	return &Server{
 		server:   grpcServer,
 		settings: settings,

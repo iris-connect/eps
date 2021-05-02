@@ -133,6 +133,13 @@ var JSONRPCClientSettingsForm = forms.Form{
 			},
 		},
 		{
+			Name: "local",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: true},
+				forms.IsBoolean{},
+			},
+		},
+		{
 			Name: "tls",
 			Validators: []forms.Validator{
 				forms.IsOptional{},

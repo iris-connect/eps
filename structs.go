@@ -48,13 +48,13 @@ func GetAddress(id string) (*Address, error) {
 }
 
 type Response struct {
-	Result interface{} `json:"result,omitempty"`
-	Error  *Error      `json:"error,omitempty"`
-	ID     *string     `json:"id"`
+	Result map[string]interface{} `json:"result,omitempty"`
+	Error  *Error                 `json:"error,omitempty"`
+	ID     *string                `json:"id"`
 }
 
 type Error struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Code    int                    `json:"code"`
+	Message string                 `json:"message"`
+	Data    map[string]interface{} `json:"data,omitempty"`
 }

@@ -46,6 +46,20 @@ type BaseChannel struct {
 	directory Directory
 }
 
+func (b *BaseChannel) GetDirectoryEntry(address *Address) *DirectoryEntry {
+	entries := b.Directory().Entries(&DirectoryQuery{
+		Operator: address.Operator,
+		Channels: []string{"grpc_client"},
+	})
+
+	if len(entries) > 0 {
+		return entries[0]
+	}
+
+	return nil
+
+}
+
 func (b *BaseChannel) Directory() Directory {
 	return b.directory
 }

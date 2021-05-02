@@ -19,12 +19,39 @@ package channels
 import (
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/grpc"
+	"github.com/kiprotect/go-helpers/forms"
 )
 
 type GRPCClientChannel struct {
 	eps.BaseChannel
-	client   *grpc.Client
 	Settings grpc.GRPCClientSettings
+}
+
+type GRPCClientEntrySettings struct {
+	Address string `json:"address"`
+}
+
+var GRPCClientEntrySettingsForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "address",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
+
+func getEntrySettings(settings map[string]interface{}) (*GRPCClientEntrySettings, error) {
+	if params, err := GRPCClientEntrySettingsForm.Validate(settings); err != nil {
+		return nil, err
+	} else {
+		validatedSettings := &GRPCClientEntrySettings{}
+		if err := GRPCClientEntrySettingsForm.Coerce(validatedSettings, params); err != nil {
+			return nil, err
+		}
+		return validatedSettings, nil
+	}
 }
 
 func GRPCClientSettingsValidator(settings map[string]interface{}) (interface{}, error) {
@@ -46,10 +73,6 @@ func MakeGRPCClientChannel(settings interface{}) (eps.Channel, error) {
 }
 
 func (c *GRPCClientChannel) Open() error {
-	var err error
-	if c.client, err = grpc.MakeClient(&c.Settings); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -58,7 +81,28 @@ func (c *GRPCClientChannel) Close() error {
 }
 
 func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
-	return nil, nil
+
+	address, err := eps.GetAddress(request.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	entry := c.GetDirectoryEntry(address)
+
+	settings, err := getEntrySettings(entry.Channels[0].Settings)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if client, err := grpc.MakeClient(&c.Settings); err != nil {
+		return nil, err
+	} else if err := client.Connect(settings.Address, entry.Name); err != nil {
+		return nil, err
+	} else {
+		return client.SendRequest(request)
+	}
 }
 
 func (c *GRPCClientChannel) DeliverResponse(response *eps.Response) error {
@@ -66,5 +110,10 @@ func (c *GRPCClientChannel) DeliverResponse(response *eps.Response) error {
 }
 
 func (c *GRPCClientChannel) CanDeliverTo(address *eps.Address) bool {
+
+	if c.GetDirectoryEntry(address) != nil {
+		return true
+	}
+
 	return false
 }

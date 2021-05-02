@@ -46,22 +46,6 @@ func MakeJSONRPCClientChannel(settings interface{}) (eps.Channel, error) {
 
 func (c *JSONRPCClientChannel) Open() error {
 
-	/*
-		client, err := grpc.MakeClient(settings.GRPCClient, "localhost:4444", "grpc-server")
-
-		if err != nil {
-			eps.Log.Fatal(err)
-		}
-
-		if err := client.Connect(); err != nil {
-			eps.Log.Fatal(err)
-		}
-
-		if err := client.SendMessage(); err != nil {
-			eps.Log.Fatal(err)
-		}
-	*/
-
 	return nil
 }
 
@@ -70,7 +54,7 @@ func (c *JSONRPCClientChannel) Close() error {
 }
 
 func (c *JSONRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
-	return nil, nil
+	return &eps.Response{Result: map[string]interface{}{"foo": "bar"}, ID: &request.ID}, nil
 }
 
 func (c *JSONRPCClientChannel) DeliverResponse(response *eps.Response) error {
@@ -78,5 +62,10 @@ func (c *JSONRPCClientChannel) DeliverResponse(response *eps.Response) error {
 }
 
 func (c *JSONRPCClientChannel) CanDeliverTo(address *eps.Address) bool {
+
+	if address.Operator == c.Directory().Name() {
+		return true
+	}
+
 	return false
 }

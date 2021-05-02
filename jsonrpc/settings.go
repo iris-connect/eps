@@ -24,6 +24,7 @@ import (
 type JSONRPCClientSettings struct {
 	TLS      *tls.TLSSettings `json:"tls"`
 	Endpoint string           `json:"endpoint"`
+	Local    bool             `json:"local"`
 }
 
 type CorsSettings struct {

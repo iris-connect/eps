@@ -26,7 +26,7 @@ type DirectoryDefinition struct {
 }
 
 type DirectoryEntry struct {
-	Name     string             `json:"string"`
+	Name     string             `json:"name"`
 	Channels []*OperatorChannel `json:"channels"`
 }
 
@@ -42,14 +42,20 @@ type DirectoryQuery struct {
 
 type DirectoryEntries []*DirectoryEntry
 type DirectoryDefinitions map[string]DirectoryDefinition
-type DirectoryMaker func(settings interface{}) (Directory, error)
+type DirectoryMaker func(name string, settings interface{}) (Directory, error)
 
 // A directory can deliver and accept message
 type Directory interface {
 	Entries(*DirectoryQuery) []*DirectoryEntry
+	Name() string
 }
 
 type BaseDirectory struct {
+	Name_ string
+}
+
+func (b *BaseDirectory) Name() string {
+	return b.Name_
 }
 
 // helper function that can be used by directory implementations that
