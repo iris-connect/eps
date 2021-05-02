@@ -75,7 +75,7 @@ make bench
 You can generate and update copyright headers as follows
 
 ```
-make copyright-headers
+make copyright
 ```
 
 This will add appropriate headers to all Golang files. You can edit the generation and affected file types directly in the script (in `.scripts`). You should run this before committing code. Please note that any additional comments that appear directly at the top of the file will be replaced by this.
