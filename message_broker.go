@@ -16,6 +16,10 @@
 
 package eps
 
+import (
+	"fmt"
+)
+
 /*
 Message flow through the system:
 
@@ -71,8 +75,20 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 	return nil
 }
 
-func (b *BasicMessageBroker) DeliverRequest(*Request) (*Response, error) {
-	return nil, nil
+func (b *BasicMessageBroker) DeliverRequest(request *Request) (*Response, error) {
+	address, err := GetAddress(request.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, channel := range b.channels {
+		if !channel.CanDeliverTo(address) {
+			continue
+		}
+		return channel.DeliverRequest(request)
+	}
+	return nil, fmt.Errorf("no channel can deliver this request")
 }
 
 func (b *BasicMessageBroker) DeliverResponse(*Response) error {

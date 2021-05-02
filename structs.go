@@ -16,19 +16,41 @@
 
 package eps
 
+import (
+	"fmt"
+	"regexp"
+)
+
+var IDAddressRegexp = regexp.MustCompile(`(?i)^([^\.]+)\.([^\()]+)\(([^\)]+)\)$`)
+
 type Address struct {
+	Operator string `json:"operator"`
+	Method   string `json:"method"`
+	ID       string `json:"id"`
 }
 
 type Request struct {
-	Method  string                 `json:"method"`
-	Params  map[string]interface{} `json:"params"`
-	ID      string                 `json:"id"`
+	Method string                 `json:"method"`
+	Params map[string]interface{} `json:"params"`
+	ID     string                 `json:"id"`
+}
+
+func GetAddress(id string) (*Address, error) {
+	if groups := IDAddressRegexp.FindStringSubmatch(id); groups == nil {
+		return nil, fmt.Errorf("invalid ID format")
+	} else {
+		return &Address{
+			Operator: groups[1],
+			Method:   groups[2],
+			ID:       groups[3],
+		}, nil
+	}
 }
 
 type Response struct {
-	Result  interface{} `json:"result,omitempty"`
-	Error   *Error      `json:"error,omitempty"`
-	ID      *string     `json:"id"`
+	Result interface{} `json:"result,omitempty"`
+	Error  *Error      `json:"error,omitempty"`
+	ID     *string     `json:"id"`
 }
 
 type Error struct {

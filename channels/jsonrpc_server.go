@@ -17,6 +17,7 @@
 package channels
 
 import (
+	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/jsonrpc"
 )
@@ -55,7 +56,29 @@ func MakeJSONRPCServerChannel(settings interface{}) (eps.Channel, error) {
 }
 
 func (c *JSONRPCServerChannel) handler(context *jsonrpc.Context) *jsonrpc.Response {
-	return context.Result("test")
+
+	// we transform this JSON-RPC request into an EPS request
+	request := &eps.Request{
+		Method: context.Request.Method,
+		Params: context.Request.Params,
+		ID:     fmt.Sprintf("%s(%s)", context.Request.Method, context.Request.ID),
+	}
+
+	eps.Log.Debugf("New request: '%s'", request.ID)
+
+	if response, err := c.MessageBroker().DeliverRequest(request); err != nil {
+		eps.Log.Error(err)
+		return context.Error(1, "cannot deliver request", err)
+	} else {
+		if response == nil {
+			return context.Result(map[string]interface{}{"message": "submitted"})
+		}
+		if response.Error != nil {
+			return context.Error(2, response.Error.Message, response.Error.Data)
+		} else {
+			return context.Result(response.Result)
+		}
+	}
 }
 
 func (c *JSONRPCServerChannel) Open() error {
