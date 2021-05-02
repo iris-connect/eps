@@ -1,5 +1,5 @@
 ## simple makefile to log workflow
-.PHONY: all test clean build install protobuf
+.PHONY: all test clean build install protobuf examples
 
 SHELL := /bin/bash
 
@@ -45,3 +45,7 @@ certs:
 	rm -rf settings/test/certs/*
 	(cd settings/dev/certs; ../../../.scripts/make_certs.sh)
 	(cd settings/test/certs; ../../../.scripts/make_certs.sh)
+
+examples:
+	@go build $(GOFLAGS) -tags examples ./...
+	@go install $(GOFLAGS) -tags examples ./...

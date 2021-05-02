@@ -14,25 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package eps
+// +build examples
 
-type Address struct {
-}
+package main
 
-type Request struct {
-	Method  string                 `json:"method"`
-	Params  map[string]interface{} `json:"params"`
-	ID      string                 `json:"id"`
-}
-
-type Response struct {
-	Result  interface{} `json:"result,omitempty"`
-	Error   *Error      `json:"error,omitempty"`
-	ID      *string     `json:"id"`
-}
-
-type Error struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+func main() {
 }
