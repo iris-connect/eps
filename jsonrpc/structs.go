@@ -16,9 +16,22 @@
 
 package jsonrpc
 
-type RequestData struct {
+type Request struct {
 	JSONRPC string                 `json:"jsonrpc"`
 	Method  string                 `json:"method"`
 	Params  map[string]interface{} `json:"params"`
 	ID      string                 `json:"id"`
+}
+
+type Response struct {
+	JSONRPC string      `json:"jsonrpc"`
+	Result  interface{} `json:"result,omitempty"`
+	Error   *Error      `json:"error,omitempty"`
+	ID      *string     `json:"id"`
+}
+
+type Error struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
 }

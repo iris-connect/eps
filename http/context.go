@@ -56,6 +56,7 @@ func (c *Context) Abort() {
 }
 
 func (c *Context) AbortWithStatus(status int) {
+	c.Writer.WriteHeader(status)
 	c.Abort()
 }
 
@@ -82,5 +83,7 @@ func (c *Context) JSON(status int, data interface{}) {
 	c.HeaderWritten = true
 
 	c.Writer.Write(bytes)
+
+	c.Abort()
 
 }

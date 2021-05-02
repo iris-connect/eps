@@ -19,3 +19,11 @@ curl --cacert settings/dev/certs/rootCA.crt --resolve jsonrpc-server:5555:127.0.
 ```
 
 This tells CURL to resolve `jsonrpc-server:5555` to `localhost`, which will then make the given `CommonName` of the certificate match what `curl` expects. 
+
+## JSON-RPC Server
+
+To send some example data to the JSON-RPC server via `curl`:
+
+```bash
+curl --cacert settings/dev/certs/rootCA.crt --resolve jsonrpc-server:5555:127.0.0.1 https://jsonrpc-server:5555/jsonrpc --header "Content-Type: application/json; charset=utf-8" --data '{"method": "hello", "id": "1", "params": {}, "jsonrpc": "2.0"}' 2>/dev/null | jq .
+```

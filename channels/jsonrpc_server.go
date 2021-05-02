@@ -41,7 +41,10 @@ func JSONRPCServerSettingsValidator(settings map[string]interface{}) (interface{
 
 func MakeJSONRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	rpcSettings := settings.(jsonrpc.JSONRPCServerSettings)
-	if server, err := jsonrpc.MakeJSONRPCServer(&rpcSettings); err != nil {
+
+	methods := []*jsonrpc.Method{}
+
+	if server, err := jsonrpc.MakeJSONRPCServer(&rpcSettings, methods); err != nil {
 		return nil, err
 	} else {
 		return &JSONRPCServerChannel{

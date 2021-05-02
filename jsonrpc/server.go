@@ -21,17 +21,42 @@ import (
 	"github.com/iris-gateway/eps/http"
 )
 
+type Handler func(*Context) *Response
+
+type Method struct {
+	Name    string
+	Handler Handler
+}
+
 type JSONRPCServer struct {
 	settings *JSONRPCServerSettings
 	server   *http.HTTPServer
+	methods  []*Method
 }
 
-func JSONRPC(c *http.Context) {
-	requestData := c.Get("requestData").(*RequestData)
-	c.JSON(200, requestData)
+func JSONRPC(methods []*Method) http.Handler {
+	return func(c *http.Context) {
+		// the request data has been validated by the 'ExtractJSONRequest' handler
+		request := c.Get("request").(*Request)
+		context := &Context{
+			Request: request,
+		}
+		for _, method := range methods {
+			if method.Name == request.Method {
+				response := method.Handler(context)
+				// people will forget this so we add it here in that case
+				if response.JSONRPC == "" {
+					response.JSONRPC = "2.0"
+				}
+				c.JSON(200, response)
+				return
+			}
+		}
+		c.JSON(400, context.MethodNotFound())
+	}
 }
 
-func MakeJSONRPCServer(settings *JSONRPCServerSettings) (*JSONRPCServer, error) {
+func MakeJSONRPCServer(settings *JSONRPCServerSettings, methods []*Method) (*JSONRPCServer, error) {
 	routeGroups := []*http.RouteGroup{
 		{
 			// these handlers will be executed for all routes in the group
@@ -42,8 +67,8 @@ func MakeJSONRPCServer(settings *JSONRPCServerSettings) (*JSONRPCServer, error) 
 				{
 					Pattern: "^/jsonrpc$",
 					Handlers: []http.Handler{
-						ExtractJSONRequestData,
-						JSONRPC,
+						ExtractJSONRequest,
+						JSONRPC(methods),
 					},
 				},
 			},

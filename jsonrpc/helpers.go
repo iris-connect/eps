@@ -26,11 +26,15 @@ import (
 var jsonContentTypeRegexp = regexp.MustCompile("(?i)^application/json(?:;.*)?$")
 
 // extracts the request data from
-func ExtractJSONRequestData(c *http.Context) {
+func ExtractJSONRequest(c *http.Context) {
 	eps.Log.Debugf("Extracting JSON data...")
 
+	invalidJSONResponse := Response{JSONRPC: "2.0,", Error: &Error{Code: -32700, Message: "JSON required"}}
+	invalidRequestResponse := Response{JSONRPC: "2.0,", Error: &Error{Code: -32600, Message: "invalid request"}}
+	serverErrorResponse := Response{JSONRPC: "2.0,", Error: &Error{Code: -32603, Message: "internal server error"}}
+
 	if !jsonContentTypeRegexp.MatchString(c.Request.Header.Get("content-type")) {
-		c.JSON(400, http.H{"message": "JSON required"})
+		c.JSON(400, invalidJSONResponse)
 		c.Abort()
 		return
 	}
@@ -38,25 +42,25 @@ func ExtractJSONRequestData(c *http.Context) {
 	var jsonData map[string]interface{}
 
 	if err := json.NewDecoder(c.Request.Body).Decode(&jsonData); err != nil {
-		c.JSON(400, http.H{"message": "invalid JSON"})
+		c.JSON(400, invalidJSONResponse)
 		c.Abort()
 		return
 	}
 
 	if validJSON, err := JSONRPCRequestForm.Validate(jsonData); err != nil {
 		// validation errors are safe to pass back to the client
-		c.JSON(400, http.H{"message": "invalid JSON", "error": err})
+		c.JSON(400, invalidRequestResponse)
 		c.Abort()
 		return
 	} else {
-		var requestData RequestData
+		var request Request
 		// this should never happen if the form validation is correct...
-		if err := JSONRPCRequestForm.Coerce(&requestData, validJSON); err != nil {
+		if err := JSONRPCRequestForm.Coerce(&request, validJSON); err != nil {
 			eps.Log.Error(err)
-			c.JSON(500, http.H{"message": "internal server error"})
+			c.JSON(500, serverErrorResponse)
 			c.Abort()
 		}
-		c.Set("requestData", &requestData)
+		c.Set("request", &request)
 	}
 
 }

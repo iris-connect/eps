@@ -81,7 +81,6 @@ func Cors(settings *CorsSettings, defaultRoute bool) http.Handler {
 			// for OPTIONS calls we set the status code explicitly
 			if c.Request.Method == "OPTIONS" {
 				c.AbortWithStatus(200)
-				c.Abort()
 				return
 			}
 
@@ -89,7 +88,6 @@ func Cors(settings *CorsSettings, defaultRoute bool) http.Handler {
 
 		if defaultRoute {
 			c.JSON(404, http.H{"message": "route not found"})
-			c.Abort()
 			return
 		}
 
@@ -117,7 +115,6 @@ func CorsFromEverywhere(settings *CorsSettings) http.Handler {
 		// for OPTIONS calls we set the status code explicitly
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(200)
-			c.Abort()
 			return
 		}
 
