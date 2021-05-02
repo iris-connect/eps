@@ -14,39 +14,27 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package fixtures
+package eps
 
-import (
-	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/helpers"
-)
-
-type Channels struct {
+type Address struct {
 }
 
-func (c Channels) Setup(fixtures map[string]interface{}) (interface{}, error) {
-	settings, ok := fixtures["settings"].(*eps.Settings)
-
-	if !ok {
-		return nil, fmt.Errorf("settings missing")
-	}
-
-	broker, ok := fixtures["broker"].(eps.MessageBroker)
-
-	if !ok {
-		return nil, fmt.Errorf("message broker missing")
-	}
-
-	directory, ok := fixtures["directory"].(eps.Directory)
-
-	if !ok {
-		return nil, fmt.Errorf("directory missing")
-	}
-
-	return helpers.InitializeChannels(broker, directory, settings)
+type Request struct {
+	JSONRPC string                 `json:"jsonrpc"`
+	Method  string                 `json:"method"`
+	Params  map[string]interface{} `json:"params"`
+	ID      string                 `json:"id"`
 }
 
-func (c Channels) Teardown(fixture interface{}) error {
-	return nil
+type Response struct {
+	JSONRPC string      `json:"jsonrpc"`
+	Result  interface{} `json:"result,omitempty"`
+	Error   *Error      `json:"error,omitempty"`
+	ID      *string     `json:"id"`
+}
+
+type Error struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
 }

@@ -48,10 +48,9 @@ func StdoutSettingsValidator(settings map[string]interface{}) (interface{}, erro
 	}
 }
 
-func MakeStdoutChannel(broker eps.MessageBroker, settings interface{}) (eps.Channel, error) {
+func MakeStdoutChannel(settings interface{}) (eps.Channel, error) {
 	return &StdoutChannel{
-		BaseChannel: eps.BaseChannel{Broker: broker},
-		Settings:    settings.(StdoutSettings),
+		Settings: settings.(StdoutSettings),
 	}, nil
 }
 
@@ -63,13 +62,14 @@ func (c *StdoutChannel) Close() error {
 	return nil
 }
 
-func (c *StdoutChannel) Deliver(message *eps.Message) (*eps.Message, error) {
+func (c *StdoutChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 	return nil, nil
 }
 
-func (c *StdoutChannel) CanDeliver(message *eps.Message) bool {
-	return false
+func (c *StdoutChannel) DeliverResponse(response *eps.Response) error {
+	return nil
 }
-func (c *StdoutChannel) CanHandle(message *eps.Message) bool {
+
+func (c *StdoutChannel) CanDeliverTo(address *eps.Address) bool {
 	return false
 }

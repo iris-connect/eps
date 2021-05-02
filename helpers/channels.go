@@ -31,14 +31,20 @@ func GetChannelSettingsAndDefinition(settings *eps.Settings, name string) (*eps.
 	return nil, nil, fmt.Errorf("channel not found")
 }
 
-func InitializeChannels(broker eps.MessageBroker, settings *eps.Settings) ([]eps.Channel, error) {
+func InitializeChannels(broker eps.MessageBroker, directory eps.Directory, settings *eps.Settings) ([]eps.Channel, error) {
 	channels := make([]eps.Channel, 0)
 	for _, channel := range settings.Channels {
 		eps.Log.Debugf("Initializing channel '%s' of type '%s'", channel.Name, channel.Type)
 		definition := settings.Definitions.ChannelDefinitions[channel.Type]
-		if channel, err := definition.Maker(broker, channel.Settings); err != nil {
+		if channel, err := definition.Maker(channel.Settings); err != nil {
 			return nil, err
 		} else {
+			if err := broker.AddChannel(channel); err != nil {
+				return nil, err
+			}
+			if err := channel.SetDirectory(directory); err != nil {
+				return nil, err
+			}
 			channels = append(channels, channel)
 		}
 	}

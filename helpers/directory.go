@@ -14,39 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package fixtures
+package helpers
 
 import (
-	"fmt"
 	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/helpers"
 )
 
-type Channels struct {
-}
-
-func (c Channels) Setup(fixtures map[string]interface{}) (interface{}, error) {
-	settings, ok := fixtures["settings"].(*eps.Settings)
-
-	if !ok {
-		return nil, fmt.Errorf("settings missing")
-	}
-
-	broker, ok := fixtures["broker"].(eps.MessageBroker)
-
-	if !ok {
-		return nil, fmt.Errorf("message broker missing")
-	}
-
-	directory, ok := fixtures["directory"].(eps.Directory)
-
-	if !ok {
-		return nil, fmt.Errorf("directory missing")
-	}
-
-	return helpers.InitializeChannels(broker, directory, settings)
-}
-
-func (c Channels) Teardown(fixture interface{}) error {
-	return nil
+func InitializeDirectory(settings *eps.Settings) (eps.Directory, error) {
+	definition := settings.Definitions.DirectoryDefinitions[settings.Directory.Type]
+	return definition.Maker(settings.Directory.Settings)
 }

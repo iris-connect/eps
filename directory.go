@@ -25,11 +25,23 @@ type DirectoryDefinition struct {
 	SettingsValidator SettingsValidator `json:"-"`
 }
 
+type DirectoryEntry struct {
+	Name     string             `json:"string"`
+	Channels []*OperatorChannel `json:"channels"`
+}
+
+type OperatorChannel struct {
+	Type     string                 `json:"type"`
+	Settings map[string]interface{} `json:"settings,omitempty"`
+}
+
+type DirectoryEntries []*DirectoryEntry
 type DirectoryDefinitions map[string]DirectoryDefinition
 type DirectoryMaker func(settings interface{}) (Directory, error)
 
 // A directory can deliver and accept message
 type Directory interface {
+	Entries() []*DirectoryEntry
 }
 
 type BaseDirectory struct {

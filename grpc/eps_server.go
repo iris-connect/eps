@@ -36,9 +36,7 @@ type EPSServer struct {
 	connectedClients []EPSClient
 }
 
-func (s *EPSServer) Call(context context.Context, message *protobuf.Message) (*protobuf.Message, error) {
-
-	// this is a bidirectional message stream
+func (s *EPSServer) Call(context context.Context, request *protobuf.Request) (*protobuf.Response, error) {
 
 	peer, ok := peer.FromContext(context)
 	if ok {
@@ -51,7 +49,7 @@ func (s *EPSServer) Call(context context.Context, message *protobuf.Message) (*p
 
 }
 
-func (s *EPSServer) Stream(stream protobuf.EPS_StreamServer) error {
+func (s *EPSServer) Stream(stream protobuf.EPS_AsyncUpstreamServer) error {
 
 	// this is a bidirectional message stream
 

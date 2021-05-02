@@ -45,7 +45,13 @@ func (c Channel) Setup(fixtures map[string]interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	return definition.Maker(broker, channelSettings.Settings)
+	if channel, err := definition.Maker(channelSettings.Settings); err != nil {
+		return nil, err
+	} else if err := broker.AddChannel(channel); err != nil {
+		return nil, err
+	} else {
+		return channel, nil
+	}
 }
 
 func (c Channel) Teardown(fixture interface{}) error {

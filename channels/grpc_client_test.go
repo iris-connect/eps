@@ -28,6 +28,8 @@ func TestGRPCClientConnection(t *testing.T) {
 
 	fixtures := []th.FC{
 		{fixtures.Settings{}, "settings"},
+		{fixtures.MessageBroker{}, "broker"},
+		{fixtures.Directory{}, "directory"},
 		{fixtures.Channel{"test gRPC client"}, "client"},
 		{fixtures.Channel{"test gRPC server"}, "server"},
 	}
@@ -51,9 +53,9 @@ func TestGRPCClientConnection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	message := &eps.Message{}
+	request := &eps.Request{}
 
-	if _, err := client.Deliver(message); err != nil {
+	if _, err := client.DeliverRequest(request); err != nil {
 		t.Fatal(err)
 	}
 

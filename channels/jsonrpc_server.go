@@ -39,12 +39,11 @@ func JSONRPCServerSettingsValidator(settings map[string]interface{}) (interface{
 	}
 }
 
-func MakeJSONRPCServerChannel(broker eps.MessageBroker, settings interface{}) (eps.Channel, error) {
+func MakeJSONRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	rpcSettings := settings.(jsonrpc.JSONRPCServerSettings)
 
 	s := &JSONRPCServerChannel{
-		BaseChannel: eps.BaseChannel{Broker: broker},
-		Settings:    &rpcSettings,
+		Settings: &rpcSettings,
 	}
 
 	methods := []*jsonrpc.Method{
@@ -74,13 +73,14 @@ func (c *JSONRPCServerChannel) Close() error {
 	return c.Server.Stop()
 }
 
-func (c *JSONRPCServerChannel) Deliver(message *eps.Message) (*eps.Message, error) {
+func (c *JSONRPCServerChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 	return nil, nil
 }
 
-func (c *JSONRPCServerChannel) CanDeliver(message *eps.Message) bool {
-	return false
+func (c *JSONRPCServerChannel) DeliverResponse(response *eps.Response) error {
+	return nil
 }
-func (c *JSONRPCServerChannel) CanHandle(message *eps.Message) bool {
+
+func (c *JSONRPCServerChannel) CanDeliverTo(address *eps.Address) bool {
 	return false
 }

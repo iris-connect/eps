@@ -1,25 +1,25 @@
 directory:
-  type: json
+  type: file
   settings:
-    path: "$DIR/directory/services.json"
+    path: "$DIR/directory/services.yml"
 channels: # defines all the channels that we want to open when starting the server
   - name: Stdout channel
     type: stdout
     settings: {}
-  - name: test gRPC server # accepts incoming gRPC connections to deliver and receive messages
+  - name: main gRPC server # accepts incoming gRPC connections to deliver and receive messages
     type: grpc_server
     settings:
       tls:
         ca_certificate_file: "$DIR/certs/root.crt"
         certificate_file: "$DIR/certs/hd-1.crt"
         key_file: "$DIR/certs/hd-1.key"
-  - name: test gRPC client # creates outgoing gRPC connections to deliver and receive messages
+  - name: main gRPC client # creates outgoing gRPC connections to deliver and receive messages
     type: grpc_client
     settings:
       tls:
         ca_certificate_file: "$DIR/certs/root.crt"
-        certificate_file: "$DIR/certs/grpc-client.crt"
-        key_file: "$DIR/certs/grpc-client.key"
+        certificate_file: "$DIR/certs/hd-1.crt"
+        key_file: "$DIR/certs/hd-1.key"
   - name: main JSON-RPC server # accepts incoming JSONRPC connections to deliver and receive messages
     type: jsonrpc_server 
     settings:
@@ -28,8 +28,8 @@ channels: # defines all the channels that we want to open when starting the serv
         allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
       tls:
         ca_certificate_file: "$DIR/certs/root.crt"
-        certificate_file: "$DIR/certs/jsonrpc-server.crt"
-        key_file: "$DIR/certs/jsonrpc-server.key"
+        certificate_file: "$DIR/certs/hd-1.crt"
+        key_file: "$DIR/certs/hd-1.key"
   - name: main JSON-RPC client # creates outgoing JSONRPC connections to deliver and receive messages
     type: jsonrpc_client
     settings:

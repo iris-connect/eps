@@ -59,16 +59,16 @@ func (c *Client) Close() error {
 	return c.connection.Close()
 }
 
-func (c *Client) SendMessage(message *eps.Message) error {
+func (c *Client) SendRequest(request *eps.Request) error {
 
 	client := protobuf.NewEPSClient(c.connection)
 
-	pbMessage := &protobuf.Message{}
+	pbMessage := &protobuf.Request{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	streamClient, err := client.Stream(ctx)
+	streamClient, err := client.AsyncUpstream(ctx)
 
 	if err != nil {
 		return err

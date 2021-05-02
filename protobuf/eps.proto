@@ -1,12 +1,36 @@
 syntax = "proto3";
 
+import "google/protobuf/struct.proto";
 option go_package = "github.com/iris-gateway/eps/protobuf";
 
-message Message {
-	bytes id = 1;
+// A JSON-RPC style request
+message Request {
+	string method = 1;
+	google.protobuf.Struct params = 2;
+	string id = 3;
 }
 
+message Error {
+	int32 code = 1;
+	string message = 2;
+	google.protobuf.Struct data = 3;
+}
+
+// A JSON-RPC style response
+message Response {
+	string id = 1;
+	oneof result_or_error {
+		google.protobuf.Struct result = 2;
+		Error error = 3;	
+	}
+}
+
+
 service EPS {
-	rpc Call(Message) returns (Message) {}
-	rpc Stream(stream Message) returns (stream Message) {}
+	// synchronous method calls
+	rpc Call(Request) returns (Response) {}
+	// async RPCs
+	rpc AsyncUpstream(stream Request) returns (stream Response) {}
+	// async reverse RPCs
+	rpc AsyncDownstream(stream Response) returns (stream Request) {}
 }

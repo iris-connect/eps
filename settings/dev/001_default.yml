@@ -1,7 +1,13 @@
+vars:
+  OP:
+    source: env
+    variable: EPS_OP
+    type: string
+operator: $OP
 directory:
-  type: file
+  type: json
   settings:
-    path: "$DIR/directory/services.yml"
+    path: "$DIR/directory/services.json"
 channels: # defines all the channels that we want to open when starting the server
   - name: Stdout channel
     type: stdout
@@ -10,16 +16,16 @@ channels: # defines all the channels that we want to open when starting the serv
     type: grpc_server
     settings:
       tls:
-        ca_certificate_file: "$DIR/certs/rootCA.crt"
-        certificate_file: "$DIR/certs/grpc-server.crt"
-        key_file: "$DIR/certs/grpc-server.key"
+        ca_certificate_file: "$DIR/certs/root.crt"
+        certificate_file: "$DIR/certs/$OP.crt"
+        key_file: "$DIR/certs/$OP.key"
   - name: main gRPC client # creates outgoing gRPC connections to deliver and receive messages
     type: grpc_client
     settings:
       tls:
-        ca_certificate_file: "$DIR/certs/rootCA.crt"
-        certificate_file: "$DIR/certs/grpc-client.crt"
-        key_file: "$DIR/certs/grpc-client.key"
+        ca_certificate_file: "$DIR/certs/root.crt"
+        certificate_file: "$DIR/certs/$OP.crt"
+        key_file: "$DIR/certs/$OP.key"
   - name: main JSON-RPC server # accepts incoming JSONRPC connections to deliver and receive messages
     type: jsonrpc_server 
     settings:
@@ -27,9 +33,9 @@ channels: # defines all the channels that we want to open when starting the serv
       cors:
         allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
       tls:
-        ca_certificate_file: "$DIR/certs/rootCA.crt"
-        certificate_file: "$DIR/certs/jsonrpc-server.crt"
-        key_file: "$DIR/certs/jsonrpc-server.key"
+        ca_certificate_file: "$DIR/certs/root.crt"
+        certificate_file: "$DIR/certs/$OP.crt"
+        key_file: "$DIR/certs/$OP.key"
   - name: main JSON-RPC client # creates outgoing JSONRPC connections to deliver and receive messages
     type: jsonrpc_client
     settings:

@@ -14,8 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package eps
+package forms
 
-// describes a message
-type Message struct {
+import (
+	"github.com/kiprotect/go-helpers/forms"
+)
+
+var MessageForm = forms.Form{
+	Fields: []forms.Field{},
 }

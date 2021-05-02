@@ -39,10 +39,9 @@ func GRPCClientSettingsValidator(settings map[string]interface{}) (interface{}, 
 	}
 }
 
-func MakeGRPCClientChannel(broker eps.MessageBroker, settings interface{}) (eps.Channel, error) {
+func MakeGRPCClientChannel(settings interface{}) (eps.Channel, error) {
 	return &GRPCClientChannel{
-		BaseChannel: eps.BaseChannel{Broker: broker},
-		Settings:    settings.(grpc.GRPCClientSettings),
+		Settings: settings.(grpc.GRPCClientSettings),
 	}, nil
 }
 
@@ -58,20 +57,14 @@ func (c *GRPCClientChannel) Close() error {
 	return nil
 }
 
-func (c *GRPCClientChannel) Deliver(message *eps.Message) (*eps.Message, error) {
-	/*
-		- Determine the address of the gRPC sever that the message should go to
-		- Connect to the server and try to deliver it
-	*/
-	if err := c.client.Connect("localhost:4444", "grpc-server"); err != nil {
-		return nil, err
-	}
-	return nil, c.client.SendMessage(message)
+func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
+	return nil, nil
 }
 
-func (c *GRPCClientChannel) CanDeliver(message *eps.Message) bool {
-	return false
+func (c *GRPCClientChannel) DeliverResponse(response *eps.Response) error {
+	return nil
 }
-func (c *GRPCClientChannel) CanHandle(message *eps.Message) bool {
+
+func (c *GRPCClientChannel) CanDeliverTo(address *eps.Address) bool {
 	return false
 }

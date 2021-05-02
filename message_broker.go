@@ -37,7 +37,8 @@ type MessageBroker interface {
 	SetMessageStore(MessageStore) error
 	AddChannel(Channel) error
 	Channels() []Channel
-	Deliver(*Message) (*Message, error)
+	DeliverRequest(*Request) (*Response, error)
+	DeliverResponse(*Response) error
 }
 
 type BasicMessageBroker struct {
@@ -62,11 +63,20 @@ func (b *BasicMessageBroker) SetMessageStore(messageStore MessageStore) error {
 
 func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 	b.channels = append(b.channels, channel)
+	// we tell the channel that it's part of the message broker
+	if err := channel.SetMessageBroker(b); err != nil {
+		b.channels = b.channels[:len(b.channels)-1]
+		return err
+	}
 	return nil
 }
 
-func (b *BasicMessageBroker) Deliver(*Message) (*Message, error) {
+func (b *BasicMessageBroker) DeliverRequest(*Request) (*Response, error) {
 	return nil, nil
+}
+
+func (b *BasicMessageBroker) DeliverResponse(*Response) error {
+	return nil
 }
 
 func (b *BasicMessageBroker) Channels() []Channel {

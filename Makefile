@@ -41,5 +41,7 @@ protobuf:
     protobuf/eps.proto
 
 certs:
+	rm -rf settings/dev/certs/*
+	rm -rf settings/test/certs/*
 	(cd settings/dev/certs; ../../../.scripts/make_certs.sh)
 	(cd settings/test/certs; ../../../.scripts/make_certs.sh)

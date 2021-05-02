@@ -21,10 +21,10 @@ import (
 )
 
 var Directories = eps.DirectoryDefinitions{
-	"file": eps.DirectoryDefinition{
-		Name:              "File-Based Service Directory",
-		Description:       "Loads the service directory from a YAML file",
-		Maker:             MakeFileDirectory,
-		SettingsValidator: FileDirectorySettingsValidator,
+	"json": eps.DirectoryDefinition{
+		Name:              "JSON-Based Service Directory",
+		Description:       "Loads the service directory from a JSON file",
+		Maker:             MakeJSONDirectory,
+		SettingsValidator: JSONDirectorySettingsValidator,
 	},
 }

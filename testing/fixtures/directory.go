@@ -14,47 +14,32 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package directories
+package fixtures
 
 import (
+	"fmt"
 	"github.com/iris-gateway/eps"
-	"github.com/kiprotect/go-helpers/forms"
+	"github.com/iris-gateway/eps/helpers"
 )
 
-var FileDirectoryForm = forms.Form{
-	Fields: []forms.Field{
-		{
-			Name: "path",
-			Validators: []forms.Validator{
-				forms.IsString{},
-			},
-		},
-	},
+type Directory struct {
+	Name string
 }
 
-type FileDirectorySettings struct {
-	Path string `json:"path"`
-}
+func (c Directory) Setup(fixtures map[string]interface{}) (interface{}, error) {
+	settings, ok := fixtures["settings"].(*eps.Settings)
 
-type FileDirectory struct {
-	eps.BaseDirectory
-	Settings FileDirectorySettings
-}
+	if !ok {
+		return nil, fmt.Errorf("settings missing")
+	}
 
-func FileDirectorySettingsValidator(settings map[string]interface{}) (interface{}, error) {
-	if params, err := FileDirectoryForm.Validate(settings); err != nil {
+	if directory, err := helpers.InitializeDirectory(settings); err != nil {
 		return nil, err
 	} else {
-		validatedSettings := &FileDirectorySettings{}
-		if err := FileDirectoryForm.Coerce(validatedSettings, params); err != nil {
-			return nil, err
-		}
-		return validatedSettings, nil
+		return directory, nil
 	}
 }
 
-func MakeFileDirectory(settings interface{}) (eps.Directory, error) {
-	return &FileDirectory{
-		Settings: settings.(FileDirectorySettings),
-	}, nil
+func (c Directory) Teardown(fixture interface{}) error {
+	return nil
 }

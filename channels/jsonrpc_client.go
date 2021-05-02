@@ -38,10 +38,9 @@ func JSONRPCClientSettingsValidator(settings map[string]interface{}) (interface{
 	}
 }
 
-func MakeJSONRPCClientChannel(broker eps.MessageBroker, settings interface{}) (eps.Channel, error) {
+func MakeJSONRPCClientChannel(settings interface{}) (eps.Channel, error) {
 	return &JSONRPCClientChannel{
-		BaseChannel: eps.BaseChannel{Broker: broker},
-		Settings:    settings.(jsonrpc.JSONRPCClientSettings),
+		Settings: settings.(jsonrpc.JSONRPCClientSettings),
 	}, nil
 }
 
@@ -70,13 +69,14 @@ func (c *JSONRPCClientChannel) Close() error {
 	return nil
 }
 
-func (c *JSONRPCClientChannel) Deliver(message *eps.Message) (*eps.Message, error) {
+func (c *JSONRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 	return nil, nil
 }
 
-func (c *JSONRPCClientChannel) CanDeliver(message *eps.Message) bool {
-	return false
+func (c *JSONRPCClientChannel) DeliverResponse(response *eps.Response) error {
+	return nil
 }
-func (c *JSONRPCClientChannel) CanHandle(message *eps.Message) bool {
+
+func (c *JSONRPCClientChannel) CanDeliverTo(address *eps.Address) bool {
 	return false
 }

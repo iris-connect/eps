@@ -39,10 +39,9 @@ func GRPCServerSettingsValidator(settings map[string]interface{}) (interface{}, 
 	}
 }
 
-func MakeGRPCServerChannel(broker eps.MessageBroker, settings interface{}) (eps.Channel, error) {
+func MakeGRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	return &GRPCServerChannel{
-		BaseChannel: eps.BaseChannel{Broker: broker},
-		Settings:    settings.(grpc.GRPCServerSettings),
+		Settings: settings.(grpc.GRPCServerSettings),
 	}, nil
 }
 
@@ -58,13 +57,14 @@ func (c *GRPCServerChannel) Close() error {
 	return nil
 }
 
-func (c *GRPCServerChannel) Deliver(message *eps.Message) (*eps.Message, error) {
+func (c *GRPCServerChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 	return nil, nil
 }
 
-func (c *GRPCServerChannel) CanDeliver(message *eps.Message) bool {
-	return false
+func (c *GRPCServerChannel) DeliverResponse(response *eps.Response) error {
+	return nil
 }
-func (c *GRPCServerChannel) CanHandle(message *eps.Message) bool {
+
+func (c *GRPCServerChannel) CanDeliverTo(address *eps.Address) bool {
 	return false
 }
