@@ -18,6 +18,12 @@ For testing and development you'll also need TLS certificates, which you can gen
 make certs
 ```
 
+To build the example services (e.g. the "locations" services `eps-ls`) simply run
+
+```
+make examples
+```
+
 Please note that you need `openssl` on your system for this to work. This will generate all required certificates and put them in the `settings/dev/certs` and `settings/dev/test` folders. Please do not use these certificates in a production setting and do not check them into version control.
 
 Please see below for additional dependencies you might need to install for various purposes (e.g. to recompile protobuf code).
