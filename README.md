@@ -22,12 +22,27 @@ Please note that you need `openssl` on your system for this to work. This will g
 
 Please see below for additional dependencies you might need to install for various purposes (e.g. to recompile protobuf code).
 
+## Defining Settings
+
+The `eps` binary will look for settings in a list of directories defined by the `EPS_SETTINGS` variable (or, if it is undefined in the `settings` subdirectory of the current directory). The development settings include an environment-based variable `EPS_OP` that allows you to use different certificates for testing. You should define these variables before running the development server:
+
+```bash
+export EPS_SETTINGS=`readlink -f settings/dev`
+export EPS_OP=hd-1 # run server as the 'hd-1' operator
+```
+
+You can also source these things from the local `.dev-setup` script, which includes everything you need to get started:
+
+```bash
+source .dev-setup # load all development environment variables
+```
+
 ## Running The Server
 
 To run the development EPS server simply run (from the main directory)
 
 ```
-EPS_SETTINGS=settings/dev eps server run
+eps server run
 ```
 
 For this to work you need to ensure that your `GOPATH` is in your `PATH`. This will open the JSON RPC server and (depending on the settings) also a gRPC server.
@@ -37,7 +52,7 @@ For this to work you need to ensure that your `GOPATH` is in your `PATH`. This w
 To run the development EPS test client simply run (from the main directory)
 
 ```
-EPS_SETTINGS=settings/dev eps client test
+eps client test
 ```
 
 This will currently try to connect to the development server via gRPC and send a message to it. In the future it will perform various connection and functional tests.

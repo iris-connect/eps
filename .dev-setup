@@ -1,0 +1,3 @@
+export EPS_SETTINGS=`readlink -f settings/dev`
+export EPS_OP=hd-1 # run server as the 'hd-1' operator
+
