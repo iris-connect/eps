@@ -1,9 +1,9 @@
+name: $OP
 vars:
   OP:
     source: env
     variable: EPS_OP
     type: string
-operator: $OP
 directory:
   type: json
   settings:
