@@ -47,16 +47,6 @@ eps server run
 
 For this to work you need to ensure that your `GOPATH` is in your `PATH`. This will open the JSON RPC server and (depending on the settings) also a gRPC server.
 
-## Running The Test Client
-
-To run the development EPS test client simply run (from the main directory)
-
-```
-eps client test
-```
-
-This will currently try to connect to the development server via gRPC and send a message to it. In the future it will perform various connection and functional tests.
-
 ## Testing
 
 To run the tests
