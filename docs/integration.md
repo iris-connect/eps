@@ -22,13 +22,13 @@ This should open a local JSON-RPC server on port `5555` that you can connect to 
 
 The gateway will take care of routing this message to the correct service and returning a response to you.
 
-If you expect to received requests from other organizations in the IRIS ecosystem they will be pushed to an API endpoint of your via a JSON-RPC client. To change this endpoint, simply edit your settings file. Any incoming request will be sent to that endpoint as a JSON-RPC call like the one shown above.
+If you want to accept requests from other services in the IRIS ecosystem you can use the `jsonrpc_client`, simply specifying an API endpoint that incoming requests will be delivered to using the same syntax as above.
 
 That's it!
 
 ## Asynchronous Calls
 
-The calls we've above were all synchronous, i.e. making a call resulted in a direct response. Sometimes calls need to be asynchronous though, e.g. because replying to them takes time. In that case, you'll just get back an acknowledgment first. As soon as the service you've called has a response ready, it will send it back to your via the `eps` network.
+The calls we've seen above were all synchronous, i.e. making a call resulted in a direct response. Sometimes calls need to be asynchronous though, e.g. because replying to them takes time. If you make an asynchronous call to another service, you'll get back an acknowledgment first. As soon as the service you've called has a response ready, it will send it back to your via the `eps` network, using the same `id` you provided (which enables you to match the response to your request). Likewise, you can respond to calls from other services in an asynchronous way, simply pushing the response to your local JSON-RPC server with a method name `respond` (without a service name). Do not forget to include the same `id` that you received with the original request, as this will contain the "return address" of the request.
 
 ## Integration Example
 
