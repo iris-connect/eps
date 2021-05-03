@@ -56,17 +56,12 @@ func Server(settings *eps.Settings) ([]cli.Command, error) {
 			Name:    "server",
 			Aliases: []string{"s"},
 			Flags:   []cli.Flag{},
-			Usage:   "Run the server.",
+			Usage:   "Server-related commands.",
 			Subcommands: []cli.Command{
 				{
 					Name: "run",
-					Flags: []cli.Flag{
-						cli.StringFlag{
-							Name:  "messages",
-							Value: "",
-							Usage: "optional: a YAML file with messages to send into the broker",
-						},
-					}, Usage: "Run the server.",
+					Flags: []cli.Flag{},
+					Usage: "Run the EPS server.",
 					Action: func(c *cli.Context) error {
 						eps.Log.Info("Opening all channels...")
 
