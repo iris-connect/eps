@@ -6,6 +6,8 @@ This repository contains the code of the IRIS endpoint server (EPS), which manag
 
 ## Getting Started
 
+Please ensure your Golang version is recent enough (>=1.13) before you attempt to build the software. 
+
 To build the `eps` binary, simply run
 
 ```
