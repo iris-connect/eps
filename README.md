@@ -18,15 +18,15 @@ For testing and development you'll also need TLS certificates, which you can gen
 make certs
 ```
 
+Please note that you need `openssl` on your system for this to work. This will generate all required certificates and put them in the `settings/dev/certs` and `settings/dev/test` folders. Please do not use these certificates in a production setting and do not check them into version control.
+
+Please see below for additional dependencies you might need to install for various purposes (e.g. to recompile protobuf code).
+
 To build the example services (e.g. the "locations" services `eps-ls`) simply run
 
 ```
 make examples
 ```
-
-Please note that you need `openssl` on your system for this to work. This will generate all required certificates and put them in the `settings/dev/certs` and `settings/dev/test` folders. Please do not use these certificates in a production setting and do not check them into version control.
-
-Please see below for additional dependencies you might need to install for various purposes (e.g. to recompile protobuf code).
 
 ## Defining Settings
 
@@ -42,6 +42,8 @@ You can also source these things from the local `.dev-setup` script, which inclu
 ```bash
 source .dev-setup # load all development environment variables
 ```
+
+There are also role-specific development/test settings in the `settings/dev/roles` directory. Those can be used to set up multiple EPS servers and test the communication between them. Please have a a look at the [integration guidelines](docs/integration.md) for more information about this.
 
 **Important: The settings parser includes support for variable replacement and many other things. But with great power comes great responsibility and attack surface, so make sure you only feed trusted YAML input to it, as it is not designed to handle untrusted or potentially malicious settings.**
 
@@ -71,6 +73,10 @@ To run the benchmarks
 ```
 make bench
 ```
+
+## Debugging
+
+If you're stuck debugging a problem please have a look at the [debugging guidelines](docs/debugging.md), which contain a few pointers that might help you to pinpoint problems in the system.
 
 ## Copyright Headers
 
