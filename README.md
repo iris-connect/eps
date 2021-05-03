@@ -2,7 +2,7 @@
 
 # IRIS Endpoint Server (EPS)
 
-This repository contains the code of the IRIS endpoint server (EPS), which manages the communication between different actors in the IRIS ecosystem. It provides a gRPC server & client to exchange messages between different actors, as well as a JSON-RPC API for location communication.
+This repository contains the code of the IRIS endpoint server (EPS), which manages the communication between different actors in the IRIS ecosystem. It provides a gRPC server & client to exchange messages between different actors, as well as a JSON-RPC API client & server for interacting with the server locally.
 
 ## Getting Started
 
@@ -30,7 +30,7 @@ Please see below for additional dependencies you might need to install for vario
 
 ## Defining Settings
 
-The `eps` binary will look for settings in a list of directories defined by the `EPS_SETTINGS` variable (or, if it is undefined in the `settings` subdirectory of the current directory). The development settings include an environment-based variable `EPS_OP` that allows you to use different certificates for testing. You should define these variables before running the development server:
+The `eps` binary will look for settings in a list of colon (`:`) separated directories as defined by the `EPS_SETTINGS` environment variable (or, if it is undefined in the `settings` subdirectory of the current directory). The development settings include an environment-based variable `EPS_OP` that allows you to use different certificates for testing. You should define these variables before running the development server:
 
 ```bash
 export EPS_SETTINGS=`readlink -f settings/dev`
@@ -42,6 +42,8 @@ You can also source these things from the local `.dev-setup` script, which inclu
 ```bash
 source .dev-setup # load all development environment variables
 ```
+
+**Important: The settings parser includes support for variable replacement and many other things. But with great power comes great responsibility and attack surface, so make sure you only feed trusted YAML input to it, as it is not designed to handle untrusted or potentially malicious settings.**
 
 ## Running The Server
 
@@ -93,3 +95,7 @@ sudo apt install protobuf-compiler
 ```
 
 To generate TLS certificates for testing and development you need to have `openssl` installed.
+
+## Deployment
+
+To 

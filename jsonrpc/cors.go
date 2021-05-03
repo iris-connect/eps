@@ -49,6 +49,7 @@ func Cors(settings *CorsSettings, defaultRoute bool) http.Handler {
 
 	for i, allowedHost := range settings.AllowedHosts {
 		if pattern, err := regexp.Compile(allowedHost); err != nil {
+			// this should not happen...
 			panic(err)
 		} else {
 			allowedHostPatterns[i] = pattern

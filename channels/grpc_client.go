@@ -17,6 +17,7 @@
 package channels
 
 import (
+	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/grpc"
 	"github.com/kiprotect/go-helpers/forms"
@@ -89,6 +90,14 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 	}
 
 	entry := c.GetDirectoryEntry(address)
+
+	if entry == nil {
+		return nil, fmt.Errorf("cannot deliver request")
+	}
+
+	if len(entry.Channels) == 0 {
+		return nil, fmt.Errorf("cannot find channel")
+	}
 
 	settings, err := getEntrySettings(entry.Channels[0].Settings)
 

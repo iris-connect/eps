@@ -39,6 +39,12 @@ func (c Channel) Setup(fixtures map[string]interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("message broker missing")
 	}
 
+	directory, ok := fixtures["directory"].(eps.Directory)
+
+	if !ok {
+		return nil, fmt.Errorf("directory missing")
+	}
+
 	channelSettings, definition, err := helpers.GetChannelSettingsAndDefinition(settings, c.Name)
 
 	if err != nil {
@@ -50,6 +56,9 @@ func (c Channel) Setup(fixtures map[string]interface{}) (interface{}, error) {
 	} else if err := broker.AddChannel(channel); err != nil {
 		return nil, err
 	} else {
+		if err := channel.SetDirectory(directory); err != nil {
+			return nil, err
+		}
 		return channel, nil
 	}
 }

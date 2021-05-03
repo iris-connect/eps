@@ -59,7 +59,7 @@ func Server(settings *eps.Settings) ([]cli.Command, error) {
 			Usage:   "Server-related commands.",
 			Subcommands: []cli.Command{
 				{
-					Name: "run",
+					Name:  "run",
 					Flags: []cli.Flag{},
 					Usage: "Run the EPS server.",
 					Action: func(c *cli.Context) error {

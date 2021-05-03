@@ -53,10 +53,12 @@ func TestGRPCClientConnection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	request := &eps.Request{}
+	request := &eps.Request{
+		ID: "hd-1.add(1)",
+	}
 
-	if _, err := client.DeliverRequest(request); err != nil {
-		t.Fatal(err)
+	if _, err := client.DeliverRequest(request); err == nil {
+		t.Fatalf("expeceted an error")
 	}
 
 }
