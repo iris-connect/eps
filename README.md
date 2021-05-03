@@ -98,4 +98,4 @@ To generate TLS certificates for testing and development you need to have `opens
 
 ## Deployment
 
-To 
+You can easily deploy the server as a service using `systemd` or Docke. Specific documentation coming up soon.
