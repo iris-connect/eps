@@ -17,12 +17,15 @@
 package jsonrpc
 
 import (
+	"fmt"
 	"github.com/iris-gateway/eps"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 var idRegexp = regexp.MustCompile(`^n:(\d{1,32})$`)
+var idNRegexp = regexp.MustCompile(`^(n+):(\d{1,32})$`)
 
 type Context struct {
 	Request *Request
@@ -40,6 +43,9 @@ func convertID(id interface{}) interface{} {
 			} else {
 				return n
 			}
+		}
+		if matches := idNRegexp.FindStringSubmatch(strValue); matches != nil && len(matches[1])%2 == 0 {
+			return fmt.Sprintf("%s:%s", strings.Repeat("n", len(matches[1])/2), matches[2])
 		}
 	}
 	// we do not convert anything

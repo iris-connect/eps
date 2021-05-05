@@ -24,6 +24,7 @@ import (
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/http"
 	"regexp"
+	"strings"
 )
 
 var jsonContentTypeRegexp = regexp.MustCompile("(?i)^application/json(?:;.*)?$")
@@ -83,6 +84,11 @@ func ExtractJSONRequest(c *http.Context) {
 			case int64:
 				// we convert numbers to strings
 				validJSON["id"] = fmt.Sprintf("n:%d", v)
+			case string:
+				if matches := idNRegexp.FindStringSubmatch(v); matches != nil {
+					// we need to escape the string IDs that match our custom format...
+					validJSON["id"] = fmt.Sprintf("%s:%s", strings.Repeat("n", 2*len(matches[1])), matches[2])
+				}
 			}
 		}
 
