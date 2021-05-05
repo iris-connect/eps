@@ -17,13 +17,29 @@
 package jsonrpc
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/http"
 	"regexp"
 )
 
 var jsonContentTypeRegexp = regexp.MustCompile("(?i)^application/json(?:;.*)?$")
+
+func RandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	nr, err := rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+	if nr != n {
+		return nil, fmt.Errorf("not enough bytes read")
+	}
+
+	return b, nil
+}
 
 // extracts the request data from
 func ExtractJSONRequest(c *http.Context) {
@@ -35,7 +51,6 @@ func ExtractJSONRequest(c *http.Context) {
 
 	if !jsonContentTypeRegexp.MatchString(c.Request.Header.Get("content-type")) {
 		c.JSON(400, invalidJSONResponse)
-		c.Abort()
 		return
 	}
 
@@ -43,23 +58,41 @@ func ExtractJSONRequest(c *http.Context) {
 
 	if err := json.NewDecoder(c.Request.Body).Decode(&jsonData); err != nil {
 		c.JSON(400, invalidJSONResponse)
-		c.Abort()
 		return
 	}
 
 	if validJSON, err := JSONRPCRequestForm.Validate(jsonData); err != nil {
 		// validation errors are safe to pass back to the client
 		c.JSON(400, invalidRequestResponse)
-		c.Abort()
 		return
 	} else {
 		var request Request
+
+		id, ok := validJSON["id"]
+
+		// if no ID is contained we generate a random UUID
+		if !ok {
+			if randomID, err := RandomBytes(16); err != nil {
+				c.JSON(500, serverErrorResponse)
+				return
+			} else {
+				validJSON["id"] = hex.EncodeToString(randomID)
+			}
+		} else {
+			switch v := id.(type) {
+			case int64:
+				// we convert numbers to strings
+				validJSON["id"] = fmt.Sprintf("n:%d", v)
+			}
+		}
+
 		// this should never happen if the form validation is correct...
 		if err := JSONRPCRequestForm.Coerce(&request, validJSON); err != nil {
 			eps.Log.Error(err)
 			c.JSON(500, serverErrorResponse)
-			c.Abort()
+			return
 		}
+
 		c.Set("request", &request)
 	}
 

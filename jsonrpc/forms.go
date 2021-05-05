@@ -52,10 +52,23 @@ var JSONRPCRequestForm = forms.Form{
 		{
 			Name: "id",
 			Validators: []forms.Validator{
-				// we only support string IDs
-				forms.IsString{
-					MinLength: 1,
-					MaxLength: 100,
+				// it may be omitted (then we generate one)
+				forms.IsOptional{},
+				// either a string or an integer
+				forms.Or{
+					Options: [][]forms.Validator{
+						{
+							// we support strings
+							forms.IsString{
+								MinLength: 1,
+								MaxLength: 100,
+							},
+						},
+						{
+							// we also support integers
+							forms.IsInteger{},
+						},
+					},
 				},
 			},
 		},

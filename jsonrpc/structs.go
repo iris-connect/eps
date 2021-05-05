@@ -20,6 +20,7 @@ import (
 	"github.com/iris-gateway/eps"
 )
 
+// we always convert incoming IDs to strings
 type Request struct {
 	JSONRPC string                 `json:"jsonrpc"`
 	Method  string                 `json:"method"`
@@ -38,13 +39,19 @@ type Response struct {
 	JSONRPC string      `json:"jsonrpc"`
 	Result  interface{} `json:"result,omitempty"`
 	Error   *Error      `json:"error,omitempty"`
-	ID      *string     `json:"id"`
+	ID      interface{} `json:"id"`
 }
 
 func (r *Response) ToEPSResponse() *eps.Response {
 
+	strId, ok := r.ID.(string)
+
+	if !ok {
+		eps.Log.Warningf("Warning, non-string response ID found: %v", r.ID)
+	}
+
 	response := &eps.Response{
-		ID: r.ID,
+		ID: &strId,
 	}
 
 	if r.Result != nil {

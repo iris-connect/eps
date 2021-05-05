@@ -16,13 +16,40 @@
 
 package jsonrpc
 
+import (
+	"github.com/iris-gateway/eps"
+	"regexp"
+	"strconv"
+)
+
+var idRegexp = regexp.MustCompile(`^n:(\d{1,32})$`)
+
 type Context struct {
 	Request *Request
 }
 
+func convertID(id interface{}) interface{} {
+	if strValue, ok := id.(string); ok {
+		if matches := idRegexp.FindStringSubmatch(strValue); matches != nil {
+			// we convert this value back to a number
+			if n, err := strconv.Atoi(matches[1]); err != nil {
+				// this should not happen, if it does we log the error and
+				// return the string value (could only be an overflow)
+				eps.Log.Error(err)
+				return id
+			} else {
+				return n
+			}
+		}
+	}
+	// we do not convert anything
+	return id
+}
+
 func (c *Context) Result(data interface{}) *Response {
+
 	return &Response{
-		ID:      &c.Request.ID,
+		ID:      convertID(c.Request.ID),
 		Result:  data,
 		JSONRPC: "2.0",
 	}
@@ -36,8 +63,20 @@ func (c *Context) Error(code int, message string, data interface{}) *Response {
 			Data:    data,
 		},
 		JSONRPC: "2.0",
-		ID:      &c.Request.ID,
+		ID:      convertID(c.Request.ID),
 	}
+}
+
+func (c *Context) NotFound() *Response {
+	return c.Error(404, "not found", nil)
+}
+
+func (c *Context) Acknowledge() *Response {
+	return c.Result("ok")
+}
+
+func (c *Context) Nil() *Response {
+	return c.Result(nil)
 }
 
 func (c *Context) MethodNotFound() *Response {
