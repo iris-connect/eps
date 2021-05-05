@@ -24,8 +24,8 @@ import (
 	"strings"
 )
 
-var idRegexp = regexp.MustCompile(`^n:(\d{1,32})$`)
-var idNRegexp = regexp.MustCompile(`^(n+):(\d{1,32})$`)
+var idRegexp = regexp.MustCompile(`^n:(-?\d{1,32})$`)
+var idNRegexp = regexp.MustCompile(`^(n+):(-?\d{1,32})$`)
 
 type Context struct {
 	Request *Request

@@ -65,8 +65,13 @@ var JSONRPCRequestForm = forms.Form{
 							},
 						},
 						{
-							// we also support integers
-							forms.IsInteger{},
+							// we also support integers (but only 32 bit)
+							forms.IsInteger{
+								HasMin: true,
+								HasMax: true,
+								Min:    -2147483648,
+								Max:    2147483647,
+							},
 						},
 					},
 				},

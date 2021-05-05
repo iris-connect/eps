@@ -47,7 +47,9 @@ func ExtractJSONRequest(c *http.Context) {
 	eps.Log.Debugf("Extracting JSON data...")
 
 	invalidJSONResponse := Response{JSONRPC: "2.0,", Error: &Error{Code: -32700, Message: "JSON required"}}
-	invalidRequestResponse := Response{JSONRPC: "2.0,", Error: &Error{Code: -32600, Message: "invalid request"}}
+	invalidRequestResponse := func(err error) *Response {
+		return &Response{JSONRPC: "2.0,", Error: &Error{Code: -32600, Message: "invalid request", Data: err}}
+	}
 	serverErrorResponse := Response{JSONRPC: "2.0,", Error: &Error{Code: -32603, Message: "internal server error"}}
 
 	if !jsonContentTypeRegexp.MatchString(c.Request.Header.Get("content-type")) {
@@ -64,7 +66,7 @@ func ExtractJSONRequest(c *http.Context) {
 
 	if validJSON, err := JSONRPCRequestForm.Validate(jsonData); err != nil {
 		// validation errors are safe to pass back to the client
-		c.JSON(400, invalidRequestResponse)
+		c.JSON(400, invalidRequestResponse(err))
 		return
 	} else {
 		var request Request
