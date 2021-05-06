@@ -107,3 +107,11 @@ To generate TLS certificates for testing and development you need to have `opens
 ## Deployment
 
 You can easily deploy the server as a service using `systemd` or Docke. Specific documentation coming up soon.
+
+# Feedback
+
+If you have any questions [just contact us](mailto:iris@steiger-stiftung.de).
+
+# Participation
+
+We are happy about your contribution to the project! In order to ensure compliance with the licensing conditions and the future development of the project, we require a signed contributor license agreement (CLA) for all contributions in accordance with the [Harmony standard](http://selector.harmonyagreements.org). Please sign the corresponding document for [natural persons](.clas/IRIS Gateway-Individual.pdf) or for [organizations](.clas/IRIS Gateway-Entity.pdf) and send it to [us](mailto:iris@steiger-stiftung.de).
