@@ -27,5 +27,6 @@ channels: # defines all the channels that we want to open when starting the serv
         key_file: "$DIR/../../certs/ls-1.key"
   - name: main JSON-RPC client # creates outgoing JSONRPC connections to deliver and receive messages
     type: jsonrpc_client
+    services: [locations]
     settings:
       endpoint: http://localhost:6666/jsonrpc

@@ -19,6 +19,7 @@ package eps
 type ChannelSettings struct {
 	Name     string      `json:"name"`
 	Type     string      `json:"type"`
+	Services []string    `json:"services"`
 	Settings interface{} `json:"settings"`
 }
 
