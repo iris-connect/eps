@@ -89,7 +89,11 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 		return nil, err
 	}
 
-	entry := c.GetDirectoryEntry(address)
+	entry, err := c.DirectoryEntry(address, "grpc_server")
+
+	if err != nil {
+		return nil, err
+	}
 
 	if entry == nil {
 		return nil, fmt.Errorf("cannot deliver request")
@@ -120,8 +124,12 @@ func (c *GRPCClientChannel) DeliverResponse(response *eps.Response) error {
 
 func (c *GRPCClientChannel) CanDeliverTo(address *eps.Address) bool {
 
-	if c.GetDirectoryEntry(address) != nil {
+	// we check if the requested service offers a gRPC server
+	if entry, err := c.DirectoryEntry(address, "grpc_server"); entry != nil {
 		return true
+	} else if err != nil {
+		// we log this error
+		eps.Log.Error(err)
 	}
 
 	return false

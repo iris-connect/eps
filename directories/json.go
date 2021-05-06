@@ -18,6 +18,7 @@ package directories
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/kiprotect/go-helpers/forms"
 	"io/ioutil"
@@ -139,8 +140,18 @@ func (f *JSONDirectory) load() error {
 	}
 }
 
-func (f *JSONDirectory) Entries(query *eps.DirectoryQuery) []*eps.DirectoryEntry {
-	return eps.FilterDirectoryEntriesByQuery(f.Directory.Entries, query)
+func (f *JSONDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntry, error) {
+	return eps.FilterDirectoryEntriesByQuery(f.Directory.Entries, query), nil
+}
+
+func (f *JSONDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
+	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: f.Name()}); err != nil {
+		return nil, err
+	} else if len(entries) == 0 {
+		return nil, fmt.Errorf("no entry for myself")
+	} else {
+		return entries[0], nil
+	}
 }
 
 type Directory struct {

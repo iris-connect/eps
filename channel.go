@@ -16,7 +16,9 @@
 
 package eps
 
-import ()
+import (
+	"fmt"
+)
 
 type ChannelDefinition struct {
 	Name              string            `json:"name"`
@@ -46,17 +48,29 @@ type BaseChannel struct {
 	directory Directory
 }
 
-func (b *BaseChannel) GetDirectoryEntry(address *Address) *DirectoryEntry {
-	entries := b.Directory().Entries(&DirectoryQuery{
-		Operator: address.Operator,
-		Channels: []string{"grpc_client"},
-	})
-
-	if len(entries) > 0 {
-		return entries[0]
+func (b *BaseChannel) OperatorEntry(name string) (*DirectoryEntry, error) {
+	if entries, err := b.Directory().Entries(&DirectoryQuery{
+		Operator: name,
+	}); err != nil {
+		return nil, err
+	} else if len(entries) == 0 {
+		return nil, fmt.Errorf("no entry found")
+	} else {
+		return entries[0], nil
 	}
 
-	return nil
+}
+
+func (b *BaseChannel) DirectoryEntry(address *Address, channel string) (*DirectoryEntry, error) {
+	if entries, err := b.Directory().Entries(&DirectoryQuery{
+		Operator: address.Operator,
+		Channels: []string{channel},
+	}); err != nil {
+		return nil, err
+	} else if len(entries) > 0 {
+		return entries[0], nil
+	}
+	return nil, nil
 
 }
 

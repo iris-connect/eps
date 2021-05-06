@@ -18,13 +18,11 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/protobuf"
 	"github.com/iris-gateway/eps/tls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/structpb"
 	"time"
 )
@@ -66,13 +64,6 @@ func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-
-	peer, ok := peer.FromContext(ctx)
-	if ok {
-		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
-		v := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
-		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
-	}
 
 	paramsStruct, err := structpb.NewStruct(request.Params)
 

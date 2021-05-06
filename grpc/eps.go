@@ -32,15 +32,22 @@ type EPSServer struct {
 	handler Handler
 }
 
-type Handler func(*eps.Request) (*eps.Response, error)
+type ClientInfo struct {
+	Name string
+}
+
+type Handler func(*eps.Request, *ClientInfo) (*eps.Response, error)
 
 func (s *EPSServer) Call(context context.Context, pbRequest *protobuf.Request) (*protobuf.Response, error) {
+
+	clientInfo := &ClientInfo{}
 
 	peer, ok := peer.FromContext(context)
 	if ok {
 		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
-		v := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
-		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
+		clientInfo.Name = tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
+	} else {
+		return nil, fmt.Errorf("cannot determine client name")
 	}
 
 	request := &eps.Request{
@@ -49,7 +56,7 @@ func (s *EPSServer) Call(context context.Context, pbRequest *protobuf.Request) (
 		Method: pbRequest.Method,
 	}
 
-	if response, err := s.handler(request); err != nil {
+	if response, err := s.handler(request, clientInfo); err != nil {
 		return nil, err
 	} else {
 

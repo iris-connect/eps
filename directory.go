@@ -46,7 +46,8 @@ type DirectoryMaker func(name string, settings interface{}) (Directory, error)
 
 // A directory can deliver and accept message
 type Directory interface {
-	Entries(*DirectoryQuery) []*DirectoryEntry
+	Entries(*DirectoryQuery) ([]*DirectoryEntry, error)
+	OwnEntry() (*DirectoryEntry, error)
 	Name() string
 }
 
