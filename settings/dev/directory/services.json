@@ -60,6 +60,28 @@
           "type" : "grpc_client"
         }
       ]
+    },
+    {
+      "name": "private-proxy-1",
+      "channels" : [
+        {
+          "type" : "grpc_client"
+        }
+      ]
+    },
+    {
+      "name": "public-proxy-1",
+      "channels" : [
+        {
+          "type" : "grpc_server",
+          "settings" : {
+            "address" : "localhost:5556"
+          }
+        },
+        {
+          "type" : "grpc_client"
+        }
+      ]
     }
   ]
 }
