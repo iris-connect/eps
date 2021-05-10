@@ -42,12 +42,17 @@ type GRPCServerConnection struct {
 }
 
 func (c *GRPCServerConnection) Open() error {
+	if c.connected {
+		// we're already connected
+		return nil
+	}
 	if client, err := grpc.MakeClient(&c.channel.Settings); err != nil {
 		return err
 	} else if err := client.Connect(c.Address, c.Name); err != nil {
 		return err
 	} else {
 		c.client = client
+		c.connected = true
 		// we open the server call in another goroutine
 		go func() {
 			for {
@@ -74,8 +79,10 @@ func (c *GRPCServerConnection) Close() error {
 	c.stop <- true
 	select {
 	case <-c.stop:
+		c.connected = false
 		return nil
 	case <-time.After(5 * time.Second):
+		c.connected = false
 		return fmt.Errorf("timeout when closing channel")
 	}
 

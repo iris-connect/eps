@@ -46,6 +46,13 @@ var SettingsForm = forms.Form{
 var PrivateSettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
+			Name: "internal_endpoint",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: "localhost:8888"},
+				forms.IsString{},
+			},
+		},
+		{
 			Name: "jsonrpc_client",
 			Validators: []forms.Validator{
 				forms.IsStringMap{

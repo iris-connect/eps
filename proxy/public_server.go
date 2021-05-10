@@ -23,6 +23,7 @@ proxy via a separate TCP channel.
 package proxy
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/jsonrpc"
@@ -32,17 +33,23 @@ import (
 )
 
 type PublicServer struct {
-	settings         *PublicServerSettings
-	jsonrpcServer    *jsonrpc.JSONRPCServer
-	jsonrpcClient    *jsonrpc.Client
-	tlsListener      net.Listener
-	internalListener net.Listener
+	settings            *PublicServerSettings
+	jsonrpcServer       *jsonrpc.JSONRPCServer
+	jsonrpcClient       *jsonrpc.Client
+	tlsListener         net.Listener
+	internalListener    net.Listener
+	tlsConnections      map[string]net.Conn
+	tlsHellos           map[string][]byte
+	internalConnections map[string]net.Conn
 }
 
 func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
 	server := &PublicServer{
-		settings:      settings,
-		jsonrpcClient: jsonrpc.MakeClient(settings.JSONRPCClient),
+		settings:            settings,
+		jsonrpcClient:       jsonrpc.MakeClient(settings.JSONRPCClient),
+		tlsConnections:      make(map[string]net.Conn),
+		tlsHellos:           make(map[string][]byte),
+		internalConnections: make(map[string]net.Conn),
 	}
 
 	jsonrpcServer, err := jsonrpc.MakeJSONRPCServer(settings.JSONRPCServer, server.jsonrpcHandler)
@@ -60,19 +67,67 @@ func (s *PublicServer) jsonrpcHandler(context *jsonrpc.Context) *jsonrpc.Respons
 	return nil
 }
 
-func (s *PublicServer) handleInternalConnection(conn net.Conn) {
+func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 	// we give the client 1 second to announce itself
-	conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	internalConnection.SetReadDeadline(time.Now().Add(1 * time.Second))
 	// we expect a secret token to be transmitted over the connection
-	buf := make([]byte, 32)
+	tokenBuf := make([]byte, 32)
 
-	reqLen, err := conn.Read(buf)
+	reqLen, err := internalConnection.Read(tokenBuf)
 
 	if err != nil {
 		eps.Log.Error(err)
 	}
 
-	eps.Log.Info(reqLen, string(buf[:reqLen]))
+	if reqLen != 32 {
+		eps.Log.Error("cannot read token")
+	}
+
+	tokenStr := base64.StdEncoding.EncodeToString(tokenBuf)
+
+	tlsConnection, ok := s.tlsConnections[tokenStr]
+
+	if !ok {
+		return
+	}
+
+	tlsHello, ok := s.tlsHellos[tokenStr]
+
+	if !ok {
+		return
+	}
+
+	eps.Log.Info("Forwarding connection!")
+
+	if n, err := internalConnection.Write(tlsHello); err != nil {
+		eps.Log.Error(err)
+		return
+	} else if n != len(tlsHello) {
+		eps.Log.Error("Can't forward TLS HelloClient")
+		return
+	} else {
+		eps.Log.Info("Forwarded client hello")
+	}
+
+	pipe := func(left, right net.Conn) {
+		buf := make([]byte, 1024)
+		for {
+			n, err := left.Read(buf)
+			if err != nil {
+				eps.Log.Error(err)
+				return
+			}
+			if m, err := right.Write(buf[:n]); err != nil {
+				eps.Log.Error(err)
+				return
+			} else if m != n {
+				eps.Log.Errorf("cannot write all data")
+			}
+		}
+	}
+
+	go pipe(internalConnection, tlsConnection)
+	go pipe(tlsConnection, internalConnection)
 
 }
 
@@ -91,30 +146,45 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 
 	clientHello, err := tls.ParseClientHello(buf[:reqLen])
 
-	if err != nil {
-		eps.Log.Error(err)
+	close := func() {
 		if err := conn.Close(); err != nil {
 			eps.Log.Error(err)
 		}
+	}
+
+	if err != nil {
+		eps.Log.Error(err)
+		close()
 		return
 	}
 
 	if serverNameList := clientHello.ServerNameList(); serverNameList == nil {
 		// no server name given, we close the connection
-		if err := conn.Close(); err != nil {
-			eps.Log.Error(err)
-		}
+		close()
+		return
 	} else if hostName := serverNameList.HostName(); hostName == "" {
-		// no host name given, we close the connection
-		if err := conn.Close(); err != nil {
-			eps.Log.Error(err)
-		}
+		close()
+		return
 	} else {
 
 		id := fmt.Sprintf("%d", 1)
 
+		randomBytes, err := jsonrpc.RandomBytes(32)
+
+		if err != nil {
+			close()
+			return
+		}
+
+		randomStr := base64.StdEncoding.EncodeToString(randomBytes)
+
+		s.tlsConnections[randomStr] = conn
+		s.tlsHellos[randomStr] = buf[:reqLen]
+
 		request := jsonrpc.MakeRequest("private-proxy-1.incomingConnection", id, map[string]interface{}{
 			"hostname": hostName,
+			"token":    randomStr,
+			"endpoint": s.Settings.InternalBindAddress,
 		})
 
 		if result, err := s.jsonrpcClient.Call(request); err != nil {
@@ -125,7 +195,7 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 	}
 }
 
-func (s *PublicServer) listenForTls() {
+func (s *PublicServer) listenForTlsConnections() {
 	for {
 		if s.tlsListener == nil {
 			// was closed
@@ -169,7 +239,12 @@ func (s *PublicServer) Start() error {
 	if err != nil {
 		return err
 	}
-	go s.listenForTls()
+	go s.listenForTlsConnections()
+	s.internalListener, err = net.Listen("tcp", s.settings.InternalBindAddress)
+	if err != nil {
+		return err
+	}
+	go s.listenForInternalConnections()
 
 	if err := s.jsonrpcServer.Start(); err != nil {
 		return err

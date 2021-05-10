@@ -22,6 +22,8 @@ server and forwards them to an internal endpoint.
 package proxy
 
 import (
+	"encoding/base64"
+	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"net"
@@ -32,6 +34,63 @@ type PrivateServer struct {
 	jsonrpcServer *jsonrpc.JSONRPCServer
 	jsonrpcClient *jsonrpc.Client
 	l             net.Listener
+}
+
+type ProxyConnection struct {
+	proxyEndpoint    string
+	internalEndpoint string
+	token            []byte
+}
+
+func MakeProxyConnection(proxyEndpoint, internalEndpoint string, token []byte) *ProxyConnection {
+	return &ProxyConnection{
+		proxyEndpoint:    proxyEndpoint,
+		internalEndpoint: internalEndpoint,
+		token:            token,
+	}
+}
+
+func (p *ProxyConnection) Run() error {
+
+	proxyConnection, err := net.Dial("tcp", p.proxyEndpoint)
+
+	if err != nil {
+		return err
+	}
+
+	if n, err := proxyConnection.Write(p.token); err != nil {
+		return err
+	} else if n != len(p.token) {
+		return fmt.Errorf("could not write token")
+	}
+
+	internalConnection, err := net.Dial("tcp", p.internalEndpoint)
+
+	if err != nil {
+		return err
+	}
+
+	pipe := func(left, right net.Conn) {
+		buf := make([]byte, 1024)
+		for {
+			n, err := left.Read(buf)
+			if err != nil {
+				eps.Log.Error(err)
+				return
+			}
+			if m, err := right.Write(buf[:n]); err != nil {
+				eps.Log.Error(err)
+				return
+			} else if m != n {
+				eps.Log.Errorf("cannot write all data")
+			}
+		}
+	}
+
+	go pipe(internalConnection, proxyConnection)
+	go pipe(proxyConnection, internalConnection)
+
+	return nil
 }
 
 func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) {
@@ -54,7 +113,23 @@ func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) 
 }
 
 func (s *PrivateServer) jsonrpcHandler(context *jsonrpc.Context) *jsonrpc.Response {
-	return context.Result(map[string]interface{}{"message": "ok, got it!"})
+	params := context.Request.Params
+	tokenStr := params["token"].(string)
+	proxyEndpoint := params["endpoint"].(string)
+	token, err := base64.StdEncoding.DecodeString(tokenStr)
+	if err != nil {
+		eps.Log.Error(err)
+		return context.InternalError()
+	}
+
+	connection := MakeProxyConnection(proxyEndpoint, s.settings.InternalEndpoint, token)
+
+	if err := connection.Run(); err != nil {
+		eps.Log.Error(err)
+		return context.InternalError()
+	}
+
+	return context.Result(map[string]interface{}{"message": "ok"})
 }
 
 func (s *PrivateServer) Start() error {

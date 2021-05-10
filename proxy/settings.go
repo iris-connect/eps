@@ -33,7 +33,7 @@ type PublicServerSettings struct {
 }
 
 type PrivateServerSettings struct {
-	EPSEndpoint   string                         `json:"eps_endpoint "`
-	JSONRPCClient *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
-	JSONRPCServer *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
+	InternalEndpoint string                         `json:"internal_endpoint"`
+	JSONRPCClient    *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
+	JSONRPCServer    *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
 }
