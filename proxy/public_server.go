@@ -28,31 +28,89 @@ import (
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"github.com/iris-gateway/eps/tls"
+	"github.com/kiprotect/go-helpers/forms"
 	"net"
+	"regexp"
 	"time"
 )
 
 type PublicServer struct {
-	settings            *PublicServerSettings
-	jsonrpcServer       *jsonrpc.JSONRPCServer
-	jsonrpcClient       *jsonrpc.Client
-	tlsListener         net.Listener
-	internalListener    net.Listener
-	tlsConnections      map[string]net.Conn
-	tlsHellos           map[string][]byte
-	internalConnections map[string]net.Conn
+	settings             *PublicServerSettings
+	jsonrpcServer        *jsonrpc.JSONRPCServer
+	jsonrpcClient        *jsonrpc.Client
+	tlsListener          net.Listener
+	internalListener     net.Listener
+	tlsConnections       map[string]net.Conn
+	announcedConnections []*AnnouncedConnection
+	tlsHellos            map[string][]byte
+}
+
+type AnnouncedConnection struct {
+	Name    string         `json:"name"`
+	Pattern *regexp.Regexp `json:"pattern"`
+}
+
+type IsValidRegexp struct{}
+
+func (i IsValidRegexp) Validate(value interface{}, values map[string]interface{}) (interface{}, error) {
+	// we assume IsString{} was called before...
+	if regexp, err := regexp.Compile(value.(string)); err != nil {
+		return nil, err
+	} else {
+		return regexp, nil
+	}
+}
+
+var AnnounceConnectionForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "pattern",
+			Validators: []forms.Validator{
+				forms.IsString{},
+				IsValidRegexp{},
+			},
+		},
+	},
+}
+
+type AnnounceConnectionParams struct {
+	Name    string `json:"name"`
+	Pattern string `json:"pattern"`
+}
+
+func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *AnnounceConnectionParams) *jsonrpc.Response {
+	return context.InternalError()
 }
 
 func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
 	server := &PublicServer{
-		settings:            settings,
-		jsonrpcClient:       jsonrpc.MakeClient(settings.JSONRPCClient),
-		tlsConnections:      make(map[string]net.Conn),
-		tlsHellos:           make(map[string][]byte),
-		internalConnections: make(map[string]net.Conn),
+		settings:             settings,
+		jsonrpcClient:        jsonrpc.MakeClient(settings.JSONRPCClient),
+		tlsConnections:       make(map[string]net.Conn),
+		tlsHellos:            make(map[string][]byte),
+		announcedConnections: make([]*AnnouncedConnection, 0),
 	}
 
-	jsonrpcServer, err := jsonrpc.MakeJSONRPCServer(settings.JSONRPCServer, server.jsonrpcHandler)
+	methods := map[string]*jsonrpc.Method{
+		"announceConnection": {
+			Form:    &AnnounceConnectionForm,
+			Handler: server.announceConnection,
+		},
+	}
+
+	handler, err := jsonrpc.MethodsHandler(methods)
+
+	if err != nil {
+		return nil, err
+	}
+
+	jsonrpcServer, err := jsonrpc.MakeJSONRPCServer(settings.JSONRPCServer, handler)
 
 	if err != nil {
 		return nil, err
@@ -178,13 +236,15 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 
 		randomStr := base64.StdEncoding.EncodeToString(randomBytes)
 
+		// we store the connection details for later use
 		s.tlsConnections[randomStr] = conn
 		s.tlsHellos[randomStr] = buf[:reqLen]
 
+		// we tell the internal proxy about an incoming connection
 		request := jsonrpc.MakeRequest("private-proxy-1.incomingConnection", id, map[string]interface{}{
 			"hostname": hostName,
 			"token":    randomStr,
-			"endpoint": s.Settings.InternalBindAddress,
+			"endpoint": s.settings.InternalBindAddress,
 		})
 
 		if result, err := s.jsonrpcClient.Call(request); err != nil {

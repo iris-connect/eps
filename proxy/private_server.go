@@ -22,10 +22,10 @@ server and forwards them to an internal endpoint.
 package proxy
 
 import (
-	"encoding/base64"
 	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/jsonrpc"
+	"github.com/kiprotect/go-helpers/forms"
 	"net"
 )
 
@@ -93,6 +93,44 @@ func (p *ProxyConnection) Run() error {
 	return nil
 }
 
+var IncomingConnectionForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "token",
+			Validators: []forms.Validator{
+				forms.IsBytes{
+					Encoding:  "base64",
+					MinLength: 32,
+					MaxLength: 32,
+				},
+			},
+		},
+		{
+			Name: "endpoint",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
+
+type IncomingConnectionParams struct {
+	Endpoint string `json:"endpoint"`
+	Token    []byte `json:"token"`
+}
+
+func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *IncomingConnectionParams) *jsonrpc.Response {
+
+	connection := MakeProxyConnection(params.Endpoint, c.settings.InternalEndpoint, params.Token)
+
+	if err := connection.Run(); err != nil {
+		eps.Log.Error(err)
+		return context.InternalError()
+	}
+
+	return context.Result(map[string]interface{}{"message": "ok"})
+}
+
 func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) {
 
 	server := &PrivateServer{
@@ -100,7 +138,20 @@ func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) 
 		jsonrpcClient: jsonrpc.MakeClient(settings.JSONRPCClient),
 	}
 
-	jsonrpcServer, err := jsonrpc.MakeJSONRPCServer(settings.JSONRPCServer, server.jsonrpcHandler)
+	methods := map[string]*jsonrpc.Method{
+		"incomingConnection": {
+			Form:    &IncomingConnectionForm,
+			Handler: server.incomingConnection,
+		},
+	}
+
+	handler, err := jsonrpc.MethodsHandler(methods)
+
+	if err != nil {
+		return nil, err
+	}
+
+	jsonrpcServer, err := jsonrpc.MakeJSONRPCServer(settings.JSONRPCServer, handler)
 
 	if err != nil {
 		return nil, err
@@ -112,24 +163,21 @@ func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) 
 
 }
 
-func (s *PrivateServer) jsonrpcHandler(context *jsonrpc.Context) *jsonrpc.Response {
-	params := context.Request.Params
-	tokenStr := params["token"].(string)
-	proxyEndpoint := params["endpoint"].(string)
-	token, err := base64.StdEncoding.DecodeString(tokenStr)
-	if err != nil {
-		eps.Log.Error(err)
-		return context.InternalError()
-	}
+func (s *PrivateServer) announceConnections() error {
+	return nil
+	/*
+		request := jsonrpc.MakeRequest("private-proxy-1.incomingConnection", id, map[string]interface{}{
+			"hostname": hostName,
+			"token":    randomStr,
+			"endpoint": s.settings.InternalBindAddress,
+		})
 
-	connection := MakeProxyConnection(proxyEndpoint, s.settings.InternalEndpoint, token)
-
-	if err := connection.Run(); err != nil {
-		eps.Log.Error(err)
-		return context.InternalError()
-	}
-
-	return context.Result(map[string]interface{}{"message": "ok"})
+		if result, err := s.jsonrpcClient.Call(request); err != nil {
+			eps.Log.Error(err)
+		} else {
+			eps.Log.Info(result)
+		}
+	*/
 }
 
 func (s *PrivateServer) Start() error {
