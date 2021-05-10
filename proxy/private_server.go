@@ -54,11 +54,11 @@ func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) 
 }
 
 func (s *PrivateServer) jsonrpcHandler(context *jsonrpc.Context) *jsonrpc.Response {
-	eps.Log.Info("Received JSON-RPC request!")
-	return nil
+	return context.Result(map[string]interface{}{"message": "ok, got it!"})
 }
 
 func (s *PrivateServer) Start() error {
+	eps.Log.Debug("Starting JSON-RPC server")
 	return s.jsonrpcServer.Start()
 }
 

@@ -36,7 +36,6 @@ type Channel interface {
 	SetMessageBroker(MessageBroker) error
 	CanDeliverTo(*Address) bool
 	DeliverRequest(*Request) (*Response, error)
-	DeliverResponse(*Response) error
 	SetDirectory(Directory) error
 	Directory() Directory
 	Close() error

@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/types/known/structpb"
+	"io"
 	"time"
 )
 
@@ -56,6 +57,86 @@ func (c *Client) Connect(address, serverName string) error {
 
 func (c *Client) Close() error {
 	return c.connection.Close()
+}
+
+func (c *Client) ServerCall(messageBroker eps.MessageBroker) error {
+
+	client := protobuf.NewEPSClient(c.connection)
+
+	//ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	//defer cancel()
+
+	stream, err := client.ServerCall(context.Background())
+
+	if err != nil {
+		return err
+	}
+
+	for {
+
+		pbRequest, err := stream.Recv()
+
+		if err == io.EOF {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		if err != nil {
+			return err
+		}
+
+		request := &eps.Request{
+			ID:     pbRequest.Id,
+			Params: pbRequest.Params.AsMap(),
+			Method: pbRequest.Method,
+		}
+
+		eps.Log.Info("Sending request to broker...")
+
+		response, err := messageBroker.DeliverRequest(request)
+
+		pbResponse := &protobuf.Response{
+			Id: pbRequest.Id,
+		}
+		if err != nil {
+			pbResponse.Error = &protobuf.Error{
+				Code:    -100,
+				Message: err.Error(),
+			}
+		} else {
+			if response.Result != nil {
+				resultStruct, err := structpb.NewStruct(response.Result)
+				if err != nil {
+					eps.Log.Error(err)
+				}
+				pbResponse.Result = resultStruct
+			}
+			if response.Error != nil {
+				pbResponse.Error = &protobuf.Error{
+					Code:    int32(response.Error.Code),
+					Message: response.Error.Message,
+				}
+
+				if response.Error.Data != nil {
+					errorStruct, err := structpb.NewStruct(response.Error.Data)
+					if err != nil {
+						eps.Log.Error(err)
+					}
+					pbResponse.Error.Data = errorStruct
+				}
+			}
+		}
+
+		eps.Log.Info("Sending response....")
+
+		if err := stream.Send(pbResponse); err != nil {
+			eps.Log.Error(err)
+		}
+
+	}
+
+	return nil
+
 }
 
 func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {

@@ -40,6 +40,10 @@ func JSONRPC(handler Handler) http.Handler {
 
 		response := handler(context)
 
+		if response == nil {
+			response = context.Nil()
+		}
+
 		// people will forget this so we add it here in that case
 		if response.JSONRPC == "" {
 			response.JSONRPC = "2.0"
@@ -57,6 +61,11 @@ func JSONRPC(handler Handler) http.Handler {
 	}
 }
 
+func NotFound(c *http.Context) {
+	eps.Log.Error("not found!")
+	c.JSON(404, map[string]interface{}{"message": "not found"})
+}
+
 func MakeJSONRPCServer(settings *JSONRPCServerSettings, handler Handler) (*JSONRPCServer, error) {
 	routeGroups := []*http.RouteGroup{
 		{
@@ -70,6 +79,12 @@ func MakeJSONRPCServer(settings *JSONRPCServerSettings, handler Handler) (*JSONR
 					Handlers: []http.Handler{
 						ExtractJSONRequest,
 						JSONRPC(handler),
+					},
+				},
+				{
+					Pattern: "^.*$",
+					Handlers: []http.Handler{
+						NotFound,
 					},
 				},
 			},

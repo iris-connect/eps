@@ -25,7 +25,11 @@ import (
 
 type GRPCClientChannel struct {
 	eps.BaseChannel
-	Settings grpc.GRPCClientSettings
+	Settings          grpc.GRPCClientSettings
+	ServerConnections []*GRPCServerConnection
+}
+
+type GRPCServerConnection struct {
 }
 
 type GRPCClientEntrySettings struct {
@@ -74,11 +78,50 @@ func MakeGRPCClientChannel(settings interface{}) (eps.Channel, error) {
 }
 
 func (c *GRPCClientChannel) Open() error {
-	return nil
+	return c.openChannels()
 }
 
 func (c *GRPCClientChannel) Close() error {
 	return nil
+}
+
+func (c *GRPCClientChannel) openChannels() error {
+	if entries, err := c.Directory().Entries(&eps.DirectoryQuery{
+		Channels: []string{"grpc_server"},
+	}); err != nil {
+		return err
+	} else {
+		for _, entry := range entries {
+			if channel := entry.Channel("grpc_server"); channel == nil {
+				return fmt.Errorf("this should not happen: no grpc_server channel found")
+			} else if settings, err := getEntrySettings(channel.Settings); err != nil {
+				return err
+			} else {
+				if c.Directory().Name() == entry.Name {
+					// we won't open a channel to ourselves...
+					continue
+				}
+				eps.Log.Debugf("Opening channel to %s at %s", entry.Name, settings.Address)
+				if err := c.openChannel(settings.Address, entry.Name); err != nil {
+					eps.Log.Error("An error occurred:", err)
+				}
+			}
+		}
+	}
+	return nil
+
+}
+
+func (c *GRPCClientChannel) openChannel(address, name string) error {
+	if client, err := grpc.MakeClient(&c.Settings); err != nil {
+		return err
+	} else if err := client.Connect(address, name); err != nil {
+		return err
+	} else {
+		return client.ServerCall(c.MessageBroker())
+	}
+	return nil
+
 }
 
 func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
@@ -116,10 +159,6 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 	} else {
 		return client.SendRequest(request)
 	}
-}
-
-func (c *GRPCClientChannel) DeliverResponse(response *eps.Response) error {
-	return nil
 }
 
 func (c *GRPCClientChannel) CanDeliverTo(address *eps.Address) bool {

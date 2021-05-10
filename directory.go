@@ -30,6 +30,15 @@ type DirectoryEntry struct {
 	Channels []*OperatorChannel `json:"channels"`
 }
 
+func (d *DirectoryEntry) Channel(channelType string) *OperatorChannel {
+	for _, channel := range d.Channels {
+		if channel.Type == channelType {
+			return channel
+		}
+	}
+	return nil
+}
+
 type OperatorChannel struct {
 	Type     string                 `json:"type"`
 	Settings map[string]interface{} `json:"settings,omitempty"`

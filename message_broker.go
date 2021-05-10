@@ -42,7 +42,6 @@ type MessageBroker interface {
 	AddChannel(Channel) error
 	Channels() []Channel
 	DeliverRequest(*Request) (*Response, error)
-	DeliverResponse(*Response) error
 }
 
 type BasicMessageBroker struct {
@@ -77,9 +76,12 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 
 func (b *BasicMessageBroker) DeliverRequest(request *Request) (*Response, error) {
 
+	Log.Info(request.ID)
+
 	address, err := GetAddress(request.ID)
 
 	if err != nil {
+		Log.Error("addressing errro...")
 		return nil, err
 	}
 
@@ -87,13 +89,10 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request) (*Response, error)
 		if !channel.CanDeliverTo(address) {
 			continue
 		}
+		Log.Infof("found channel that can deliver!")
 		return channel.DeliverRequest(request)
 	}
 	return nil, fmt.Errorf("no channel can deliver this request")
-}
-
-func (b *BasicMessageBroker) DeliverResponse(*Response) error {
-	return nil
 }
 
 func (b *BasicMessageBroker) Channels() []Channel {

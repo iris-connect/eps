@@ -17,6 +17,7 @@
 package grpc
 
 import (
+	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/protobuf"
 	"github.com/iris-gateway/eps/tls"
 	"google.golang.org/grpc"
@@ -25,8 +26,9 @@ import (
 )
 
 type Server struct {
-	server   *grpc.Server
-	settings *GRPCServerSettings
+	server    *grpc.Server
+	epsServer *EPSServer
+	settings  *GRPCServerSettings
 }
 
 func (s *Server) Start() error {
@@ -49,6 +51,14 @@ func (s *Server) Stop() error {
 	return nil
 }
 
+func (s *Server) CanDeliverTo(address *eps.Address) bool {
+	return s.epsServer.CanDeliverTo(address)
+}
+
+func (s *Server) DeliverRequest(request *eps.Request) (*eps.Response, error) {
+	return s.epsServer.DeliverRequest(request)
+}
+
 func MakeServer(settings *GRPCServerSettings, handler Handler) (*Server, error) {
 	var opts []grpc.ServerOption
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
@@ -56,10 +66,14 @@ func MakeServer(settings *GRPCServerSettings, handler Handler) (*Server, error) 
 	} else {
 		opts = append(opts, grpc.Creds(credentials.NewTLS(tlsConfig)))
 	}
+
+	epsServer := MakeEPSServer(handler)
+
 	grpcServer := grpc.NewServer(opts...)
-	protobuf.RegisterEPSServer(grpcServer, MakeEPSServer(handler))
+	protobuf.RegisterEPSServer(grpcServer, epsServer)
 	return &Server{
-		server:   grpcServer,
-		settings: settings,
+		epsServer: epsServer,
+		server:    grpcServer,
+		settings:  settings,
 	}, nil
 }

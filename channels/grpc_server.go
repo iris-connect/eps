@@ -45,14 +45,13 @@ func MakeGRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	}, nil
 }
 
-func (c *GRPCServerChannel) handle(request *eps.Request, clientInfo *grpc.ClientInfo) (*eps.Response, error) {
-
+func (c *GRPCServerChannel) HandleRequest(request *eps.Request, clientInfo *grpc.ClientInfo) (*eps.Response, error) {
 	return c.MessageBroker().DeliverRequest(request)
 }
 
 func (c *GRPCServerChannel) Open() error {
 	var err error
-	if c.server, err = grpc.MakeServer(&c.Settings, c.handle); err != nil {
+	if c.server, err = grpc.MakeServer(&c.Settings, c); err != nil {
 		return err
 	}
 	return c.server.Start()
@@ -63,13 +62,9 @@ func (c *GRPCServerChannel) Close() error {
 }
 
 func (c *GRPCServerChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
-	return nil, nil
-}
-
-func (c *GRPCServerChannel) DeliverResponse(response *eps.Response) error {
-	return nil
+	return c.server.DeliverRequest(request)
 }
 
 func (c *GRPCServerChannel) CanDeliverTo(address *eps.Address) bool {
-	return false
+	return c.server.CanDeliverTo(address)
 }

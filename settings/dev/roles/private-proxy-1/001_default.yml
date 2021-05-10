@@ -9,7 +9,7 @@ private:
     bind_address: "localhost:8877"
     cors:
       allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
-    tls:
-      ca_certificate_file: "$DIR/../../certs/root.crt"
-      certificate_file: "$DIR/../../certs/private-proxy-1.crt"
-      key_file: "$DIR/../../certs/private-proxy-1.key"
+    #tls:
+    #  ca_certificate_file: "$DIR/../../certs/root.crt"
+    #  certificate_file: "$DIR/../../certs/private-proxy-1.crt"
+    #  key_file: "$DIR/../../certs/private-proxy-1.key"

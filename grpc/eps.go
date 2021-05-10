@@ -24,19 +24,109 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/structpb"
-	"io"
+	"sync"
 )
 
 type EPSServer struct {
 	protobuf.UnimplementedEPSServer
-	handler Handler
+	connectedClients map[string]*ConnectedClient
+	mutex            sync.Mutex
+	handler          Handler
+}
+
+type ConnectedClient struct {
+	CallServer    protobuf.EPS_ServerCallServer
+	RespondServer protobuf.EPS_ServerRespondServer
+	Stop          chan bool
+	Info          *ClientInfo
+}
+
+func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, error) {
+
+	paramsStruct, err := structpb.NewStruct(request.Params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	pbRequest := &protobuf.Request{
+		Params: paramsStruct,
+		Method: request.Method,
+		Id:     request.ID,
+	}
+
+	if err := c.CallServer.Send(pbRequest); err != nil {
+		return nil, err
+	}
+
+	if pbResponse, err := c.CallServer.Recv(); err != nil {
+		return nil, err
+	} else {
+
+		var responseError *eps.Error
+
+		if pbResponse.Error != nil {
+			responseError = &eps.Error{
+				Code:    int(pbResponse.Error.Code),
+				Data:    pbResponse.Error.Data.AsMap(),
+				Message: pbResponse.Error.Message,
+			}
+		}
+
+		response := &eps.Response{
+			ID:     &pbResponse.Id,
+			Result: pbResponse.Result.AsMap(),
+			Error:  responseError,
+		}
+
+		return response, nil
+	}
+
 }
 
 type ClientInfo struct {
 	Name string
 }
 
-type Handler func(*eps.Request, *ClientInfo) (*eps.Response, error)
+type RequestClient struct {
+}
+
+type Handler interface {
+	HandleRequest(*eps.Request, *ClientInfo) (*eps.Response, error)
+}
+
+func MakeEPSServer(handler Handler) *EPSServer {
+	return &EPSServer{
+		handler:          handler,
+		connectedClients: make(map[string]*ConnectedClient),
+	}
+}
+
+func (s *EPSServer) DeliverRequest(request *eps.Request) (*eps.Response, error) {
+
+	address, err := eps.GetAddress(request.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	client := s.getClient(address.Operator)
+
+	if client == nil {
+		return nil, fmt.Errorf("client disconnected")
+	}
+
+	return client.DeliverRequest(request)
+}
+
+func (s *EPSServer) CanDeliverTo(address *eps.Address) bool {
+	for _, connectedClient := range s.connectedClients {
+		if connectedClient.Info.Name == address.Operator {
+			return true
+		}
+	}
+	return false
+}
 
 func (s *EPSServer) Call(context context.Context, pbRequest *protobuf.Request) (*protobuf.Response, error) {
 
@@ -56,7 +146,7 @@ func (s *EPSServer) Call(context context.Context, pbRequest *protobuf.Request) (
 		Method: pbRequest.Method,
 	}
 
-	if response, err := s.handler(request, clientInfo); err != nil {
+	if response, err := s.handler.HandleRequest(request, clientInfo); err != nil {
 		return nil, err
 	} else {
 
@@ -92,30 +182,48 @@ func (s *EPSServer) Call(context context.Context, pbRequest *protobuf.Request) (
 
 }
 
-func (s *EPSServer) Stream(stream protobuf.EPS_AsyncUpstreamServer) error {
+func (s *EPSServer) getClient(name string) *ConnectedClient {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	client, _ := s.connectedClients[name]
+	return client
+}
+
+func (s *EPSServer) setClient(client *ConnectedClient) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.connectedClients[client.Info.Name] = client
+}
+
+func (s *EPSServer) ServerCall(server protobuf.EPS_ServerCallServer) error {
 
 	// this is a bidirectional message stream
 
-	peer, ok := peer.FromContext(stream.Context())
+	clientInfo := &ClientInfo{}
+
+	peer, ok := peer.FromContext(server.Context())
 	if ok {
 		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
-		v := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
-		fmt.Printf("%v - %v\n", peer.Addr.String(), v)
+		clientInfo.Name = tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
+	} else {
+		return fmt.Errorf("cannot determine client name")
 	}
 
-	for {
-		_, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-	}
-}
+	client := s.getClient(clientInfo.Name)
 
-func MakeEPSServer(handler Handler) *EPSServer {
-	return &EPSServer{
-		handler: handler,
+	if client == nil {
+		client = &ConnectedClient{
+			Info: clientInfo,
+			Stop: make(chan bool),
+		}
+		s.setClient(client)
 	}
+
+	client.CallServer = server
+
+	// we wait for the client to stop...
+	<-client.Stop
+
+	return nil
+
 }

@@ -134,6 +134,7 @@ var JSONRPCServerSettingsForm = forms.Form{
 		{
 			Name: "tls",
 			Validators: []forms.Validator{
+				forms.IsOptional{},
 				forms.IsStringMap{
 					Form: &tls.TLSSettingsForm,
 				},

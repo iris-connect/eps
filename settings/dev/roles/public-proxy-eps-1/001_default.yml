@@ -7,6 +7,7 @@ channels: # defines all the channels that we want to open when starting the serv
   - name: main gRPC server # accepts incoming gRPC connections to deliver and receive messages
     type: grpc_server
     settings:
+      bind_address: "localhost:5556"
       tls:
         ca_certificate_file: "$DIR/../../certs/root.crt"
         certificate_file: "$DIR/../../certs/public-proxy-1.crt"
@@ -31,4 +32,6 @@ channels: # defines all the channels that we want to open when starting the serv
   - name: main JSON-RPC client # creates outgoing JSONRPC connections to deliver and receive messages
     type: jsonrpc_client
     settings:
-      endpoint: http://localhost:6655/jsonrpc
+      endpoint: https://localhost:6655/jsonrpc
+      tls:
+        ca_certificate_file: "$DIR/../../certs/root.crt"

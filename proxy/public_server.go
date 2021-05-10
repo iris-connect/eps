@@ -57,7 +57,6 @@ func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
 }
 
 func (s *PublicServer) jsonrpcHandler(context *jsonrpc.Context) *jsonrpc.Response {
-	eps.Log.Info("Received JSON RPC request!")
 	return nil
 }
 
@@ -72,8 +71,6 @@ func (s *PublicServer) handleInternalConnection(conn net.Conn) {
 	if err != nil {
 		eps.Log.Error(err)
 	}
-
-	eps.Log.Info(buf, reqLen)
 
 }
 
@@ -121,9 +118,8 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 		if result, err := s.jsonrpcClient.Call(request); err != nil {
 			eps.Log.Error(err)
 		} else {
-			eps.Log.Info(result.Error)
+			eps.Log.Info(result)
 		}
-		eps.Log.Info(hostName)
 	}
 }
 

@@ -19,16 +19,18 @@ message Error {
 // A JSON-RPC style response
 message Response {
 	string id = 1;
-	Error error = 3;	
+	Error error = 3;
 	google.protobuf.Struct result = 2;
 }
 
+message Acknowledgment {
+	string id = 1;
+	Error error = 2;
+}
 
 service EPS {
-	// synchronous method calls
+	// client sends a request to the server and receives a response
 	rpc Call(Request) returns (Response) {}
-	// async RPCs
-	rpc AsyncUpstream(stream Request) returns (stream Response) {}
-	// async reverse RPCs
-	rpc AsyncDownstream(stream Response) returns (stream Request) {}
+	// client sends a response to the server and receives an acknowledgment 
+	rpc ServerCall(stream Response) returns (stream Request) {}
 }

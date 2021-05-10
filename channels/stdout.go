@@ -66,10 +66,6 @@ func (c *StdoutChannel) DeliverRequest(request *eps.Request) (*eps.Response, err
 	return nil, nil
 }
 
-func (c *StdoutChannel) DeliverResponse(response *eps.Response) error {
-	return nil
-}
-
 func (c *StdoutChannel) CanDeliverTo(address *eps.Address) bool {
 	return false
 }

@@ -93,10 +93,6 @@ func (c *JSONRPCServerChannel) DeliverRequest(request *eps.Request) (*eps.Respon
 	return nil, nil
 }
 
-func (c *JSONRPCServerChannel) DeliverResponse(response *eps.Response) error {
-	return nil
-}
-
 func (c *JSONRPCServerChannel) CanDeliverTo(address *eps.Address) bool {
 	return false
 }
