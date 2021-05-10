@@ -21,15 +21,64 @@ import (
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/grpc"
 	"github.com/kiprotect/go-helpers/forms"
+	"sync"
+	"time"
 )
 
 type GRPCClientChannel struct {
 	eps.BaseChannel
-	Settings          grpc.GRPCClientSettings
-	ServerConnections []*GRPCServerConnection
+	Settings    grpc.GRPCClientSettings
+	connections map[string]*GRPCServerConnection
+	mutex       sync.Mutex
 }
 
 type GRPCServerConnection struct {
+	Name      string
+	Address   string
+	client    *grpc.Client
+	channel   *GRPCClientChannel
+	connected bool
+	stop      chan bool
+}
+
+func (c *GRPCServerConnection) Open() error {
+	if client, err := grpc.MakeClient(&c.channel.Settings); err != nil {
+		return err
+	} else if err := client.Connect(c.Address, c.Name); err != nil {
+		return err
+	} else {
+		c.client = client
+		// we open the server call in another goroutine
+		go func() {
+			for {
+				if err := client.ServerCall(c.channel.MessageBroker(), c.stop); err != nil {
+					eps.Log.Error(err)
+				} else {
+					// the call stopped because it was requested to
+					break
+				}
+				select {
+				case <-time.After(1 * time.Second):
+				case <-c.stop:
+					c.stop <- true
+					break
+				}
+			}
+		}()
+		return nil
+	}
+
+}
+
+func (c *GRPCServerConnection) Close() error {
+	c.stop <- true
+	select {
+	case <-c.stop:
+		return nil
+	case <-time.After(5 * time.Second):
+		return fmt.Errorf("timeout when closing channel")
+	}
+
 }
 
 type GRPCClientEntrySettings struct {
@@ -73,19 +122,46 @@ func GRPCClientSettingsValidator(settings map[string]interface{}) (interface{}, 
 
 func MakeGRPCClientChannel(settings interface{}) (eps.Channel, error) {
 	return &GRPCClientChannel{
-		Settings: settings.(grpc.GRPCClientSettings),
+		Settings:    settings.(grpc.GRPCClientSettings),
+		connections: make(map[string]*GRPCServerConnection),
 	}, nil
 }
 
 func (c *GRPCClientChannel) Open() error {
-	return c.openChannels()
+	return c.openConnections()
 }
 
 func (c *GRPCClientChannel) Close() error {
-	return nil
+	return c.closeConnections()
 }
 
-func (c *GRPCClientChannel) openChannels() error {
+func (c *GRPCClientChannel) getConnection(name string) *GRPCServerConnection {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	conn, _ := c.connections[name]
+	return conn
+}
+
+func (c *GRPCClientChannel) setConnection(name string, conn *GRPCServerConnection) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.connections[name] = conn
+}
+
+func (c *GRPCClientChannel) closeConnections() error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	var lastErr error
+	for _, connection := range c.connections {
+		if err := connection.Close(); err != nil {
+			lastErr = err
+			eps.Log.Error(err)
+		}
+	}
+	return lastErr
+}
+
+func (c *GRPCClientChannel) openConnections() error {
 	if entries, err := c.Directory().Entries(&eps.DirectoryQuery{
 		Channels: []string{"grpc_server"},
 	}); err != nil {
@@ -102,7 +178,7 @@ func (c *GRPCClientChannel) openChannels() error {
 					continue
 				}
 				eps.Log.Debugf("Opening channel to %s at %s", entry.Name, settings.Address)
-				if err := c.openChannel(settings.Address, entry.Name); err != nil {
+				if err := c.openConnection(settings.Address, entry.Name); err != nil {
 					eps.Log.Error("An error occurred:", err)
 				}
 			}
@@ -112,15 +188,23 @@ func (c *GRPCClientChannel) openChannels() error {
 
 }
 
-func (c *GRPCClientChannel) openChannel(address, name string) error {
-	if client, err := grpc.MakeClient(&c.Settings); err != nil {
-		return err
-	} else if err := client.Connect(address, name); err != nil {
-		return err
-	} else {
-		return client.ServerCall(c.MessageBroker())
+func (c *GRPCClientChannel) openConnection(address, name string) error {
+
+	conn := c.getConnection(name)
+
+	if conn == nil {
+		conn = &GRPCServerConnection{
+			channel: c,
+			stop:    make(chan bool),
+		}
 	}
-	return nil
+
+	conn.Address = address
+	conn.Name = name
+
+	c.setConnection(name, conn)
+
+	return conn.Open()
 
 }
 

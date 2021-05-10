@@ -72,6 +72,8 @@ func (s *PublicServer) handleInternalConnection(conn net.Conn) {
 		eps.Log.Error(err)
 	}
 
+	eps.Log.Info(reqLen, string(buf[:reqLen]))
+
 }
 
 func (s *PublicServer) handleTlsConnection(conn net.Conn) {

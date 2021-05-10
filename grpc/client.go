@@ -59,14 +59,14 @@ func (c *Client) Close() error {
 	return c.connection.Close()
 }
 
-func (c *Client) ServerCall(messageBroker eps.MessageBroker) error {
+func (c *Client) ServerCall(messageBroker eps.MessageBroker, stop chan bool) error {
 
 	client := protobuf.NewEPSClient(c.connection)
 
-	//ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	//defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	stream, err := client.ServerCall(context.Background())
+	stream, err := client.ServerCall(ctx)
 
 	if err != nil {
 		return err
@@ -74,7 +74,23 @@ func (c *Client) ServerCall(messageBroker eps.MessageBroker) error {
 
 	for {
 
-		pbRequest, err := stream.Recv()
+		done := make(chan bool, 1)
+
+		var pbRequest *protobuf.Request
+		var err error
+
+		go func() {
+			pbRequest, err = stream.Recv()
+			done <- true
+		}()
+
+		select {
+		case <-stop:
+			// we were asked to stop
+			stop <- true
+			return nil
+		case <-done:
+		}
 
 		if err == io.EOF {
 			time.Sleep(1 * time.Second)
@@ -90,8 +106,6 @@ func (c *Client) ServerCall(messageBroker eps.MessageBroker) error {
 			Params: pbRequest.Params.AsMap(),
 			Method: pbRequest.Method,
 		}
-
-		eps.Log.Info("Sending request to broker...")
 
 		response, err := messageBroker.DeliverRequest(request)
 
@@ -127,15 +141,11 @@ func (c *Client) ServerCall(messageBroker eps.MessageBroker) error {
 			}
 		}
 
-		eps.Log.Info("Sending response....")
-
 		if err := stream.Send(pbResponse); err != nil {
 			eps.Log.Error(err)
 		}
 
 	}
-
-	return nil
 
 }
 
