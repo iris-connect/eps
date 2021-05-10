@@ -64,11 +64,9 @@ func (c *JSONRPCServerChannel) handler(context *jsonrpc.Context) *jsonrpc.Respon
 		ID:     fmt.Sprintf("%s(%s)", context.Request.Method, context.Request.ID),
 	}
 
-	eps.Log.Debugf("New request: '%s'", request.ID)
-
 	if response, err := c.MessageBroker().DeliverRequest(request); err != nil {
 		eps.Log.Error(err)
-		return context.Error(1, "cannot deliver request", err)
+		return context.Error(1, "cannot deliver JSON-RPC request", err)
 	} else {
 		if response == nil {
 			return context.Result(map[string]interface{}{"message": "submitted"})

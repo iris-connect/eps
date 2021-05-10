@@ -19,6 +19,7 @@ package jsonrpc
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/tls"
 	"io/ioutil"
 	"net/http"
@@ -49,6 +50,8 @@ func (c *Client) Call(request *Request) (*Response, error) {
 			return nil, err
 		}
 		client.Transport = &http.Transport{
+			DisableKeepAlives: true, // removing this will cause connections to pile up
+			//MaxIdleConnsPerHost: 100,
 			TLSClientConfig: tlsConfig,
 		}
 	}
@@ -71,6 +74,7 @@ func (c *Client) Call(request *Request) (*Response, error) {
 	// to do: sanity checks...
 
 	body, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
 
 	if err != nil {
 		return nil, err

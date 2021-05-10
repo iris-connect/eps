@@ -39,9 +39,14 @@ type ConnectedClient struct {
 	RespondServer protobuf.EPS_ServerRespondServer
 	Stop          chan bool
 	Info          *ClientInfo
+	mutex         sync.Mutex
 }
 
 func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, error) {
+
+	// we need to ensure only one goroutine calls this method at once
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	paramsStruct, err := structpb.NewStruct(request.Params)
 

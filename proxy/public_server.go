@@ -31,6 +31,7 @@ import (
 	"github.com/kiprotect/go-helpers/forms"
 	"net"
 	"regexp"
+	"sync"
 	"time"
 )
 
@@ -43,6 +44,7 @@ type PublicServer struct {
 	tlsConnections       map[string]net.Conn
 	announcedConnections []*AnnouncedConnection
 	tlsHellos            map[string][]byte
+	mutex                sync.Mutex
 }
 
 type AnnouncedConnection struct {
@@ -126,6 +128,11 @@ func (s *PublicServer) jsonrpcHandler(context *jsonrpc.Context) *jsonrpc.Respons
 }
 
 func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
+
+	close := func() {
+		internalConnection.Close()
+	}
+
 	// we give the client 1 second to announce itself
 	internalConnection.SetReadDeadline(time.Now().Add(1 * time.Second))
 	// we expect a secret token to be transmitted over the connection
@@ -135,36 +142,51 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 
 	if err != nil {
 		eps.Log.Error(err)
+		close()
+		return
 	}
 
 	if reqLen != 32 {
 		eps.Log.Error("cannot read token")
+		close()
+		return
 	}
 
 	tokenStr := base64.StdEncoding.EncodeToString(tokenBuf)
 
-	tlsConnection, ok := s.tlsConnections[tokenStr]
+	s.mutex.Lock()
 
-	if !ok {
+	tlsConnection, connectionOk := s.tlsConnections[tokenStr]
+	delete(s.tlsConnections, tokenStr)
+	tlsHello, helloOk := s.tlsHellos[tokenStr]
+	delete(s.tlsHellos, tokenStr)
+
+	s.mutex.Unlock()
+
+	if !connectionOk {
+		internalConnection.Close()
 		return
 	}
 
-	tlsHello, ok := s.tlsHellos[tokenStr]
-
-	if !ok {
-		return
+	close = func() {
+		eps.Log.Info("Closing connectins...")
+		internalConnection.Close()
+		tlsConnection.Close()
 	}
 
-	eps.Log.Info("Forwarding connection!")
+	if !helloOk {
+		close()
+		return
+	}
 
 	if n, err := internalConnection.Write(tlsHello); err != nil {
 		eps.Log.Error(err)
+		close()
 		return
 	} else if n != len(tlsHello) {
 		eps.Log.Error("Can't forward TLS HelloClient")
+		close()
 		return
-	} else {
-		eps.Log.Info("Forwarded client hello")
 	}
 
 	pipe := func(left, right net.Conn) {
@@ -173,10 +195,12 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 			n, err := left.Read(buf)
 			if err != nil {
 				eps.Log.Error(err)
+				close()
 				return
 			}
 			if m, err := right.Write(buf[:n]); err != nil {
 				eps.Log.Error(err)
+				close()
 				return
 			} else if m != n {
 				eps.Log.Errorf("cannot write all data")
@@ -236,9 +260,11 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 
 		randomStr := base64.StdEncoding.EncodeToString(randomBytes)
 
+		s.mutex.Lock()
 		// we store the connection details for later use
 		s.tlsConnections[randomStr] = conn
 		s.tlsHellos[randomStr] = buf[:reqLen]
+		s.mutex.Unlock()
 
 		// we tell the internal proxy about an incoming connection
 		request := jsonrpc.MakeRequest("private-proxy-1.incomingConnection", id, map[string]interface{}{
@@ -249,8 +275,14 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 
 		if result, err := s.jsonrpcClient.Call(request); err != nil {
 			eps.Log.Error(err)
+			close()
+			return
 		} else {
-			eps.Log.Info(result)
+			if result.Error != nil {
+				eps.Log.Error(result.Error.Message)
+				close()
+				return
+			}
 		}
 	}
 }
@@ -266,7 +298,6 @@ func (s *PublicServer) listenForTlsConnections() {
 			if err == net.ErrClosed {
 				break
 			}
-			eps.Log.Error("another error")
 			eps.Log.Error(err)
 			continue
 		}

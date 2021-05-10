@@ -130,7 +130,6 @@ func (s *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request
 	for _, routeGroup := range s.routeGroups {
 		handleRouteGroup(context, routeGroup, []Handler{})
 	}
-
 }
 
 func (s *HTTPServer) Start() error {

@@ -186,7 +186,7 @@ func (c *GRPCClientChannel) openConnections() error {
 				}
 				eps.Log.Debugf("Opening channel to %s at %s", entry.Name, settings.Address)
 				if err := c.openConnection(settings.Address, entry.Name); err != nil {
-					eps.Log.Error("An error occurred:", err)
+					eps.Log.Error(err)
 				}
 			}
 		}
@@ -230,7 +230,7 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 	}
 
 	if entry == nil {
-		return nil, fmt.Errorf("cannot deliver request")
+		return nil, fmt.Errorf("cannot deliver gRPC request")
 	}
 
 	if len(entry.Channels) == 0 {

@@ -6,8 +6,14 @@ This document describes various strategies to debug server problems.
 
 To inspect the TLS certificate of the gRPC or JSON-RPC server we can use openssl:
 
+```bash
+openssl s_client -servername [your-server-name] -connect 127.0.0.1:4444
 ```
-openssl s_client -connect 127.0.0.1:4444
+
+You can also view the TLS certificate:
+
+```bash
+openssl s_client -CAfile settings/dev/certs/root.crt -servername foo.internal-sserver -connect 127.0.0.1:4433 </dev/null 2>/dev/null | openssl x509 -noout -text | grep -B 10 -A 10 DNS:
 ```
 
 ## Servers Using Curl

@@ -72,7 +72,7 @@ func (c *JSONRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Respon
 
 	jsonrpcResponse, err := client.Call(jsonrpcRequest)
 	if err != nil {
-		eps.Log.Error("error calling JSON RPC")
+		eps.Log.Error(err)
 		return nil, err
 	}
 	return jsonrpcResponse.ToEPSResponse(), nil

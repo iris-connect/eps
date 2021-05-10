@@ -62,7 +62,6 @@ func JSONRPC(handler Handler) http.Handler {
 }
 
 func NotFound(c *http.Context) {
-	eps.Log.Error("not found!")
 	c.JSON(404, map[string]interface{}{"message": "not found"})
 }
 
@@ -111,6 +110,5 @@ func (s *JSONRPCServer) Start() error {
 }
 
 func (s *JSONRPCServer) Stop() error {
-	eps.Log.Debugf("Stopping down JSONRPC server...")
 	return s.server.Stop()
 }

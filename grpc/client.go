@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/types/known/structpb"
 	"io"
-	"time"
 )
 
 type Client struct {
@@ -35,6 +34,7 @@ type Client struct {
 
 func (c *Client) Connect(address, serverName string) error {
 	var err error
+
 	var opts []grpc.DialOption
 
 	tlsConfig, err := tls.TLSClientConfig(c.settings.TLS, serverName)
@@ -69,6 +69,7 @@ func (c *Client) ServerCall(messageBroker eps.MessageBroker, stop chan bool) err
 	stream, err := client.ServerCall(ctx)
 
 	if err != nil {
+		eps.Log.Error("Setup:", err)
 		return err
 	}
 
@@ -93,11 +94,11 @@ func (c *Client) ServerCall(messageBroker eps.MessageBroker, stop chan bool) err
 		}
 
 		if err == io.EOF {
-			time.Sleep(1 * time.Second)
 			continue
 		}
 
 		if err != nil {
+			eps.Log.Error("Call err:", err)
 			return err
 		}
 
@@ -153,12 +154,13 @@ func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 
 	client := protobuf.NewEPSClient(c.connection)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	paramsStruct, err := structpb.NewStruct(request.Params)
 
 	if err != nil {
+		eps.Log.Error(err)
 		return nil, err
 	}
 
@@ -171,6 +173,7 @@ func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 	pbResponse, err := client.Call(ctx, pbRequest)
 
 	if err != nil {
+		eps.Log.Error(err)
 		return nil, err
 	}
 

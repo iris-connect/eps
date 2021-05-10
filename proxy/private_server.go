@@ -55,19 +55,28 @@ func (p *ProxyConnection) Run() error {
 	proxyConnection, err := net.Dial("tcp", p.proxyEndpoint)
 
 	if err != nil {
+		proxyConnection.Close()
 		return err
 	}
 
 	if n, err := proxyConnection.Write(p.token); err != nil {
+		proxyConnection.Close()
 		return err
 	} else if n != len(p.token) {
+		proxyConnection.Close()
 		return fmt.Errorf("could not write token")
 	}
 
 	internalConnection, err := net.Dial("tcp", p.internalEndpoint)
 
 	if err != nil {
+		proxyConnection.Close()
 		return err
+	}
+
+	close := func() {
+		proxyConnection.Close()
+		internalConnection.Close()
 	}
 
 	pipe := func(left, right net.Conn) {
@@ -75,14 +84,18 @@ func (p *ProxyConnection) Run() error {
 		for {
 			n, err := left.Read(buf)
 			if err != nil {
-				eps.Log.Error(err)
+				eps.Log.Error("Pipe:", err)
+				close()
 				return
 			}
 			if m, err := right.Write(buf[:n]); err != nil {
-				eps.Log.Error(err)
+				eps.Log.Error("Pipe:", err)
+				close()
 				return
 			} else if m != n {
 				eps.Log.Errorf("cannot write all data")
+				close()
+				return
 			}
 		}
 	}
@@ -123,10 +136,11 @@ func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *Inc
 
 	connection := MakeProxyConnection(params.Endpoint, c.settings.InternalEndpoint, params.Token)
 
-	if err := connection.Run(); err != nil {
-		eps.Log.Error(err)
-		return context.InternalError()
-	}
+	go func() {
+		if err := connection.Run(); err != nil {
+			eps.Log.Error(err)
+		}
+	}()
 
 	return context.Result(map[string]interface{}{"message": "ok"})
 }
@@ -181,7 +195,6 @@ func (s *PrivateServer) announceConnections() error {
 }
 
 func (s *PrivateServer) Start() error {
-	eps.Log.Debug("Starting JSON-RPC server")
 	return s.jsonrpcServer.Start()
 }
 
