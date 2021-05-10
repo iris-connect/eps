@@ -46,17 +46,11 @@ var SettingsForm = forms.Form{
 var PrivateSettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "bind_address",
+			Name: "jsonrpc_client",
 			Validators: []forms.Validator{
-				forms.IsOptional{Default: "localhost:443"},
-				forms.IsString{},
-			},
-		},
-		{
-			Name: "eps_endpoint",
-			Validators: []forms.Validator{
-				forms.IsOptional{Default: "localhost:5555"},
-				forms.IsString{},
+				forms.IsStringMap{
+					Form: &jsonrpc.JSONRPCClientSettingsForm,
+				},
 			},
 		},
 		{
@@ -73,17 +67,25 @@ var PrivateSettingsForm = forms.Form{
 var PublicSettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "bind_address",
+			Name: "tls_bind_address",
 			Validators: []forms.Validator{
 				forms.IsOptional{Default: "localhost:443"},
 				forms.IsString{},
 			},
 		},
 		{
-			Name: "eps_endpoint",
+			Name: "internal_bind_address",
 			Validators: []forms.Validator{
-				forms.IsOptional{Default: "localhost:5555"},
+				forms.IsOptional{Default: "localhost:9999"},
 				forms.IsString{},
+			},
+		},
+		{
+			Name: "jsonrpc_client",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &jsonrpc.JSONRPCClientSettingsForm,
+				},
 			},
 		},
 		{

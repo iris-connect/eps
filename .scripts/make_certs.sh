@@ -5,7 +5,7 @@
 # operator. The name of the operator will be added as the common name as well
 # as the subject alternative name (SAN), which is required for some newer
 # TLS libraries.
-declare -a certs=("op-1" "op-2" "hd-1" "ls-1", "internal-server")
+declare -a certs=("op-1" "op-2" "hd-1" "ls-1" "internal-server" "public-proxy-1" "private-proxy-1")
 
 O="IRIS"
 ST="Berlin"

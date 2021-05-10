@@ -31,12 +31,14 @@ var TLSSettingsForm = forms.Form{
 		{
 			Name: "certificate_file",
 			Validators: []forms.Validator{
+				forms.IsOptional{},
 				forms.IsString{},
 			},
 		},
 		{
 			Name: "key_file",
 			Validators: []forms.Validator{
+				forms.IsOptional{},
 				forms.IsString{},
 			},
 		},

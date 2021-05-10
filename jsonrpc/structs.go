@@ -28,6 +28,15 @@ type Request struct {
 	ID      string                 `json:"id"`
 }
 
+func MakeRequest(method, id string, params map[string]interface{}) *Request {
+	return &Request{
+		Method:  method,
+		Params:  params,
+		JSONRPC: "2.0",
+		ID:      id,
+	}
+}
+
 func (r *Request) FromEPSRequest(request *eps.Request) {
 	r.JSONRPC = "2.0"
 	r.Method = request.Method

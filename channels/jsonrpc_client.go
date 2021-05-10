@@ -27,7 +27,7 @@ var MethodNameRegexp = regexp.MustCompile(`(?i)^([^\.]+)\.(.*)$`)
 
 type JSONRPCClientChannel struct {
 	eps.BaseChannel
-	Settings jsonrpc.JSONRPCClientSettings
+	Settings *jsonrpc.JSONRPCClientSettings
 }
 
 func JSONRPCClientSettingsValidator(settings map[string]interface{}) (interface{}, error) {
@@ -43,8 +43,9 @@ func JSONRPCClientSettingsValidator(settings map[string]interface{}) (interface{
 }
 
 func MakeJSONRPCClientChannel(settings interface{}) (eps.Channel, error) {
+	rpcSettings := settings.(jsonrpc.JSONRPCClientSettings)
 	return &JSONRPCClientChannel{
-		Settings: settings.(jsonrpc.JSONRPCClientSettings),
+		Settings: &rpcSettings,
 	}, nil
 }
 
@@ -58,7 +59,7 @@ func (c *JSONRPCClientChannel) Close() error {
 }
 
 func (c *JSONRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
-	client := jsonrpc.MakeClient(c.Settings.Endpoint)
+	client := jsonrpc.MakeClient(c.Settings)
 	jsonrpcRequest := &jsonrpc.Request{}
 	jsonrpcRequest.FromEPSRequest(request)
 

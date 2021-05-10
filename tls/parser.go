@@ -19,6 +19,7 @@ package tls
 import (
 	"encoding/binary"
 	"fmt"
+	"regexp"
 )
 
 type ProtocolVersion struct {
@@ -35,6 +36,15 @@ type ClientHello struct {
 	Extensions         []Extension     `json:"extensions"`
 }
 
+func (c *ClientHello) ServerNameList() *ServerNameList {
+	for _, extension := range c.Extensions {
+		if extension.Type == ServerNameExtension {
+			return extension.Struct.(*ServerNameList)
+		}
+	}
+	return nil
+}
+
 type Extension struct {
 	Type   ExtensionType `json:"type"`
 	Data   []byte        `json:"data"`
@@ -45,9 +55,18 @@ type ServerNameList struct {
 	ServerNames []ServerName `json:"server_names"`
 }
 
+func (s *ServerNameList) HostName() string {
+	for _, serverName := range s.ServerNames {
+		if serverName.NameType == HostNameType {
+			return serverName.HostName
+		}
+	}
+	return ""
+}
+
 type ServerName struct {
 	NameType ServerNameType `json:"name_type"`
-	HostName []byte         `json:"host_name"`
+	HostName string         `json:"host_name"`
 }
 
 type ServerNameType uint8
@@ -66,6 +85,9 @@ type Random struct {
 	GMTUnixTime uint32   `json:"gmt_unix_time"`
 	RandomBytes [28]byte `json:"random_bytes"`
 }
+
+// SNI hostnames do not include the trailing dot.
+var HostNameRegexp = regexp.MustCompile(`^([a-zA-Z0-9][a-zA-Z0-9-]{0,62}\.)*([a-zA-Z0-9][a-zA-Z0-9-]{0,62})$`)
 
 func ParseClientHello(data []byte) (*ClientHello, error) {
 
@@ -320,9 +342,19 @@ func ParseClientHello(data []byte) (*ClientHello, error) {
 					return nil, fmt.Errorf("unexpected data length when parsing host name")
 				}
 
+				hostName := d[:hostNameLength]
+
+				if len(hostName) > 253 {
+					return nil, fmt.Errorf("hostname is too long")
+				}
+
+				if !HostNameRegexp.Match(hostName) {
+					return nil, fmt.Errorf("invalid hostname detected")
+				}
+
 				extensionStruct.ServerNames = append(extensionStruct.ServerNames, ServerName{
 					NameType: HostNameType,
-					HostName: d[:hostNameLength],
+					HostName: string(hostName),
 				})
 
 				d = d[hostNameLength:]

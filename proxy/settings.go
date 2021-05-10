@@ -26,13 +26,14 @@ type Settings struct {
 }
 
 type PublicServerSettings struct {
-	BindAddress   string                         `json:"bind_address"`
-	EPSEndpoint   string                         `json:"eps_endpoint"`
-	JSONRPCServer *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
+	TLSBindAddress      string                         `json:"tls_bind_address"`
+	InternalBindAddress string                         `json:"internal_bind_address"`
+	JSONRPCClient       *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
+	JSONRPCServer       *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
 }
 
 type PrivateServerSettings struct {
-	BindAddress   string                         `json:"bind_address"`
-	EPSEndpoint   string                         `json:"eps_endpoint"`
+	EPSEndpoint   string                         `json:"eps_endpoint "`
+	JSONRPCClient *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
 	JSONRPCServer *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
 }

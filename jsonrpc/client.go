@@ -19,17 +19,18 @@ package jsonrpc
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/iris-gateway/eps/tls"
 	"io/ioutil"
 	"net/http"
 )
 
 type Client struct {
-	endpoint string
+	settings *JSONRPCClientSettings
 }
 
-func MakeClient(endpoint string) *Client {
+func MakeClient(settings *JSONRPCClientSettings) *Client {
 	return &Client{
-		endpoint: endpoint,
+		settings: settings,
 	}
 }
 
@@ -42,7 +43,17 @@ func (c *Client) Call(request *Request) (*Response, error) {
 
 	client := &http.Client{}
 
-	req, err := http.NewRequest("POST", c.endpoint, bytes.NewReader(data))
+	if c.settings.TLS != nil {
+		tlsConfig, err := tls.TLSClientConfig(c.settings.TLS, c.settings.ServerName)
+		if err != nil {
+			return nil, err
+		}
+		client.Transport = &http.Transport{
+			TLSClientConfig: tlsConfig,
+		}
+	}
+
+	req, err := http.NewRequest("POST", c.settings.Endpoint, bytes.NewReader(data))
 
 	if err != nil {
 		return nil, err

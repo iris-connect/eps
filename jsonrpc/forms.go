@@ -151,6 +151,13 @@ var JSONRPCClientSettingsForm = forms.Form{
 			},
 		},
 		{
+			Name: "server_name",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsString{}, // to do: add URL validation
+			},
+		},
+		{
 			Name: "local",
 			Validators: []forms.Validator{
 				forms.IsOptional{Default: true},

@@ -1,10 +1,16 @@
 public:
-  bind_address: localhost:4433
+  tls_bind_address: localhost:4433
+  internal_bind_address: localhost:9999
+  jsonrpc_client:
+    endpoint: https://localhost:5544/jsonrpc
+    server_name: public-proxy-1
+    tls:
+      ca_certificate_file: "$DIR/../../certs/root.crt"
   jsonrpc_server: # the JSON-RPC server that the EPS server uses for communication
-    bind_address: "localhost:5555"
+    bind_address: "localhost:6655"
     cors:
       allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
     tls:
       ca_certificate_file: "$DIR/../../certs/root.crt"
-      certificate_file: "$DIR/../../certs/hd-1.crt"
-      key_file: "$DIR/../../certs/hd-1.key"
+      certificate_file: "$DIR/../../certs/public-proxy-1.crt"
+      key_file: "$DIR/../../certs/public-proxy-1.key"

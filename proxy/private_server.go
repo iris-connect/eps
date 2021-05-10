@@ -14,6 +14,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/*
+The private proy server creates outgoing TCP connections to the public proxy
+server and forwards them to an internal endpoint.
+*/
+
 package proxy
 
 import (
@@ -25,13 +30,15 @@ import (
 type PrivateServer struct {
 	settings      *PrivateServerSettings
 	jsonrpcServer *jsonrpc.JSONRPCServer
+	jsonrpcClient *jsonrpc.Client
 	l             net.Listener
 }
 
 func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) {
 
 	server := &PrivateServer{
-		settings: settings,
+		settings:      settings,
+		jsonrpcClient: jsonrpc.MakeClient(settings.JSONRPCClient),
 	}
 
 	jsonrpcServer, err := jsonrpc.MakeJSONRPCServer(settings.JSONRPCServer, server.jsonrpcHandler)
@@ -47,47 +54,14 @@ func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) 
 }
 
 func (s *PrivateServer) jsonrpcHandler(context *jsonrpc.Context) *jsonrpc.Response {
+	eps.Log.Info("Received JSON-RPC request!")
 	return nil
-}
-
-func (s *PrivateServer) handle(conn net.Conn) {
-	buf := make([]byte, 1024*100)
-
-	reqLen, err := conn.Read(buf)
-
-	if err != nil {
-		eps.Log.Error(err)
-	}
-
-	eps.Log.Infof("%d: %s", reqLen, string(buf))
-}
-
-func (s *PrivateServer) listen() {
-	eps.Log.Info("Listeing...")
-	for {
-		conn, err := s.l.Accept()
-		if err != nil {
-			eps.Log.Error(err)
-		}
-		eps.Log.Info("Accepted request.")
-		s.handle(conn)
-	}
 }
 
 func (s *PrivateServer) Start() error {
-	var err error
-	s.l, err = net.Listen("tcp", s.settings.BindAddress)
-	if err != nil {
-		return err
-	}
-	go s.listen()
-	return nil
+	return s.jsonrpcServer.Start()
 }
 
 func (s *PrivateServer) Stop() error {
-	if s.l != nil {
-		s.l.Close()
-		s.l = nil
-	}
-	return nil
+	return s.jsonrpcServer.Stop()
 }

@@ -37,10 +37,18 @@ func TLSConfig(settings *TLSSettings) (*tls.Config, error) {
 		return nil, fmt.Errorf("cannot import CA certificate")
 	}
 
-	cert, err := tls.LoadX509KeyPair(settings.CertificateFile, settings.KeyFile)
+	certs := []tls.Certificate{}
 
-	if err != nil {
-		return nil, err
+	// we only add a certificate if it is given (for clients we can e.g. omit it)
+	if settings.CertificateFile != "" && settings.KeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(settings.CertificateFile, settings.KeyFile)
+
+		if err != nil {
+			return nil, err
+		}
+
+		certs = append(certs, cert)
+
 	}
 
 	tlsConfig := &tls.Config{
@@ -49,7 +57,7 @@ func TLSConfig(settings *TLSSettings) (*tls.Config, error) {
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 		},
 		PreferServerCipherSuites: true,
-		Certificates:             []tls.Certificate{cert},
+		Certificates:             certs,
 		ClientCAs:                certPool,
 		RootCAs:                  certPool,
 	}
