@@ -14,12 +14,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// The JSON directory loads the service directory from a single JSON file.
+// This is just for testing, for production use please use the "file" directory
+// which provides support for signed service directory records.
+
 package directories
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/iris-gateway/eps"
+	epsForms "github.com/iris-gateway/eps/forms"
 	"github.com/kiprotect/go-helpers/forms"
 	"io/ioutil"
 	"os"
@@ -36,50 +41,6 @@ var JSONDirectorySettingsForm = forms.Form{
 	},
 }
 
-var JSONOperatorChannelForm = forms.Form{
-	Fields: []forms.Field{
-		{
-			Name: "type",
-			Validators: []forms.Validator{
-				forms.IsString{},
-				// we do not validate the channel type because it can contain
-				// channel types that are not implemented by the local server
-				// which does not mean that they can't exist though...
-			},
-		},
-		{
-			Name: "settings",
-			Validators: []forms.Validator{
-				forms.IsOptional{},
-				forms.IsStringMap{},
-			},
-		},
-	},
-}
-
-var JSONDirectoryEntryForm = forms.Form{
-	Fields: []forms.Field{
-		{
-			Name: "name",
-			Validators: []forms.Validator{
-				forms.IsString{},
-			},
-		},
-		{
-			Name: "channels",
-			Validators: []forms.Validator{
-				forms.IsList{
-					Validators: []forms.Validator{
-						forms.IsStringMap{
-							Form: &JSONOperatorChannelForm,
-						},
-					},
-				},
-			},
-		},
-	},
-}
-
 var JSONDirectoryForm = forms.Form{
 	Fields: []forms.Field{
 		{
@@ -88,7 +49,7 @@ var JSONDirectoryForm = forms.Form{
 				forms.IsList{
 					Validators: []forms.Validator{
 						forms.IsStringMap{
-							Form: &JSONDirectoryEntryForm,
+							Form: &epsForms.DirectoryEntryForm,
 						},
 					},
 				},
@@ -99,6 +60,10 @@ var JSONDirectoryForm = forms.Form{
 
 type JSONDirectorySettings struct {
 	Path string `json:"path"`
+}
+
+type Directory struct {
+	Entries eps.DirectoryEntries `json:"entries"`
 }
 
 type JSONDirectory struct {
@@ -112,7 +77,7 @@ func JSONDirectorySettingsValidator(settings map[string]interface{}) (interface{
 		return nil, err
 	} else {
 		validatedSettings := &JSONDirectorySettings{}
-		if err := JSONDirectoryForm.Coerce(validatedSettings, params); err != nil {
+		if err := JSONDirectorySettingsForm.Coerce(validatedSettings, params); err != nil {
 			return nil, err
 		}
 		return validatedSettings, nil
@@ -152,10 +117,6 @@ func (f *JSONDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
 	} else {
 		return entries[0], nil
 	}
-}
-
-type Directory struct {
-	Entries eps.DirectoryEntries `json:"entries"`
 }
 
 func LoadJSONDirectory(path string) (*Directory, error) {
