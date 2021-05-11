@@ -149,6 +149,51 @@ func CLI(settings *sd.SigningSettings) {
 				return nil
 			},
 		},
+		{
+			Name:  "verify",
+			Flags: []cli.Flag{},
+			Usage: "Verify a JSON entry",
+			Action: func(c *cli.Context) error {
+
+				filename := c.Args().Get(0)
+
+				if filename == "" {
+					eps.Log.Fatal("please specify a filename")
+				}
+
+				name := c.Args().Get(1)
+
+				if name == "" {
+					eps.Log.Fatal("please specify a name")
+				}
+
+				jsonBytes, err := ioutil.ReadFile(filename)
+
+				if err != nil {
+					eps.Log.Fatal(err)
+				}
+
+				var signedData *helpers.SignedData
+
+				if err := json.Unmarshal(jsonBytes, &signedData); err != nil {
+					eps.Log.Fatal(err)
+				}
+
+				rootCertificate, err := helpers.LoadCertificate(settings.CACertificateFile, false)
+
+				if err != nil {
+					eps.Log.Fatal(err)
+				}
+
+				if ok, err := helpers.Verify(signedData, rootCertificate, name); err != nil {
+					eps.Log.Fatal(err)
+				} else if !ok {
+					eps.Log.Fatal("Signature is not valid!")
+				}
+
+				return nil
+			},
+		},
 	}
 
 	app.Commands = decorate(bareCommands, init)
