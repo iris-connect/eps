@@ -189,8 +189,9 @@ func CLI(settings *sd.SigningSettings) {
 					eps.Log.Fatal(err)
 				} else if !ok {
 					eps.Log.Fatal("Signature is not valid!")
+				} else {
+					eps.Log.Info("Signature is ok!")
 				}
-
 				return nil
 			},
 		},
