@@ -35,11 +35,7 @@ type EPSClient interface {
 	// client sends a request to the server and receives a response
 	Call(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 	// client sends a response to the server and receives an acknowledgment
-	Respond(ctx context.Context, in *Response, opts ...grpc.CallOption) (*Acknowledgment, error)
-	// server sends requests to the client and receives responses
 	ServerCall(ctx context.Context, opts ...grpc.CallOption) (EPS_ServerCallClient, error)
-	// server sends responses to the client and receives acknowledgments
-	ServerRespond(ctx context.Context, opts ...grpc.CallOption) (EPS_ServerRespondClient, error)
 }
 
 type ePSClient struct {
@@ -53,15 +49,6 @@ func NewEPSClient(cc grpc.ClientConnInterface) EPSClient {
 func (c *ePSClient) Call(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
 	err := c.cc.Invoke(ctx, "/EPS/Call", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *ePSClient) Respond(ctx context.Context, in *Response, opts ...grpc.CallOption) (*Acknowledgment, error) {
-	out := new(Acknowledgment)
-	err := c.cc.Invoke(ctx, "/EPS/Respond", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,37 +86,6 @@ func (x *ePSServerCallClient) Recv() (*Request, error) {
 	return m, nil
 }
 
-func (c *ePSClient) ServerRespond(ctx context.Context, opts ...grpc.CallOption) (EPS_ServerRespondClient, error) {
-	stream, err := c.cc.NewStream(ctx, &EPS_ServiceDesc.Streams[1], "/EPS/ServerRespond", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &ePSServerRespondClient{stream}
-	return x, nil
-}
-
-type EPS_ServerRespondClient interface {
-	Send(*Acknowledgment) error
-	Recv() (*Response, error)
-	grpc.ClientStream
-}
-
-type ePSServerRespondClient struct {
-	grpc.ClientStream
-}
-
-func (x *ePSServerRespondClient) Send(m *Acknowledgment) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *ePSServerRespondClient) Recv() (*Response, error) {
-	m := new(Response)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 // EPSServer is the server API for EPS service.
 // All implementations must embed UnimplementedEPSServer
 // for forward compatibility
@@ -137,11 +93,7 @@ type EPSServer interface {
 	// client sends a request to the server and receives a response
 	Call(context.Context, *Request) (*Response, error)
 	// client sends a response to the server and receives an acknowledgment
-	Respond(context.Context, *Response) (*Acknowledgment, error)
-	// server sends requests to the client and receives responses
 	ServerCall(EPS_ServerCallServer) error
-	// server sends responses to the client and receives acknowledgments
-	ServerRespond(EPS_ServerRespondServer) error
 	mustEmbedUnimplementedEPSServer()
 }
 
@@ -152,14 +104,8 @@ type UnimplementedEPSServer struct {
 func (UnimplementedEPSServer) Call(context.Context, *Request) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Call not implemented")
 }
-func (UnimplementedEPSServer) Respond(context.Context, *Response) (*Acknowledgment, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Respond not implemented")
-}
 func (UnimplementedEPSServer) ServerCall(EPS_ServerCallServer) error {
 	return status.Errorf(codes.Unimplemented, "method ServerCall not implemented")
-}
-func (UnimplementedEPSServer) ServerRespond(EPS_ServerRespondServer) error {
-	return status.Errorf(codes.Unimplemented, "method ServerRespond not implemented")
 }
 func (UnimplementedEPSServer) mustEmbedUnimplementedEPSServer() {}
 
@@ -192,24 +138,6 @@ func _EPS_Call_Handler(srv interface{}, ctx context.Context, dec func(interface{
 	return interceptor(ctx, in, info, handler)
 }
 
-func _EPS_Respond_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Response)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(EPSServer).Respond(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/EPS/Respond",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EPSServer).Respond(ctx, req.(*Response))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _EPS_ServerCall_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(EPSServer).ServerCall(&ePSServerCallServer{stream})
 }
@@ -236,32 +164,6 @@ func (x *ePSServerCallServer) Recv() (*Response, error) {
 	return m, nil
 }
 
-func _EPS_ServerRespond_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(EPSServer).ServerRespond(&ePSServerRespondServer{stream})
-}
-
-type EPS_ServerRespondServer interface {
-	Send(*Response) error
-	Recv() (*Acknowledgment, error)
-	grpc.ServerStream
-}
-
-type ePSServerRespondServer struct {
-	grpc.ServerStream
-}
-
-func (x *ePSServerRespondServer) Send(m *Response) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *ePSServerRespondServer) Recv() (*Acknowledgment, error) {
-	m := new(Acknowledgment)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 // EPS_ServiceDesc is the grpc.ServiceDesc for EPS service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -273,21 +175,11 @@ var EPS_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "Call",
 			Handler:    _EPS_Call_Handler,
 		},
-		{
-			MethodName: "Respond",
-			Handler:    _EPS_Respond_Handler,
-		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "ServerCall",
 			Handler:       _EPS_ServerCall_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "ServerRespond",
-			Handler:       _EPS_ServerRespond_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

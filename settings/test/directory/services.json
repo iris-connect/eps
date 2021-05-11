@@ -4,10 +4,7 @@
       "name": "op-1",
       "channels" : [
         {
-          "type" : "grpc_client",
-          "settings" : {
-            "address" : "localhost:4444"
-          }
+          "type" : "grpc_client"
         }
       ]
     },
@@ -15,18 +12,18 @@
       "name": "ls-1",
       "channels" : [
         {
-          "type" : "grpc_client",
-          "settings" : {
-            "address" : "localhost:4445"
-          }
+          "type" : "grpc_client"
         }
       ]
     },
     {
-      "name": "h1-1",
+      "name": "hd-1",
       "channels" : [
         {
-          "type" : "grpc_server"
+          "type" : "grpc_server",
+          "settings" : {
+            "address" : "localhost:4444"
+          }
         }
       ]
     }

@@ -35,11 +35,10 @@ type EPSServer struct {
 }
 
 type ConnectedClient struct {
-	CallServer    protobuf.EPS_ServerCallServer
-	RespondServer protobuf.EPS_ServerRespondServer
-	Stop          chan bool
-	Info          *ClientInfo
-	mutex         sync.Mutex
+	CallServer protobuf.EPS_ServerCallServer
+	Stop       chan bool
+	Info       *ClientInfo
+	mutex      sync.Mutex
 }
 
 func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, error) {

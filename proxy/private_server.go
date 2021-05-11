@@ -84,12 +84,12 @@ func (p *ProxyConnection) Run() error {
 		for {
 			n, err := left.Read(buf)
 			if err != nil {
-				eps.Log.Error("Pipe:", err)
+				eps.Log.Error(err)
 				close()
 				return
 			}
 			if m, err := right.Write(buf[:n]); err != nil {
-				eps.Log.Error("Pipe:", err)
+				eps.Log.Error(err)
 				close()
 				return
 			} else if m != n {

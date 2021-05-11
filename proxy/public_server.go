@@ -123,10 +123,6 @@ func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
 	return server, nil
 }
 
-func (s *PublicServer) jsonrpcHandler(context *jsonrpc.Context) *jsonrpc.Response {
-	return nil
-}
-
 func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 
 	close := func() {
@@ -169,7 +165,6 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 	}
 
 	close = func() {
-		eps.Log.Info("Closing connectins...")
 		internalConnection.Close()
 		tlsConnection.Close()
 	}
@@ -204,6 +199,8 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 				return
 			} else if m != n {
 				eps.Log.Errorf("cannot write all data")
+				close()
+				return
 			}
 		}
 	}

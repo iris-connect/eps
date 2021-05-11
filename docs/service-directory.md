@@ -51,3 +51,15 @@ The service directory is a central database that contains information about all 
 The directory allows EPS servers to determine whether and how they can connect to another operator. Operators that only have outgoing connectivity (e.g. `ga-leipzig` in the example above) can use the directory to learn that they might receive asynchronous responses from other operators (e.g. `ls-1`) and then open outgoing connections to these operators through which they can receive replies. EPS servers can also use the service directory to determine whether they should accept a message from a given operator.
 
 The service directory implements a group-based permissions mechanism. Currently, only `yes/no` permissions exist (i.e. a member of a given group either can or cannot call a given service method). More fine-grained permissions (e.g. a contact tracing provider can only edit its own entries in the "locations" service) need to be implemented by the services themselves. For that purpose, the EPS server makes information about the calling peer available to the services via a special parameter (`_caller`) that gets passed along with the other RPC method parameters. This structure also contains the current entry of the caller from the service directory, making it easy for the called service to identify and authorize the caller.
+
+## Service Directory API
+
+The EPS server package also provides a `sd` API server command that opens a JSON-RPC server which distributes the service directory.
+
+```bash
+
+```
+
+## Signature Scheme
+
+All entries in the service directory should be cryptographically signed. For this, every actor in the EPS system has a pair of ECDSA keys and an accompanying certificate.

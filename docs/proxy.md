@@ -14,16 +14,18 @@ The private proxy can **announce** incoming connections to the public proxy. Whe
 To demonstrate this mechanism we have prepared an example configuration. Simply run the following snippets in different terminals (from the main directory in the repository):
 
 ```bash
+# prepare the binaries
+make && make examples
 # first terminal
-make examples && internal-server #will open a JSON-RPC server on port 8888
+internal-server #will open a JSON-RPC server on port 8888
 # second terminal (public proxy)
-make && PROXY_SETTINGS=settings/dev/roles/public-proxy-1 proxy --level debug run public
+PROXY_SETTINGS=settings/dev/roles/public-proxy-1 proxy run public
 # third terminal (private proxy)
-make && PROXY_SETTINGS=settings/dev/roles/private-proxy-1 proxy --level debug run private
+PROXY_SETTINGS=settings/dev/roles/private-proxy-1 proxy run private
 # fourth terminal (public proxy EPS server)
-make && EPS_SETTINGS=settings/dev/roles/public-proxy-eps-1 eps --level debug server run
+EPS_SETTINGS=settings/dev/roles/public-proxy-eps-1 eps server run
 # fifth terminal (private proxy EPS server)
-make && EPS_SETTINGS=settings/dev/roles/private-proxy-eps-1 eps --level debug server run
+EPS_SETTINGS=settings/dev/roles/private-proxy-eps-1 eps server run
 ```
 
 When all services are up and running you should be able to send a request to the proxy via

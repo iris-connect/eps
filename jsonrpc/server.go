@@ -17,7 +17,6 @@
 package jsonrpc
 
 import (
-	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/http"
 )
 

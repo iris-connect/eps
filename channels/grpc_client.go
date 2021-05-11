@@ -63,6 +63,7 @@ func (c *GRPCServerConnection) Open() error {
 					break
 				}
 				select {
+				// in case of an error we try to reconnect after 1 second
 				case <-time.After(1 * time.Second):
 				case <-c.stop:
 					c.stop <- true
