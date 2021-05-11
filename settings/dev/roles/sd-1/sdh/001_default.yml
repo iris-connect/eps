@@ -1,4 +1,4 @@
 certificate_file: "$DIR/../../../certs/sd-1-sign.crt"
-key_file: "$DIR/../../../certs/sd-1-1-sign.key"
+key_file: "$DIR/../../../certs/sd-1-sign.key"
 ca_certificate_file: "$DIR/../../../certs/root.crt"
 name: sd-1

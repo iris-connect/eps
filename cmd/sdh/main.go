@@ -97,30 +97,30 @@ func CLI(settings *sd.SigningSettings) {
 					eps.Log.Fatal(err)
 				}
 
-				certificate, err := helpers.LoadCertificate(settings.CertificateFile, true)
+				certificate, err := eps.LoadCertificate(settings.CertificateFile, true)
 
 				if err != nil {
 					eps.Log.Fatal(err)
 				}
 
-				rootCertificate, err := helpers.LoadCertificate(settings.CACertificateFile, false)
+				rootCertificate, err := eps.LoadCertificate(settings.CACertificateFile, false)
 
 				if err != nil {
 					eps.Log.Fatal(err)
 				}
 
 				// we ensure the certificate is valid for signing
-				if err := helpers.VerifyCertificate(certificate, rootCertificate, settings.Name); err != nil {
+				if err := eps.VerifyCertificate(certificate, rootCertificate, settings.Name); err != nil {
 					eps.Log.Fatal(err)
 				}
 
-				key, err := helpers.LoadPrivateKey(settings.KeyFile)
+				key, err := eps.LoadPrivateKey(settings.KeyFile)
 
 				if err != nil {
 					eps.Log.Fatal(err)
 				}
 
-				signedData, err := helpers.Sign(jsonData, key, certificate)
+				signedData, err := eps.Sign(jsonData, key, certificate)
 
 				if err != nil {
 					eps.Log.Fatal(err)
@@ -134,13 +134,13 @@ func CLI(settings *sd.SigningSettings) {
 
 				fmt.Println(string(signedDataBytes))
 
-				loadedSignedData, err := helpers.LoadSignedData(signedDataBytes)
+				loadedSignedData, err := eps.LoadSignedData(signedDataBytes)
 
 				if err != nil {
 					eps.Log.Fatal(err)
 				}
 
-				if ok, err := helpers.Verify(loadedSignedData, rootCertificate, settings.Name); err != nil {
+				if ok, err := eps.Verify(loadedSignedData, rootCertificate, settings.Name); err != nil {
 					eps.Log.Fatal(err)
 				} else if !ok {
 					eps.Log.Fatal("Signature is not valid!")
@@ -173,19 +173,19 @@ func CLI(settings *sd.SigningSettings) {
 					eps.Log.Fatal(err)
 				}
 
-				var signedData *helpers.SignedData
+				var signedData *eps.SignedData
 
 				if err := json.Unmarshal(jsonBytes, &signedData); err != nil {
 					eps.Log.Fatal(err)
 				}
 
-				rootCertificate, err := helpers.LoadCertificate(settings.CACertificateFile, false)
+				rootCertificate, err := eps.LoadCertificate(settings.CACertificateFile, false)
 
 				if err != nil {
 					eps.Log.Fatal(err)
 				}
 
-				if ok, err := helpers.Verify(signedData, rootCertificate, name); err != nil {
+				if ok, err := eps.Verify(signedData, rootCertificate, name); err != nil {
 					eps.Log.Fatal(err)
 				} else if !ok {
 					eps.Log.Fatal("Signature is not valid!")

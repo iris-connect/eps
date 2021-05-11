@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package helpers
+package eps
 
 import (
 	"crypto/ecdsa"
@@ -139,11 +139,6 @@ type SignedData struct {
 }
 
 func LoadSignedData(data []byte) (*SignedData, error) {
-	signedData := &SignedData{}
-	return signedData, json.Unmarshal(data, &signedData)
-}
-
-func Parse(data []byte) (*SignedData, error) {
 	signedData := &SignedData{}
 	return signedData, json.Unmarshal(data, &signedData)
 }

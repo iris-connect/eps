@@ -17,30 +17,17 @@
 package jsonrpc
 
 import (
-	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/helpers"
 	"github.com/iris-gateway/eps/http"
 	"regexp"
 	"strings"
 )
 
 var jsonContentTypeRegexp = regexp.MustCompile("(?i)^application/json(?:;.*)?$")
-
-func RandomBytes(n int) ([]byte, error) {
-	b := make([]byte, n)
-	nr, err := rand.Read(b)
-	if err != nil {
-		return nil, err
-	}
-	if nr != n {
-		return nil, fmt.Errorf("not enough bytes read")
-	}
-
-	return b, nil
-}
 
 // extracts the request data from
 func ExtractJSONRequest(c *http.Context) {
@@ -75,7 +62,7 @@ func ExtractJSONRequest(c *http.Context) {
 
 		// if no ID is contained we generate a random UUID
 		if !ok {
-			if randomID, err := RandomBytes(16); err != nil {
+			if randomID, err := helpers.RandomBytes(16); err != nil {
 				c.JSON(500, serverErrorResponse)
 				return
 			} else {

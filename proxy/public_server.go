@@ -26,6 +26,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/helpers"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"github.com/iris-gateway/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
@@ -248,7 +249,7 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 
 		id := fmt.Sprintf("%d", 1)
 
-		randomBytes, err := jsonrpc.RandomBytes(32)
+		randomBytes, err := helpers.RandomBytes(32)
 
 		if err != nil {
 			close()

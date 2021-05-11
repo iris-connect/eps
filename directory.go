@@ -16,7 +16,9 @@
 
 package eps
 
-import ()
+import (
+	"time"
+)
 
 type DirectoryDefinition struct {
 	Name              string            `json:"name"`
@@ -26,8 +28,51 @@ type DirectoryDefinition struct {
 }
 
 type DirectoryEntry struct {
-	Name     string             `json:"name"`
-	Channels []*OperatorChannel `json:"channels"`
+	Name         string                 `json:"name"`
+	Channels     []*OperatorChannel     `json:"channels"`
+	Services     []*OperatorService     `json:"services"`
+	Certificates []*OperatorCertificate `json:"certificates"`
+	Records      []*SignedData          `json:"records"`
+}
+
+type OperatorChannel struct {
+	Type     string                 `json:"type"`
+	Settings map[string]interface{} `json:"settings,omitempty"`
+}
+
+type OperatorCertificate struct {
+	SerialNumber string `json:"serial_number"`
+	KeyUsage     string `json:"key_usage"`
+}
+
+type OperatorService struct {
+	Name              string           `json:"name"`
+	AuthorizedClients []string         `json:"authorized_clients"`
+	Methods           []*ServiceMethod `json:"methods"`
+}
+
+type ServiceMethod struct {
+	Name              string              `json:"name"`
+	AuthorizedClients []string            `json:"authorized_clients"`
+	Parameters        []*ServiceParameter `json:"parameters"`
+}
+
+type ServiceParameter struct {
+	Name       string              `json:"name"`
+	Validators []*ServiceValidator `json:"validators"`
+}
+
+type ServiceValidator struct {
+	Type       string                 `json:"type"`
+	Parameters map[string]interface{} `json:"parameters"`
+}
+
+// describes a change in a specific section of the service directory
+type ChangeRecord struct {
+	Name      string                 `json:"name"`
+	Section   string                 `json:"section"`
+	Data      map[string]interface{} `json:"data"`
+	CreatedAt time.Time              `json:"created_at"`
 }
 
 func (d *DirectoryEntry) Channel(channelType string) *OperatorChannel {
@@ -37,11 +82,6 @@ func (d *DirectoryEntry) Channel(channelType string) *OperatorChannel {
 		}
 	}
 	return nil
-}
-
-type OperatorChannel struct {
-	Type     string                 `json:"type"`
-	Settings map[string]interface{} `json:"settings,omitempty"`
 }
 
 type DirectoryQuery struct {
