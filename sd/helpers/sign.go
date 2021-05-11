@@ -18,10 +18,14 @@ package helpers
 
 import (
 	"crypto/ecdsa"
+	"crypto/rand"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 )
 
 func VerifyCertificate(cert, rootCert *x509.Certificate, name string) error {
@@ -48,7 +52,17 @@ func LoadCertificate(path string, verifyUsage bool) (*x509.Certificate, error) {
 		return nil, err
 	}
 
-	block, _ := pem.Decode([]byte(certificatePEM))
+	return LoadCertificateFromString(string(certificatePEM), verifyUsage)
+}
+
+func LoadCertificateFromString(data string, verifyUsage bool) (*x509.Certificate, error) {
+
+	block, _ := pem.Decode([]byte(data))
+
+	if block.Type != "CERTIFICATE" {
+		return nil, fmt.Errorf("not a certificate")
+	}
+
 	cert, err := x509.ParseCertificate(block.Bytes)
 
 	if err != nil {
@@ -85,34 +99,105 @@ func LoadPrivateKey(path string) (*ecdsa.PrivateKey, error) {
 	return x509.ParseECPrivateKey(block.Bytes)
 }
 
-/*
-import (
-	"encoding/json"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/sha256"
-	"crypto/x509"
-	"fmt"
-)
-
-
-func decode(pemEncoded string, pemEncodedPub string) (*ecdsa.PrivateKey, *ecdsa.PublicKey) {
-    block, _ := pem.Decode([]byte(pemEncoded))
-    x509Encoded := block.Bytes
-    privateKey, _ := x509.ParseECPrivateKey(x509Encoded)
-
-    blockPub, _ := pem.Decode([]byte(pemEncodedPub))
-    x509EncodedPub := blockPub.Bytes
-    genericPublicKey, _ := x509.ParsePKIXPublicKey(x509EncodedPub)
-    publicKey := genericPublicKey.(*ecdsa.PublicKey)
-
-    return privateKey, publicKey
+// we define our own BigInt type that serializes to a string, as very long
+// numbers are not JSON-compliant, so if they get passed through other systems
+// or even Golang itself we will lose the numbers...
+type BigInt struct {
+	*big.Int
 }
 
-func ValidateCertificate()
-
-func SignDirectoryEntry() {
-	privateKey, err := ecd
+type Signature struct {
+	R           *BigInt `json:"r"`
+	S           *BigInt `json:"s"`
+	Certificate string  `json:"c"`
 }
-*/
+
+func (s *BigInt) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.String())
+}
+
+func (s *BigInt) UnmarshalJSON(data []byte) error {
+
+	s.Int = &big.Int{}
+
+	var ss string
+
+	if err := json.Unmarshal(data, &ss); err != nil {
+		return err
+	}
+
+	if _, ok := s.Int.SetString(ss, 10); !ok {
+		return fmt.Errorf("not a big integer in base 10")
+	}
+
+	return nil
+}
+
+type SignedData struct {
+	Signature *Signature  `json:"signature"`
+	Data      interface{} `json:"data"`
+}
+
+func LoadSignedData(data []byte) (*SignedData, error) {
+	signedData := &SignedData{}
+	return signedData, json.Unmarshal(data, &signedData)
+}
+
+func Parse(data []byte) (*SignedData, error) {
+	signedData := &SignedData{}
+	return signedData, json.Unmarshal(data, &signedData)
+}
+
+func Verify(signedData *SignedData, rootCert *x509.Certificate, name string) (bool, error) {
+
+	cert, err := LoadCertificateFromString(signedData.Signature.Certificate, true)
+
+	if err != nil {
+		return false, err
+	}
+
+	// root certificate verification can be skipped (but shouldn't be)
+	if rootCert != nil {
+		if err := VerifyCertificate(cert, rootCert, name); err != nil {
+			return false, err
+		}
+	}
+
+	if rawData, err := json.Marshal(signedData.Data); err != nil {
+		return false, err
+	} else {
+		s := sha256.Sum256(rawData)
+		return ecdsa.Verify(cert.PublicKey.(*ecdsa.PublicKey), s[:], signedData.Signature.R.Int, signedData.Signature.S.Int), nil
+	}
+}
+
+func Sign(data interface{}, key *ecdsa.PrivateKey, cert *x509.Certificate) (*SignedData, error) {
+
+	rawData, err := json.Marshal(data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	hash := sha256.Sum256(rawData)
+
+	r, s, err := ecdsa.Sign(rand.Reader, key, hash[:])
+
+	block := &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: cert.Raw,
+	}
+
+	if err != nil {
+		return nil, err
+	} else {
+		return &SignedData{
+			Data: data,
+			Signature: &Signature{
+				R:           &BigInt{r},
+				S:           &BigInt{s},
+				Certificate: string(pem.EncodeToMemory(block)),
+			},
+		}, nil
+	}
+}

@@ -18,6 +18,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/sd"
 	"github.com/iris-gateway/eps/sd/helpers"
@@ -119,7 +120,31 @@ func CLI(settings *sd.SigningSettings) {
 					eps.Log.Fatal(err)
 				}
 
-				eps.Log.Info(rootCertificate, certificate, key)
+				signedData, err := helpers.Sign(jsonData, key, certificate)
+
+				if err != nil {
+					eps.Log.Fatal(err)
+				}
+
+				signedDataBytes, err := json.Marshal(signedData)
+
+				if err != nil {
+					eps.Log.Fatal(err)
+				}
+
+				fmt.Println(string(signedDataBytes))
+
+				loadedSignedData, err := helpers.LoadSignedData(signedDataBytes)
+
+				if err != nil {
+					eps.Log.Fatal(err)
+				}
+
+				if ok, err := helpers.Verify(loadedSignedData, rootCertificate, settings.Name); err != nil {
+					eps.Log.Fatal(err)
+				} else if !ok {
+					eps.Log.Fatal("Signature is not valid!")
+				}
 
 				return nil
 			},
