@@ -41,6 +41,100 @@ var OperatorChannelForm = forms.Form{
 	},
 }
 
+var OperatorCertificateForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "serial_number",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "key_usage",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
+
+var ServiceValidatorForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "type",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "parameters",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsStringMap{},
+			},
+		},
+	},
+}
+
+var ServiceParameterForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "validators",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &ServiceValidatorForm,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var OperatorServiceForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "authorized_clients",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: []interface{}{}},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsString{},
+					},
+				},
+			},
+		},
+		{
+			Name: "parameters",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &ServiceParameterForm,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
 var DirectoryEntryForm = forms.Form{
 	Fields: []forms.Field{
 		{
@@ -56,6 +150,136 @@ var DirectoryEntryForm = forms.Form{
 					Validators: []forms.Validator{
 						forms.IsStringMap{
 							Form: &OperatorChannelForm,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "services",
+			Validators: []forms.Validator{
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &OperatorServiceForm,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "certificates",
+			Validators: []forms.Validator{
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &OperatorCertificateForm,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var SignedChangeRecordForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "position",
+			Validators: []forms.Validator{
+				forms.IsInteger{
+					HasMin: true,
+					Min:    0,
+				},
+			},
+		},
+		{
+			Name: "hash",
+			Validators: []forms.Validator{
+				forms.IsHex{
+					Strict:    true, // we don't allow any '-' characters
+					MinLength: 32,   // this is the binary length
+					MaxLength: 32,   // this is the binary length
+				},
+			},
+		},
+		{
+			Name: "signature",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &SignatureForm,
+				},
+			},
+		},
+		{
+			Name: "record",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &ChangeRecordForm,
+				},
+			},
+		},
+	},
+}
+
+var ChangeRecordForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "created_at",
+			Validators: []forms.Validator{
+				forms.IsString{},
+				forms.IsTime{
+					Format: "rfc3339",
+				},
+			},
+		},
+		{
+			Name: "section",
+			Validators: []forms.Validator{
+				forms.IsString{},
+				forms.IsIn{
+					Choices: []interface{}{"channels", "certificates", "services"},
+				},
+			},
+		},
+		{
+			Name: "data",
+			Validators: []forms.Validator{
+				forms.Switch{
+					Key: "section",
+					Cases: map[string][]forms.Validator{
+						"channels": []forms.Validator{
+							forms.IsList{
+								Validators: []forms.Validator{
+									forms.IsStringMap{
+										Form: &OperatorChannelForm,
+									},
+								},
+							},
+						},
+						"services": []forms.Validator{
+							forms.IsList{
+								Validators: []forms.Validator{
+									forms.IsStringMap{
+										Form: &OperatorServiceForm,
+									},
+								},
+							},
+						},
+						"certificates": []forms.Validator{
+							forms.IsList{
+								Validators: []forms.Validator{
+									forms.IsStringMap{
+										Form: &OperatorCertificateForm,
+									},
+								},
+							},
 						},
 					},
 				},

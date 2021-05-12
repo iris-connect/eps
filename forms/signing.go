@@ -18,7 +18,54 @@ package forms
 
 import (
 	"github.com/kiprotect/go-helpers/forms"
+	"regexp"
 )
+
+var SignedDataForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "signature",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &SignatureForm,
+				},
+			},
+		},
+		{
+			Name:       "Data",
+			Validators: []forms.Validator{}, // can be anything really...
+		},
+	},
+}
+
+var SignatureForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "R",
+			Validators: []forms.Validator{
+				forms.IsString{},
+				forms.MatchesRegex{
+					Regex: regexp.MustCompile(`^\d{10,100}$`),
+				},
+			},
+		},
+		{
+			Name: "S",
+			Validators: []forms.Validator{
+				forms.IsString{},
+				forms.MatchesRegex{
+					Regex: regexp.MustCompile(`^\d{10,100}$`),
+				},
+			},
+		},
+		{
+			Name: "C",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
 
 var SigningSettingsForm = forms.Form{
 	Fields: []forms.Field{

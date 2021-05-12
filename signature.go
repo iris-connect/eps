@@ -112,6 +112,11 @@ type Signature struct {
 	Certificate string  `json:"c"`
 }
 
+type SignedData struct {
+	Signature *Signature  `json:"signature"`
+	Data      interface{} `json:"data"`
+}
+
 func (s *BigInt) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.String())
 }
@@ -131,11 +136,6 @@ func (s *BigInt) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
-}
-
-type SignedData struct {
-	Signature *Signature  `json:"signature"`
-	Data      interface{} `json:"data"`
 }
 
 func LoadSignedData(data []byte) (*SignedData, error) {

@@ -35,7 +35,7 @@ type Server struct {
 	mutex         sync.Mutex
 }
 
-var AnnounceConnectionForm = forms.Form{
+var SubmitChangeRecordForm = forms.Form{
 	Fields: []forms.Field{
 		{
 			Name: "name",
@@ -46,12 +46,23 @@ var AnnounceConnectionForm = forms.Form{
 	},
 }
 
-type AnnounceConnectionParams struct {
+type SubmitChangeRecordParams struct {
 	Name    string `json:"name"`
 	Pattern string `json:"pattern"`
 }
 
-func (c *Server) announceConnection(context *jsonrpc.Context, params *AnnounceConnectionParams) *jsonrpc.Response {
+func (c *Server) submitChangeRecord(context *jsonrpc.Context, params *SubmitChangeRecordParams) *jsonrpc.Response {
+	return context.InternalError()
+}
+
+var GetTipForm = forms.Form{
+	Fields: []forms.Field{},
+}
+
+type GetTipParams struct {
+}
+
+func (c *Server) getTip(context *jsonrpc.Context, params *GetTipParams) *jsonrpc.Response {
 	return context.InternalError()
 }
 
@@ -69,9 +80,13 @@ func MakeServer(settings *Settings) (*Server, error) {
 	}
 
 	methods := map[string]*jsonrpc.Method{
-		"announceConnection": {
-			Form:    &AnnounceConnectionForm,
-			Handler: server.announceConnection,
+		"submitChangeRecord": {
+			Form:    &SubmitChangeRecordForm,
+			Handler: server.submitChangeRecord,
+		},
+		"getTip": {
+			Form:    &GetTipForm,
+			Handler: server.getTip,
 		},
 	}
 
