@@ -1,4 +1,0 @@
-certificate_file: "$DIR/../../../certs/private-proxy-1-sign.crt"
-key_file: "$DIR/../../../certs/private-proxy-1-sign.key"
-ca_certificate_file: "$DIR/../../../certs/root.crt"
-name: private-proxy-1

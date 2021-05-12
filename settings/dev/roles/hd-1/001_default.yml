@@ -28,3 +28,7 @@ channels: # defines all the channels that we want to open when starting the serv
     type: jsonrpc_client
     settings:
       endpoint: http://localhost:5555/jsonrpc
+signing:
+  certificate_file: "$DIR/../../../certs/sd-1-sign.crt"
+  key_file: "$DIR/../../../certs/sd-1-sign.key"
+  ca_certificate_file: "$DIR/../../../certs/root.crt"

@@ -31,6 +31,7 @@ import (
 type Server struct {
 	settings      *Settings
 	jsonrpcServer *jsonrpc.JSONRPCServer
+	directory     *RecordDirectory
 	mutex         sync.Mutex
 }
 
@@ -57,6 +58,14 @@ func (c *Server) announceConnection(context *jsonrpc.Context, params *AnnounceCo
 func MakeServer(settings *Settings) (*Server, error) {
 	server := &Server{
 		settings: settings,
+	}
+
+	var err error
+
+	server.directory, err = MakeRecordDirectory(settings.Directory)
+
+	if err != nil {
+		return nil, err
 	}
 
 	methods := map[string]*jsonrpc.Method{

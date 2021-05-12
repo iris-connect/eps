@@ -38,7 +38,6 @@ type RecordDirectorySettings struct {
 }
 
 type RecordDirectory struct {
-	eps.BaseDirectory
 	rootCert  *x509.Certificate
 	dataStore helpers.DataStore
 	settings  *RecordDirectorySettings
@@ -47,7 +46,7 @@ type RecordDirectory struct {
 	mutex     sync.Mutex
 }
 
-func MakeRecordDirectory(name string, settings *RecordDirectorySettings) (*RecordDirectory, error) {
+func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, error) {
 
 	cert, err := eps.LoadCertificate(settings.CACertificateFile, false)
 
@@ -56,13 +55,15 @@ func MakeRecordDirectory(name string, settings *RecordDirectorySettings) (*Recor
 	}
 
 	f := &RecordDirectory{
-		BaseDirectory: eps.BaseDirectory{
-			Name_: name,
-		},
-		rootCert: cert,
-		records:  make([]*eps.SignedChangeRecord, 0),
-		entries:  make([]*eps.DirectoryEntry, 0),
-		settings: settings,
+		rootCert:  cert,
+		records:   make([]*eps.SignedChangeRecord, 0),
+		entries:   make([]*eps.DirectoryEntry, 0),
+		settings:  settings,
+		dataStore: helpers.MakeFileDataStore(settings.DatabaseFile),
+	}
+
+	if err := f.dataStore.Init(); err != nil {
+		return nil, err
 	}
 
 	return f, f.update()
