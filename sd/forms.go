@@ -21,33 +21,17 @@ import (
 	"github.com/kiprotect/go-helpers/forms"
 )
 
-var SigningSettingsForm = forms.Form{
+var RecordDirectorySettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
 			Name: "ca_certificate_file",
 			Validators: []forms.Validator{
-				forms.IsOptional{},
 				forms.IsString{},
 			},
 		},
 		{
-			Name: "certificate_file",
+			Name: "database_file",
 			Validators: []forms.Validator{
-				forms.IsOptional{},
-				forms.IsString{},
-			},
-		},
-		{
-			Name: "key_file",
-			Validators: []forms.Validator{
-				forms.IsOptional{},
-				forms.IsString{},
-			},
-		},
-		{
-			Name: "name",
-			Validators: []forms.Validator{
-				forms.IsOptional{},
 				forms.IsString{},
 			},
 		},
@@ -56,6 +40,14 @@ var SigningSettingsForm = forms.Form{
 
 var SettingsForm = forms.Form{
 	Fields: []forms.Field{
+		{
+			Name: "directory",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &RecordDirectorySettingsForm,
+				},
+			},
+		},
 		{
 			Name: "jsonrpc_server",
 			Validators: []forms.Validator{

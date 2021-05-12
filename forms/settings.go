@@ -81,6 +81,15 @@ var SettingsForm = forms.Form{
 			},
 		},
 		{
+			Name: "signing",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsStringMap{
+					Form: &SigningSettingsForm,
+				},
+			},
+		},
+		{
 			Name: "channels",
 			Validators: []forms.Validator{
 				forms.IsList{

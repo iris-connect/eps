@@ -32,7 +32,7 @@ type DirectoryEntry struct {
 	Channels     []*OperatorChannel     `json:"channels"`
 	Services     []*OperatorService     `json:"services"`
 	Certificates []*OperatorCertificate `json:"certificates"`
-	Records      []*SignedData          `json:"records"`
+	Records      []*SignedChangeRecord  `json:"records"`
 }
 
 type OperatorChannel struct {
@@ -65,6 +65,13 @@ type ServiceParameter struct {
 type ServiceValidator struct {
 	Type       string                 `json:"type"`
 	Parameters map[string]interface{} `json:"parameters"`
+}
+
+type SignedChangeRecord struct {
+	Position  int           `json:"position"`
+	Hash      string        `json:"hash"`
+	Signature *Signature    `json:"signature"`
+	Record    *ChangeRecord `json:"record"`
 }
 
 // describes a change in a specific section of the service directory

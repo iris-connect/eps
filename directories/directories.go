@@ -21,6 +21,12 @@ import (
 )
 
 var Directories = eps.DirectoryDefinitions{
+	"api": eps.DirectoryDefinition{
+		Name:              "API-Based Service Directory",
+		Description:       "Loads the service directory via a JSON-RPC API",
+		Maker:             MakeAPIDirectory,
+		SettingsValidator: APIDirectorySettingsValidator,
+	},
 	"json": eps.DirectoryDefinition{
 		Name:              "JSON-Based Service Directory",
 		Description:       "Loads the service directory from a JSON file",

@@ -22,11 +22,5 @@ import (
 
 type Settings struct {
 	JSONRPCServer *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
-}
-
-type SigningSettings struct {
-	Name              string `json:"name"`
-	CACertificateFile string `json:"ca_certificate_file"`
-	CertificateFile   string `json:"certificate_file"`
-	KeyFile           string `json:"key_file"`
+	Directory     *RecordDirectorySettings       `json:"directory"`
 }

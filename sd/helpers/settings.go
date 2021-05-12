@@ -56,19 +56,3 @@ func Settings(settingsPaths []string) (*sd.Settings, error) {
 		return settings, nil
 	}
 }
-
-func SigningSettings(settingsPaths []string) (*sd.SigningSettings, error) {
-	if rawSettings, err := settings.MakeSettings(settingsPaths); err != nil {
-		return nil, err
-	} else if params, err := sd.SigningSettingsForm.Validate(rawSettings.Values); err != nil {
-		return nil, err
-	} else {
-		settings := &sd.SigningSettings{}
-		if err := sd.SigningSettingsForm.Coerce(settings, params); err != nil {
-			// this should not happen if the forms are correct...
-			return nil, err
-		}
-		// settings are valid
-		return settings, nil
-	}
-}
