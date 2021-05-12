@@ -148,6 +148,7 @@ var JSONRPCClientSettingsForm = forms.Form{
 		{
 			Name: "endpoint",
 			Validators: []forms.Validator{
+				forms.IsOptional{},
 				forms.IsString{}, // to do: add URL validation
 			},
 		},

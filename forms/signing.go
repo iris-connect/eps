@@ -32,7 +32,7 @@ var SignedDataForm = forms.Form{
 			},
 		},
 		{
-			Name:       "Data",
+			Name:       "data",
 			Validators: []forms.Validator{}, // can be anything really...
 		},
 	},
@@ -41,7 +41,7 @@ var SignedDataForm = forms.Form{
 var SignatureForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "R",
+			Name: "r",
 			Validators: []forms.Validator{
 				forms.IsString{},
 				forms.MatchesRegex{
@@ -50,7 +50,7 @@ var SignatureForm = forms.Form{
 			},
 		},
 		{
-			Name: "S",
+			Name: "s",
 			Validators: []forms.Validator{
 				forms.IsString{},
 				forms.MatchesRegex{
@@ -59,7 +59,7 @@ var SignatureForm = forms.Form{
 			},
 		},
 		{
-			Name: "C",
+			Name: "c",
 			Validators: []forms.Validator{
 				forms.IsString{},
 			},

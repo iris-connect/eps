@@ -23,6 +23,8 @@ proxy via a separate TCP channel.
 package sd
 
 import (
+	"github.com/iris-gateway/eps"
+	epsForms "github.com/iris-gateway/eps/forms"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"github.com/kiprotect/go-helpers/forms"
 	"sync"
@@ -38,21 +40,28 @@ type Server struct {
 var SubmitChangeRecordForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "name",
+			Name: "record",
 			Validators: []forms.Validator{
-				forms.IsString{},
+				forms.IsStringMap{
+					Form: &epsForms.SignedChangeRecordForm,
+				},
 			},
 		},
 	},
 }
 
 type SubmitChangeRecordParams struct {
-	Name    string `json:"name"`
-	Pattern string `json:"pattern"`
+	Record *eps.SignedChangeRecord `json:"record"`
 }
 
 func (c *Server) submitChangeRecord(context *jsonrpc.Context, params *SubmitChangeRecordParams) *jsonrpc.Response {
-	return context.InternalError()
+	eps.Log.Info(params.Record.Record.CreatedAt)
+	if err := c.directory.Append(params.Record); err != nil {
+		eps.Log.Error(err)
+		return context.Error(400, "something went wrong", nil)
+	} else {
+		return context.Acknowledge()
+	}
 }
 
 var GetTipForm = forms.Form{
@@ -63,7 +72,39 @@ type GetTipParams struct {
 }
 
 func (c *Server) getTip(context *jsonrpc.Context, params *GetTipParams) *jsonrpc.Response {
-	return context.InternalError()
+	if record, err := c.directory.Tip(); err != nil {
+		eps.Log.Error(err)
+		return context.InternalError()
+	} else {
+		return context.Result(record)
+	}
+}
+
+type GetRecordsParams struct {
+	Since int64 `json:"since"`
+}
+
+var GetRecordsForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "since",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: 0},
+				forms.IsInteger{
+					HasMin: true,
+					Min:    0,
+				},
+			},
+		},
+	},
+}
+
+func (c *Server) getRecords(context *jsonrpc.Context, params *GetRecordsParams) *jsonrpc.Response {
+	if records, err := c.directory.Records(params.Since); err != nil {
+		return context.InternalError()
+	} else {
+		return context.Result(records)
+	}
 }
 
 func MakeServer(settings *Settings) (*Server, error) {
@@ -87,6 +128,10 @@ func MakeServer(settings *Settings) (*Server, error) {
 		"getTip": {
 			Form:    &GetTipForm,
 			Handler: server.getTip,
+		},
+		"getRecords": {
+			Form:    &GetRecordsForm,
+			Handler: server.getRecords,
 		},
 	}
 

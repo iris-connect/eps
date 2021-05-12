@@ -94,5 +94,5 @@ func (c *Context) InvalidParams(err error) *Response {
 }
 
 func (c *Context) InternalError() *Response {
-	return c.Error(-32603, "intenal error", nil)
+	return c.Error(-32603, "internal error", nil)
 }

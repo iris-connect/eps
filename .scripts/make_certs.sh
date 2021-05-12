@@ -6,6 +6,7 @@
 # as the subject alternative name (SAN), which is required for some newer
 # TLS libraries.
 declare -a certs=("op-1" "op-2" "hd-1" "ls-1" "internal-server" "public-proxy-1" "private-proxy-1" "sd-1")
+declare -A groups=(["hd-1"]="sd-admin")
 
 O="IRIS"
 ST="Berlin"
@@ -35,7 +36,7 @@ do
 	# the signing certificates use ECDSA and are for signing service directory entries
 	openssl ecparam -genkey -name prime256v1 -noout -out "${cert}-sign.key";
 	openssl ec -in "${cert}-sign.key" -pubout -out "${cert}-sign.pub";
-	openssl req -new -sha256 -key "${cert}-sign.key" -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${cert}" -addext "keyUsage=digitalSignature" -addext "subjectAltName = DNS:${cert},DNS:*.${cert}.local"  -out "${cert}-sign.csr";
-	openssl x509 -req -in "${cert}-sign.csr" -CA root.crt -CAkey root.key -CAcreateserial -out "${cert}-sign.crt"  -extensions SANKey -extfile <(printf "[SANKey]\nsubjectAltName = DNS:${cert},DNS:*.${cert}.local\nkeyUsage = digitalSignature") -days 500 -sha256;
+	openssl req -new -sha256 -key "${cert}-sign.key" -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${cert}" -addext "keyUsage=digitalSignature" -addext "subjectAltName = URI:iris-name://${cert},URI:iris-group://${groups[${cert}]},DNS:${cert}"  -out "${cert}-sign.csr";
+	openssl x509 -req -in "${cert}-sign.csr" -CA root.crt -CAkey root.key -CAcreateserial -out "${cert}-sign.crt"  -extensions SANKey -extfile <(printf "[SANKey]\nsubjectAltName = URI:iris-name://${cert},URI:iris-group://${groups[${cert}]},DNS:${cert}\nkeyUsage = digitalSignature") -days 500 -sha256;
 
 done

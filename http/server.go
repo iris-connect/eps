@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/tls"
 	"net/http"
 	"regexp"
 	"strings"
@@ -137,6 +138,15 @@ func (s *HTTPServer) Start() error {
 	var listener func() error
 
 	if s.settings.TLS != nil {
+
+		tlsConfig, err := tls.TLSServerConfig(s.settings.TLS)
+
+		if err != nil {
+			return err
+		}
+
+		s.server.TLSConfig = tlsConfig
+
 		listener = func() error {
 			return s.server.ListenAndServeTLS(s.settings.TLS.CertificateFile, s.settings.TLS.KeyFile)
 		}

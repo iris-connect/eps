@@ -34,6 +34,14 @@ func MakeClient(settings *JSONRPCClientSettings) *Client {
 	}
 }
 
+func (c *Client) SetServerName(serverName string) {
+	c.settings.ServerName = serverName
+}
+
+func (c *Client) SetEndpoint(endpoint string) {
+	c.settings.Endpoint = endpoint
+}
+
 func (c *Client) Call(request *Request) (*Response, error) {
 	data, err := json.Marshal(request)
 

@@ -28,14 +28,28 @@ import (
 	"math/big"
 )
 
+type Signature struct {
+	R           string `json:"r"`
+	S           string `json:"s"`
+	Certificate string `json:"c"`
+}
+
+type SignedData struct {
+	Signature *Signature  `json:"signature"`
+	Data      interface{} `json:"data"`
+}
+
 func VerifyCertificate(cert, rootCert *x509.Certificate, name string) error {
 	roots := x509.NewCertPool()
 	roots.AddCert(rootCert)
 
 	opts := x509.VerifyOptions{
-		DNSName:   name,
 		Roots:     roots,
 		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
+	}
+
+	if name != "" {
+		opts.DNSName = name
 	}
 
 	if _, err := cert.Verify(opts); err != nil {
@@ -99,43 +113,15 @@ func LoadPrivateKey(path string) (*ecdsa.PrivateKey, error) {
 	return x509.ParseECPrivateKey(block.Bytes)
 }
 
-// we define our own BigInt type that serializes to a string, as very long
-// numbers are not JSON-compliant, so if they get passed through other systems
-// or even Golang itself we will lose the numbers...
-type BigInt struct {
-	*big.Int
-}
+func BigInt(s string) (*big.Int, error) {
 
-type Signature struct {
-	R           *BigInt `json:"r"`
-	S           *BigInt `json:"s"`
-	Certificate string  `json:"c"`
-}
+	i := &big.Int{}
 
-type SignedData struct {
-	Signature *Signature  `json:"signature"`
-	Data      interface{} `json:"data"`
-}
-
-func (s *BigInt) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.String())
-}
-
-func (s *BigInt) UnmarshalJSON(data []byte) error {
-
-	s.Int = &big.Int{}
-
-	var ss string
-
-	if err := json.Unmarshal(data, &ss); err != nil {
-		return err
+	if _, ok := i.SetString(s, 10); !ok {
+		return nil, fmt.Errorf("not a big integer in base 10")
 	}
 
-	if _, ok := s.Int.SetString(ss, 10); !ok {
-		return fmt.Errorf("not a big integer in base 10")
-	}
-
-	return nil
+	return i, nil
 }
 
 func LoadSignedData(data []byte) (*SignedData, error) {
@@ -154,7 +140,7 @@ func Verify(signedData *SignedData, rootCert *x509.Certificate, name string) (bo
 	// root certificate verification can be skipped (but shouldn't be)
 	if rootCert != nil {
 		if err := VerifyCertificate(cert, rootCert, name); err != nil {
-			return false, err
+			return false, nil
 		}
 	}
 
@@ -162,7 +148,20 @@ func Verify(signedData *SignedData, rootCert *x509.Certificate, name string) (bo
 		return false, err
 	} else {
 		s := sha256.Sum256(rawData)
-		return ecdsa.Verify(cert.PublicKey.(*ecdsa.PublicKey), s[:], signedData.Signature.R.Int, signedData.Signature.S.Int), nil
+
+		ir, err := BigInt(signedData.Signature.R)
+
+		if err != nil {
+			return false, err
+		}
+
+		is, err := BigInt(signedData.Signature.S)
+
+		if err != nil {
+			return false, err
+		}
+
+		return ecdsa.Verify(cert.PublicKey.(*ecdsa.PublicKey), s[:], ir, is), nil
 	}
 }
 
@@ -189,8 +188,8 @@ func Sign(data interface{}, key *ecdsa.PrivateKey, cert *x509.Certificate) (*Sig
 		return &SignedData{
 			Data: data,
 			Signature: &Signature{
-				R:           &BigInt{r},
-				S:           &BigInt{s},
+				R:           r.String(),
+				S:           s.String(),
 				Certificate: string(pem.EncodeToMemory(block)),
 			},
 		}, nil
