@@ -31,7 +31,7 @@ EPS_SETTINGS=settings/dev/roles/private-proxy-eps-1 eps server run
 When all services are up and running you should be able to send a request to the proxy via
 
 ```bash
-curl --cacert settings/dev/certs/root.crt --resolve test.internal-server.com:4433:127.0.0.1 https://test.internal-server.com:4433/jsonrpc | jq .
+curl --cacert settings/dev/certs/root.crt --resolve test.internal-server.local:4433:127.0.0.1 https://test.internal-server.local:4433/jsonrpc | jq .
 
 ```
 
@@ -44,3 +44,14 @@ This should return the following JSON data:
 ```
 
 The request you've sent reached the local TLS server on port 8888 via the two proxies, which communicated through the EPS network to broker the connection. Neat, isn't it?
+
+## Stress Testing
+
+You can also stress-test the server with parallel requests using the `parallel`
+util:
+
+```bash
+eq 1 2000000 | parallel -j 25 curl --cacert settings/dev/certs/root.crt --resolve test.internal-server.local:4433:127.0.0.1 https://test.internal-server.local:4433/jsonrpc --data "{}"
+```
+
+This will try to send 25 requests in parallel to the server.

@@ -1,5 +1,9 @@
 name: hd-1
 directory:
+# to use the JSON directory, uncomment this and comment everything below...
+#  type: json
+#  settings:
+#    path: "$DIR/../../directory/services.json"
   type: api
   settings:
     jsonrpc_client:
@@ -10,9 +14,6 @@ directory:
     endpoints: ["https://localhost:3322/jsonrpc"]
     server_names: ["sd-1"]
 channels: # defines all the channels that we want to open when starting the server
-  - name: Stdout channel
-    type: stdout
-    settings: {}
   - name: main gRPC client # creates outgoing gRPC connections to deliver and receive messages
     type: grpc_client
     settings:

@@ -22,12 +22,20 @@ LEN="2048"
 # second-level wildcards (e.g. "*.internal-server") will not work. Probably a good security
 # measure as one could otherwise register a wildcard like "*.com"
 
+DIRECTORY_FILE=directory.json
+
 openssl genrsa -out root.key ${LEN}
 openssl req -x509 -new -nodes -key root.key -sha256 -days 1024 -out root.crt -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${CN}"
 
+echo -n "{\"entries\": [" > $DIRECTORY_FILE
+
 for cert in "${certs[@]}"
 do
-	echo "Generating and signing certificates for ${cert}...";
+
+	if [[ -n $LAST ]]; then
+		echo -n "," >> $DIRECTORY_FILE
+	fi;
+
 	openssl genrsa -out "${cert}.key" ${LEN};
 	openssl rsa -in "${cert}.key" -pubout -out "${cert}.pub";
 	openssl req -new -sha256 -key "${cert}.key" -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${cert}" -addext "subjectAltName = DNS:${cert},DNS:*.${cert}.local" -out "${cert}.csr";
@@ -39,4 +47,11 @@ do
 	openssl req -new -sha256 -key "${cert}-sign.key" -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${cert}" -addext "keyUsage=digitalSignature" -addext "subjectAltName = URI:iris-name://${cert},URI:iris-group://${groups[${cert}]},DNS:${cert}"  -out "${cert}-sign.csr";
 	openssl x509 -req -in "${cert}-sign.csr" -CA root.crt -CAkey root.key -CAcreateserial -out "${cert}-sign.crt"  -extensions SANKey -extfile <(printf "[SANKey]\nsubjectAltName = URI:iris-name://${cert},URI:iris-group://${groups[${cert}]},DNS:${cert}\nkeyUsage = digitalSignature") -days 500 -sha256;
 
+
+	FINGERPRINT_SIGNING=`openssl x509 -noout -fingerprint -sha256 -inform pem -in "${cert}-sign.crt" | sed -e 's/://g' | sed -r 's/.*=(.*)$/\1/g'`
+	FINGERPRINT_ENCRYPTION=`openssl x509 -noout -fingerprint -sha256 -inform pem -in "${cert}.crt" | sed -e 's/://g' | sed -r 's/.*=(.*)$/\1/g'`
+	echo -n "{\"name\": \"${cert}\", \"certificates\": [{\"serial_number\": \"${FINGERPRINT_SIGNING}\", \"key_usage\": \"signing\"},{\"serial_number\": \"${FINGERPRINT_ENCRYPTION}\", \"key_usage\": \"encryption\"}]}" >> $DIRECTORY_FILE
+	LAST=1
 done
+
+echo -n "]}" >> $DIRECTORY_FILE

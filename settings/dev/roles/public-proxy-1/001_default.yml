@@ -6,6 +6,8 @@ public:
     server_name: public-proxy-1
     tls:
       ca_certificate_file: "$DIR/../../certs/root.crt"
+      certificate_file: "$DIR/../../certs/public-proxy-1.crt"
+      key_file: "$DIR/../../certs/public-proxy-1.key"
   jsonrpc_server: # the JSON-RPC server that the EPS server uses for communication
     bind_address: "localhost:6655"
     cors:
@@ -14,3 +16,4 @@ public:
       ca_certificate_file: "$DIR/../../certs/root.crt"
       certificate_file: "$DIR/../../certs/public-proxy-1.crt"
       key_file: "$DIR/../../certs/public-proxy-1.key"
+      validate_client: false

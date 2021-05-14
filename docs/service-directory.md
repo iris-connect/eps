@@ -2,52 +2,6 @@
 
 The service directory is a central database that contains information about all operators in the IRIS ecosystem. It contains information about how operators can be reached and which services they provide.
 
-```yaml
-- name: ls-1
-  groups: [LocationsServices]
-  description: The official "locations service" operated by INöG
-  certificates:
-    revoked: [a6fcad2145....] # list of revoked certificate IDs
-  channels:
-    - type: grpc_server
-      endpoint: https://ls-1.operators.iris-gateway.de:5555
-  services:
-    - name: locations
-      authorized: [LocationsAdministrators] # global authorization for all group members
-      methods:
-        - name: get
-          authorized: [HealthDepartments]
-          async: true
-        - name: add
-          authorized: [ContactTracingProviders]
-          params:
-            - name: name
-              validators:
-                - type: IsString
-                  params:
-                    min_length: 1
-                    max_length: 100
-            - name: id
-              validators:
-                - type: IsBytes
-                  params:
-                    encoding: base64
-                    min_length: 16
-                    max_length: 16
-- name: recover
-  description: The Recover contact tracing app provider
-  groups: [ContactTracingProviders, TrustedOperators]
-  channels:
-    - type: grpc_server
-      endpoint: https://recover.operators.iris-gateway.de:5555
-  services: [...]
-- name: ga-leipzig
-  description: The Leipzig health department
-  groups: [HealthDepartments]
-  channels: [] # no external channels
-  services: [] # no external services
-```
-
 The directory allows EPS servers to determine whether and how they can connect to another operator. Operators that only have outgoing connectivity (e.g. `ga-leipzig` in the example above) can use the directory to learn that they might receive asynchronous responses from other operators (e.g. `ls-1`) and then open outgoing connections to these operators through which they can receive replies. EPS servers can also use the service directory to determine whether they should accept a message from a given operator.
 
 The service directory implements a group-based permissions mechanism. Currently, only `yes/no` permissions exist (i.e. a member of a given group either can or cannot call a given service method). More fine-grained permissions (e.g. a contact tracing provider can only edit its own entries in the "locations" service) need to be implemented by the services themselves. For that purpose, the EPS server makes information about the calling peer available to the services via a special parameter (`_caller`) that gets passed along with the other RPC method parameters. This structure also contains the current entry of the caller from the service directory, making it easy for the called service to identify and authorize the caller.
@@ -57,12 +11,36 @@ The service directory implements a group-based permissions mechanism. Currently,
 The EPS server package also provides a `sd` API server command that opens a JSON-RPC server which distributes the service directory.
 
 ```bash
-
+SD_SETTINGS=settings/dev/roles/sd-1 sd run
 ```
+
+By default, this will store and retrieve change records from a file located at `/tmp/service-directory.records`. To reset the service directory, simply delete this file.
 
 ## Signature Schema
 
-All entries in the service directory should be cryptographically signed. For this, every actor in the EPS system has a pair of ECDSA keys and an accompanying certificate.
+All changes in the service directory are cryptographically signed. For this, every actor in the EPS system has a pair of ECDSA keys and an accompanying certificate. The service directory is constructed from a series of **change records**. Each change record contains the name of an **operator**, a **section** and the actual data that should be changed.
+
+### Submitting Change records
+
+Change records can be submitted to the service directory via the JSON-RPC API. The `eps` CLI provides a function for this via the `sd submit-record`:
+
+```bash
+EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-record settings/dev/roles/hd-1/example-change-record.json
+```
+
+This will submit the change record stored in `example-change-record.json`. We can also convert a JSON-based service directory into change records and submit all of them to the service directory API via the `sd submit-directory` command:
+
+```bash
+EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-directory settings/dev/directory/services.json
+```
+
+### Retrieving entries and records
+
+To retrieve change records and entries from the service directory API you can use the `getRecords(since)`, `getEntries()` and `getEntry(name)` RPC calls, e.g. like this:
+
+```bash
+curl --key settings/dev/certs/hd-1.key --cert settings/dev/certs/hd-1.crt --cacert settings/dev/certs/root.crt --resolve sd-1:3322:127.0.0.1 https://sd-1:3322/jsonrpc --header "Content-Type: application/json" --data '{"jsonrpc": "2.0", "method": "getRecords", "params": {"since": 0}}'
+```
 
 ### Signing Data
 
@@ -94,7 +72,7 @@ The output should e.g. look like this:
 
 Before importing such data, we can check the signature using the `verify` command (you need to specify the expected `name` of the signer):
 
-```
+```bash
 export SD_SETTINGS=settings/dev/roles/sd-1/sdh
 sdh verify signed.json private-proxy-1
 ```

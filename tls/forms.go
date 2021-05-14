@@ -23,6 +23,13 @@ import (
 var TLSSettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
+			Name: "verify_client",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: true},
+				forms.IsBoolean{},
+			},
+		},
+		{
 			Name: "ca_certificate_file",
 			Validators: []forms.Validator{
 				forms.IsString{},

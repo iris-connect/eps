@@ -1,5 +1,4 @@
 private:
-  bind_address: localhost:5544
   jsonrpc_client:
     endpoint: https://localhost:7766/jsonrpc
     server_name: private-proxy-1

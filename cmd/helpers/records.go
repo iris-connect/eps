@@ -79,35 +79,35 @@ func submitDirectory(c *cli.Context, settings *eps.Settings) error {
 		}
 	}
 
-	for _, entry := range directory.Entries {
+	for i, entry := range directory.Entries {
 		changeRecord := &eps.ChangeRecord{}
 		changeRecord.Name = entry.Name
 		if len(entry.Settings) > 0 {
-			eps.Log.Info("Submitting settings...")
+			eps.Log.Infof("Submitting settings for entry %d...", i)
 			changeRecord.Section = "settings"
 			changeRecord.Data = entry.Settings
 			submitRecord(changeRecord)
 		}
 		if len(entry.Channels) > 0 {
-			eps.Log.Info("Submitting channels...")
+			eps.Log.Infof("Submitting channels for entry %d...", i)
 			changeRecord.Section = "channels"
 			changeRecord.Data = entry.Channels
 			submitRecord(changeRecord)
 		}
 		if len(entry.Services) > 0 {
-			eps.Log.Info("Submitting services...")
+			eps.Log.Infof("Submitting services for entry %d...", i)
 			changeRecord.Section = "services"
 			changeRecord.Data = entry.Services
 			submitRecord(changeRecord)
 		}
 		if len(entry.Certificates) > 0 {
-			eps.Log.Info("Submitting certificates...")
+			eps.Log.Infof("Submitting certificates for entry %d...", i)
 			changeRecord.Section = "certificates"
 			changeRecord.Data = entry.Certificates
 			submitRecord(changeRecord)
 		}
 		if len(entry.Settings) > 0 {
-			eps.Log.Info("Submitting settings...")
+			eps.Log.Infof("Submitting settings for entry %d...", i)
 			changeRecord.Section = "settings"
 			changeRecord.Data = entry.Settings
 			submitRecord(changeRecord)
@@ -349,7 +349,7 @@ func Records(settings *eps.Settings) ([]cli.Command, error) {
 
 	return []cli.Command{
 		{
-			Name:    "records",
+			Name:    "sd",
 			Aliases: []string{"s"},
 			Flags:   []cli.Flag{},
 			Usage:   "Manage service-directory records.",

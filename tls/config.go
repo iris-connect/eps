@@ -80,7 +80,9 @@ func TLSServerConfig(settings *TLSSettings) (*tls.Config, error) {
 	if config, err := TLSConfig(settings); err != nil {
 		return nil, err
 	} else {
-		config.ClientAuth = tls.RequireAndVerifyClientCert
+		if settings.VerifyClient {
+			config.ClientAuth = tls.RequireAndVerifyClientCert
+		}
 		return config, nil
 	}
 }
