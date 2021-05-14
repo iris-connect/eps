@@ -31,12 +31,32 @@ type DirectoryDefinition struct {
 	SettingsValidator SettingsValidator `json:"-"`
 }
 
+func MakeDirectoryEntry() *DirectoryEntry {
+	return &DirectoryEntry{
+		Groups:       []string{},
+		Channels:     []*OperatorChannel{},
+		Services:     []*OperatorService{},
+		Certificates: []*OperatorCertificate{},
+		Settings:     []*OperatorSettings{},
+		Records:      []*SignedChangeRecord{},
+	}
+}
+
 type DirectoryEntry struct {
 	Name         string                 `json:"name"`
+	Groups       []string               `json:"groups"`
 	Channels     []*OperatorChannel     `json:"channels"`
 	Services     []*OperatorService     `json:"services"`
 	Certificates []*OperatorCertificate `json:"certificates"`
+	Settings     []*OperatorSettings    `json:"settings"`
 	Records      []*SignedChangeRecord  `json:"records"`
+}
+
+type OperatorSettings struct {
+	Operator    string                 `json:"operator"`
+	Service     string                 `json:"service"`
+	Environment string                 `json:"environment"`
+	Settings    map[string]interface{} `json:"settings"`
 }
 
 type OperatorChannel struct {
@@ -50,15 +70,20 @@ type OperatorCertificate struct {
 }
 
 type OperatorService struct {
-	Name              string           `json:"name"`
-	AuthorizedClients []string         `json:"authorized_clients"`
-	Methods           []*ServiceMethod `json:"methods"`
+	Name        string           `json:"name"`
+	Permissions []*Permission    `json:"permissions"`
+	Methods     []*ServiceMethod `json:"methods"`
 }
 
 type ServiceMethod struct {
-	Name              string              `json:"name"`
-	AuthorizedClients []string            `json:"authorized_clients"`
-	Parameters        []*ServiceParameter `json:"parameters"`
+	Name        string              `json:"name"`
+	Permissions []*Permission       `json:"permissions"`
+	Parameters  []*ServiceParameter `json:"parameters"`
+}
+
+type Permission struct {
+	Group  string   `json:"group"`
+	Rights []string `json:"rights"`
 }
 
 type ServiceParameter struct {

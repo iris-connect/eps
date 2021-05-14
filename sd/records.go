@@ -41,7 +41,7 @@ type RecordDirectory struct {
 	rootCert  *x509.Certificate
 	dataStore helpers.DataStore
 	settings  *RecordDirectorySettings
-	entries   []*eps.DirectoryEntry
+	entries   map[string]*eps.DirectoryEntry
 	records   []*eps.SignedChangeRecord
 	mutex     sync.Mutex
 }
@@ -57,7 +57,7 @@ func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, e
 	f := &RecordDirectory{
 		rootCert:  cert,
 		records:   make([]*eps.SignedChangeRecord, 0),
-		entries:   make([]*eps.DirectoryEntry, 0),
+		entries:   make(map[string]*eps.DirectoryEntry),
 		settings:  settings,
 		dataStore: helpers.MakeFileDataStore(settings.DatabaseFile),
 	}
@@ -69,6 +69,28 @@ func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, e
 	_, err = f.update()
 
 	return f, err
+}
+
+func (f *RecordDirectory) Entry(name string) (*eps.DirectoryEntry, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+	if entry, ok := f.entries[name]; !ok {
+		return nil, nil
+	} else {
+		return entry, nil
+	}
+}
+
+func (f *RecordDirectory) AllEntries() ([]*eps.DirectoryEntry, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+	entries := make([]*eps.DirectoryEntry, len(f.entries))
+	i := 0
+	for _, entry := range f.entries {
+		entries[i] = entry
+		i++
+	}
+	return entries, nil
 }
 
 func (f *RecordDirectory) Entries(*eps.DirectoryQuery) ([]*eps.DirectoryEntry, error) {
@@ -183,10 +205,10 @@ func (f *RecordDirectory) Append(record *eps.SignedChangeRecord) error {
 		return err
 	}
 
-	if ok, err := f.checkHash(record, tip); err != nil {
+	if ok, err := f.verifyHash(record, tip); err != nil {
 		return err
 	} else if !ok {
-		return fmt.Errorf("stale append")
+		return fmt.Errorf("stale append, please try again")
 	}
 
 	id, err := helpers.RandomID(16)
@@ -289,13 +311,21 @@ func (b ByPosition) Less(i, j int) bool {
 	return b.Records[i].Position < b.Records[j].Position
 }
 
-// Integrates a new record into the directory
+// Integrates a record into the directory
 func (f *RecordDirectory) integrate(record *eps.SignedChangeRecord) error {
-	eps.Log.Info(record)
+	entry, ok := f.entries[record.Record.Name]
+	if !ok {
+		entry = eps.MakeDirectoryEntry()
+		entry.Name = record.Record.Name
+	}
+	if err := helpers.IntegrateChangeRecord(record, entry); err != nil {
+		return err
+	}
+	f.entries[record.Record.Name] = entry
 	return nil
 }
 
-func (f *RecordDirectory) checkHash(record, lastRecord *eps.SignedChangeRecord) (bool, error) {
+func (f *RecordDirectory) verifyHash(record, lastRecord *eps.SignedChangeRecord) (bool, error) {
 
 	if lastRecord != nil {
 		if lastRecord.Position+1 != record.Position {
@@ -322,8 +352,6 @@ func (f *RecordDirectory) checkHash(record, lastRecord *eps.SignedChangeRecord) 
 	return true, nil
 }
 
-/*
- */
 func (f *RecordDirectory) update() ([]*eps.SignedChangeRecord, error) {
 	if entries, err := f.dataStore.Read(); err != nil {
 		return nil, err
@@ -358,7 +386,7 @@ func (f *RecordDirectory) update() ([]*eps.SignedChangeRecord, error) {
 		// now we validate the hash chain
 		for _, record := range bp.Records {
 
-			if ok, err := f.checkHash(record, lastRecord); err != nil {
+			if ok, err := f.verifyHash(record, lastRecord); err != nil {
 				return nil, err
 			} else if !ok {
 				eps.Log.Warning("stale record found, ignoring...")

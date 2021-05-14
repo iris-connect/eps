@@ -17,7 +17,9 @@
 package forms
 
 import (
+	"fmt"
 	"github.com/kiprotect/go-helpers/forms"
+	"strings"
 )
 
 var OperatorChannelForm = forms.Form{
@@ -76,7 +78,44 @@ var ServiceValidatorForm = forms.Form{
 	},
 }
 
-var ServiceParameterForm = forms.Form{
+var ServiceMethodForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "permissions",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: []interface{}{}},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &PermissionForm,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "parameters",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &MethodParameterForm,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var MethodParameterForm = forms.Form{
 	Fields: []forms.Field{
 		{
 			Name: "name",
@@ -100,6 +139,80 @@ var ServiceParameterForm = forms.Form{
 	},
 }
 
+type IsValidRightsString struct{}
+
+func (f IsValidRightsString) Validate(value interface{}, values map[string]interface{}) (interface{}, error) {
+	// string validation happened before
+	strValue := value.(string)
+	rights := strings.Split(strValue, ",")
+
+	mapValues := map[string]bool{}
+
+	// we check that the permissions are valid
+	for _, right := range rights {
+		if right != "call" {
+			return nil, fmt.Errorf("invalid 'rights' string")
+		}
+		if _, ok := mapValues[right]; ok {
+			return nil, fmt.Errorf("duplicate 'rights' string")
+		} else {
+			mapValues[right] = true
+		}
+	}
+
+	return rights, nil
+}
+
+var PermissionForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "group",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "rights",
+			Validators: []forms.Validator{
+				forms.IsString{},
+				IsValidRightsString{},
+			},
+		},
+	},
+}
+
+var OperatorSettingsForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "operator",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: ""},
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "service",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: ""},
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "environment",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: ""},
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "settings",
+			Validators: []forms.Validator{
+				forms.IsStringMap{}, // to do: restrict size of settings (?)
+			},
+		},
+	},
+}
+
 var OperatorServiceForm = forms.Form{
 	Fields: []forms.Field{
 		{
@@ -109,24 +222,26 @@ var OperatorServiceForm = forms.Form{
 			},
 		},
 		{
-			Name: "authorized_clients",
+			Name: "permissions",
 			Validators: []forms.Validator{
 				forms.IsOptional{Default: []interface{}{}},
 				forms.IsList{
 					Validators: []forms.Validator{
-						forms.IsString{},
+						forms.IsStringMap{
+							Form: &PermissionForm,
+						},
 					},
 				},
 			},
 		},
 		{
-			Name: "parameters",
+			Name: "methods",
 			Validators: []forms.Validator{
-				forms.IsOptional{},
+				forms.IsOptional{Default: []interface{}{}},
 				forms.IsList{
 					Validators: []forms.Validator{
 						forms.IsStringMap{
-							Form: &ServiceParameterForm,
+							Form: &ServiceMethodForm,
 						},
 					},
 				},
@@ -158,6 +273,7 @@ var DirectoryEntryForm = forms.Form{
 		{
 			Name: "services",
 			Validators: []forms.Validator{
+				forms.IsOptional{Default: []interface{}{}},
 				forms.IsList{
 					Validators: []forms.Validator{
 						forms.IsStringMap{
@@ -168,8 +284,22 @@ var DirectoryEntryForm = forms.Form{
 			},
 		},
 		{
+			Name: "settings",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: []interface{}{}},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &OperatorSettingsForm,
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "certificates",
 			Validators: []forms.Validator{
+				forms.IsOptional{Default: []interface{}{}},
 				forms.IsList{
 					Validators: []forms.Validator{
 						forms.IsStringMap{
@@ -244,7 +374,7 @@ var ChangeRecordForm = forms.Form{
 			Validators: []forms.Validator{
 				forms.IsString{},
 				forms.IsIn{
-					Choices: []interface{}{"channels", "certificates", "services"},
+					Choices: []interface{}{"channels", "certificates", "services", "clientData"},
 				},
 			},
 		},

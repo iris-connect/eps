@@ -80,6 +80,48 @@ func (c *Server) getTip(context *jsonrpc.Context, params *GetTipParams) *jsonrpc
 	}
 }
 
+type GetEntriesParams struct {
+}
+
+var GetEntriesForm = forms.Form{
+	Fields: []forms.Field{},
+}
+
+func (c *Server) getEntries(context *jsonrpc.Context, params *GetEntriesParams) *jsonrpc.Response {
+	if entries, err := c.directory.AllEntries(); err != nil {
+		eps.Log.Error(err)
+		return context.InternalError()
+	} else {
+		return context.Result(entries)
+	}
+}
+
+type GetEntryParams struct {
+	Name string `json:"name"`
+}
+
+var GetEntryForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
+
+func (c *Server) getEntry(context *jsonrpc.Context, params *GetEntryParams) *jsonrpc.Response {
+	if entry, err := c.directory.Entry(params.Name); err != nil {
+		eps.Log.Error(err)
+		return context.InternalError()
+	} else if entry == nil {
+		return context.NotFound()
+	} else {
+		return context.Result(entry)
+	}
+}
+
 type GetRecordsParams struct {
 	Since int64 `json:"since"`
 }
@@ -132,6 +174,14 @@ func MakeServer(settings *Settings) (*Server, error) {
 		"getRecords": {
 			Form:    &GetRecordsForm,
 			Handler: server.getRecords,
+		},
+		"getEntries": {
+			Form:    &GetEntriesForm,
+			Handler: server.getEntries,
+		},
+		"getEntry": {
+			Form:    &GetEntryForm,
+			Handler: server.getEntry,
 		},
 	}
 

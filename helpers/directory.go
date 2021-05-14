@@ -18,9 +18,33 @@ package helpers
 
 import (
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/forms"
 )
 
 func InitializeDirectory(settings *eps.Settings) (eps.Directory, error) {
 	definition := settings.Definitions.DirectoryDefinitions[settings.Directory.Type]
 	return definition.Maker(settings.Name, settings.Directory.Settings)
+}
+
+// Integrates a record into the directory
+func IntegrateChangeRecord(record *eps.SignedChangeRecord, entry *eps.DirectoryEntry) error {
+
+	config := map[string]interface{}{
+		record.Record.Section: record.Record.Data,
+	}
+
+	if params, err := forms.DirectoryEntryForm.ValidateUpdate(config); err != nil {
+		return err
+	} else {
+		// we directly coerce the updated settings into the entry
+		if err := forms.DirectoryEntryForm.Coerce(entry, params); err != nil {
+			return err
+		}
+		if entry.Records == nil {
+			entry.Records = make([]*eps.SignedChangeRecord, 0)
+		}
+		// we append the change record to the entry for audit logging purposes
+		entry.Records = append(entry.Records, record)
+	}
+	return nil
 }

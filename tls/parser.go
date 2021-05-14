@@ -264,6 +264,10 @@ func ParseClientHello(data []byte) (*ClientHello, error) {
 		return nil, fmt.Errorf("error when parsing extensions")
 	}
 
+	// if there's extraneous data at the end we ignore it (e.g. in case the
+	// client tries to fool us or sends additional TCP data, which it shouldn't)
+	c = c[:extensionsLength]
+
 	extensions := make([]Extension, 0)
 
 	for {
