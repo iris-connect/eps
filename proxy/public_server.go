@@ -268,7 +268,7 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 		request := jsonrpc.MakeRequest("private-proxy-1.incomingConnection", id, map[string]interface{}{
 			"hostname": hostName,
 			"token":    randomStr,
-			"endpoint": s.settings.InternalBindAddress,
+			"endpoint": s.settings.InternalEndpoint,
 		})
 
 		if result, err := s.jsonrpcClient.Call(request); err != nil {

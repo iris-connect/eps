@@ -88,6 +88,13 @@ var PublicSettingsForm = forms.Form{
 			},
 		},
 		{
+			Name: "internal_endpoint",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: "localhost:9999"},
+				forms.IsString{},
+			},
+		},
+		{
 			Name: "jsonrpc_client",
 			Validators: []forms.Validator{
 				forms.IsStringMap{

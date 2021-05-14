@@ -28,6 +28,7 @@ type Settings struct {
 type PublicServerSettings struct {
 	TLSBindAddress      string                         `json:"tls_bind_address"`
 	InternalBindAddress string                         `json:"internal_bind_address"`
+	InternalEndpoint    string                         `json:"internal_endpoint"`
 	JSONRPCClient       *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
 	JSONRPCServer       *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
 }
