@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/golang/protobuf v1.5.2
-	github.com/kiprotect/go-helpers v0.0.0-20210501184624-677c272d4158
+	github.com/kiprotect/go-helpers v0.0.0-20210514164310-2378c475ba2d
 	github.com/protocolbuffers/protobuf v3.15.8+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.5

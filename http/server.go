@@ -117,6 +117,9 @@ func handleRouteGroup(context *Context, group *RouteGroup, handlers []Handler) {
 				}
 			}
 		}
+		if context.Aborted {
+			break
+		}
 	}
 
 	for _, subgroup := range group.Subgroups {

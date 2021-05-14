@@ -17,10 +17,6 @@
 package eps
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
 	"time"
 )
 
@@ -61,7 +57,7 @@ type OperatorSettings struct {
 
 type OperatorChannel struct {
 	Type     string                 `json:"type"`
-	Settings map[string]interface{} `json:"settings,omitempty"`
+	Settings map[string]interface{} `json:"settings"`
 }
 
 type OperatorCertificate struct {
@@ -103,38 +99,31 @@ type SignedChangeRecord struct {
 	Record    *ChangeRecord `json:"record"`
 }
 
-func (f *SignedChangeRecord) CalculateHash(previousHash string) (string, error) {
+type Signature struct {
+	R           string `json:"r"`
+	S           string `json:"s"`
+	Certificate string `json:"c"`
+}
 
-	rawData, err := json.Marshal(f.Record)
-
-	if err != nil {
-		return "", err
-	}
-
-	hash := sha256.Sum256(rawData)
-
-	previousHashBytes, err := hex.DecodeString(previousHash)
-
-	if err != nil {
-		return "", err
-	}
-
-	// we construct new hash data from the hash of the last record, the hash of the current
-	// record and the position in the hash chain
-	fullHashData := append(append(previousHashBytes, hash[:]...), []byte(fmt.Sprintf("%d", f.Position))...)
-
-	fullHash := sha256.Sum256(fullHashData)
-
-	return hex.EncodeToString(fullHash[:]), nil
-
+type SignedData struct {
+	Signature *Signature  `json:"signature"`
+	Data      interface{} `json:"data"`
 }
 
 // describes a change in a specific section of the service directory
 type ChangeRecord struct {
-	Name      string      `json:"name"`
-	Section   string      `json:"section"`
-	Data      interface{} `json:"data"`
-	CreatedAt time.Time   `json:"created_at"`
+	Name      string       `json:"name"`
+	Section   string       `json:"section"`
+	Data      interface{}  `json:"data"`
+	CreatedAt HashableTime `json:"created_at"`
+}
+
+type HashableTime struct {
+	time.Time
+}
+
+func (h HashableTime) HashValue() interface{} {
+	return h.Time.Format(time.RFC3339)
 }
 
 func (d *DirectoryEntry) Channel(channelType string) *OperatorChannel {

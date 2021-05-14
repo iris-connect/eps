@@ -48,7 +48,7 @@ type RecordDirectory struct {
 
 func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, error) {
 
-	cert, err := eps.LoadCertificate(settings.CACertificateFile, false)
+	cert, err := helpers.LoadCertificate(settings.CACertificateFile, false)
 
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func getSubjectInfo(cert *x509.Certificate) (*SubjectInfo, error) {
 // determines whether a subject can append to the service directory
 func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord) (bool, error) {
 
-	cert, err := eps.LoadCertificateFromString(record.Signature.Certificate, true)
+	cert, err := helpers.LoadCertificateFromString(record.Signature.Certificate, true)
 
 	if err != nil {
 		return false, err
@@ -291,7 +291,7 @@ func (f *RecordDirectory) verifySignature(record *eps.SignedChangeRecord) (bool,
 	record.Signature = nil
 	defer func() { record.Signature = signature }()
 
-	return eps.Verify(signedData, f.rootCert, "")
+	return helpers.Verify(signedData, f.rootCert, "")
 }
 
 type ByPosition struct {
@@ -339,7 +339,7 @@ func (f *RecordDirectory) verifyHash(record, lastRecord *eps.SignedChangeRecord)
 		lastHash = lastRecord.Hash
 	}
 
-	reconstructedHash, err := record.CalculateHash(lastHash)
+	reconstructedHash, err := helpers.CalculateHash(record, lastHash)
 
 	if err != nil {
 		return false, err

@@ -20,16 +20,105 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/iris-gateway/eps"
+	epsForms "github.com/iris-gateway/eps/forms"
 	"github.com/iris-gateway/eps/helpers"
+	"github.com/kiprotect/go-helpers/forms"
 	"github.com/urfave/cli"
 	"io/ioutil"
 	"time"
 )
 
-func submit(c *cli.Context, settings *eps.Settings) error {
+var DirectoryForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "entries",
+			Validators: []forms.Validator{
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &epsForms.DirectoryEntryForm,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+type Directory struct {
+	Entries []*eps.DirectoryEntry `json:"entries"`
+}
+
+func submitDirectory(c *cli.Context, settings *eps.Settings) error {
+
 	if settings.Signing == nil {
 		eps.Log.Fatalf("Signing settings undefined!")
 	}
+
+	filename := c.Args().Get(0)
+
+	if filename == "" {
+		eps.Log.Fatal("please specify a filename")
+	}
+
+	jsonBytes, err := ioutil.ReadFile(filename)
+
+	if err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	var directory *Directory
+
+	if err := json.Unmarshal(jsonBytes, &directory); err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	submitRecord := func(changeRecord *eps.ChangeRecord) {
+		if err := submitChangeRecord(changeRecord, settings); err != nil {
+			eps.Log.Fatal(err)
+		}
+	}
+
+	for _, entry := range directory.Entries {
+		changeRecord := &eps.ChangeRecord{}
+		changeRecord.Name = entry.Name
+		if len(entry.Settings) > 0 {
+			eps.Log.Info("Submitting settings...")
+			changeRecord.Section = "settings"
+			changeRecord.Data = entry.Settings
+			submitRecord(changeRecord)
+		}
+		if len(entry.Channels) > 0 {
+			eps.Log.Info("Submitting channels...")
+			changeRecord.Section = "channels"
+			changeRecord.Data = entry.Channels
+			submitRecord(changeRecord)
+		}
+		if len(entry.Services) > 0 {
+			eps.Log.Info("Submitting services...")
+			changeRecord.Section = "services"
+			changeRecord.Data = entry.Services
+			submitRecord(changeRecord)
+		}
+		if len(entry.Certificates) > 0 {
+			eps.Log.Info("Submitting certificates...")
+			changeRecord.Section = "certificates"
+			changeRecord.Data = entry.Certificates
+			submitRecord(changeRecord)
+		}
+		if len(entry.Settings) > 0 {
+			eps.Log.Info("Submitting settings...")
+			changeRecord.Section = "settings"
+			changeRecord.Data = entry.Settings
+			submitRecord(changeRecord)
+		}
+	}
+
+	return nil
+
+}
+
+func submitChangeRecord(changeRecord *eps.ChangeRecord, settings *eps.Settings) error {
 
 	directory, err := helpers.InitializeDirectory(settings)
 
@@ -41,6 +130,78 @@ func submit(c *cli.Context, settings *eps.Settings) error {
 
 	if !ok {
 		eps.Log.Fatalf("not a writable service directory")
+	}
+
+	certificate, err := helpers.LoadCertificate(settings.Signing.CertificateFile, true)
+
+	if err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	rootCertificate, err := helpers.LoadCertificate(settings.Signing.CACertificateFile, false)
+
+	if err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	// we ensure the certificate is valid for signing
+	if err := helpers.VerifyCertificate(certificate, rootCertificate, settings.Name); err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	key, err := helpers.LoadPrivateKey(settings.Signing.KeyFile)
+
+	if err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	lastRecord, err := writableDirectory.Tip()
+
+	if err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	var lastPosition int64
+
+	if lastRecord != nil {
+		lastPosition = lastRecord.Position
+	}
+
+	changeRecord.CreatedAt = eps.HashableTime{time.Now()}
+
+	signedChangeRecord := &eps.SignedChangeRecord{
+		Position: lastPosition + 1,
+		Record:   changeRecord,
+	}
+
+	lastHash := ""
+
+	if lastRecord != nil {
+		lastHash = lastRecord.Hash
+	}
+
+	if newHash, err := helpers.CalculateHash(signedChangeRecord, lastHash); err != nil {
+		eps.Log.Fatal(err)
+	} else {
+		signedChangeRecord.Hash = newHash
+	}
+
+	signedData, err := helpers.Sign(signedChangeRecord, key, certificate)
+	signedChangeRecord.Signature = signedData.Signature
+
+	if err := writableDirectory.Submit(signedChangeRecord); err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	eps.Log.Info("Successfully submitted record!")
+
+	return nil
+
+}
+
+func submitRecord(c *cli.Context, settings *eps.Settings) error {
+	if settings.Signing == nil {
+		eps.Log.Fatalf("Signing settings undefined!")
 	}
 
 	filename := c.Args().Get(0)
@@ -61,74 +222,7 @@ func submit(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
-	certificate, err := eps.LoadCertificate(settings.Signing.CertificateFile, true)
-
-	if err != nil {
-		eps.Log.Fatal(err)
-	}
-
-	rootCertificate, err := eps.LoadCertificate(settings.Signing.CACertificateFile, false)
-
-	if err != nil {
-		eps.Log.Fatal(err)
-	}
-
-	// we ensure the certificate is valid for signing
-	if err := eps.VerifyCertificate(certificate, rootCertificate, settings.Name); err != nil {
-		eps.Log.Fatal(err)
-	}
-
-	key, err := eps.LoadPrivateKey(settings.Signing.KeyFile)
-
-	if err != nil {
-		eps.Log.Fatal(err)
-	}
-
-	lastRecord, err := writableDirectory.Tip()
-
-	if err != nil {
-		eps.Log.Fatal(err)
-	}
-
-	var lastPosition int64
-
-	if lastRecord != nil {
-		lastPosition = lastRecord.Position
-	}
-
-	changeRecord.CreatedAt = time.Now()
-
-	signedChangeRecord := &eps.SignedChangeRecord{
-		Position: lastPosition + 1,
-		Record:   changeRecord,
-	}
-
-	lastHash := ""
-
-	if lastRecord != nil {
-		lastHash = lastRecord.Hash
-	}
-
-	if newHash, err := signedChangeRecord.CalculateHash(lastHash); err != nil {
-		eps.Log.Fatal(err)
-	} else {
-		signedChangeRecord.Hash = newHash
-	}
-
-	signedData, err := eps.Sign(signedChangeRecord, key, certificate)
-	signedChangeRecord.Signature = signedData.Signature
-
-	data, _ := json.Marshal(signedChangeRecord)
-
-	fmt.Println(string(data))
-
-	if err := writableDirectory.Submit(signedChangeRecord); err != nil {
-		eps.Log.Fatal(err)
-	}
-
-	eps.Log.Info("Successfully submitted record!")
-
-	return nil
+	return submitChangeRecord(changeRecord, settings)
 }
 
 func sign(c *cli.Context, settings *eps.Settings) error {
@@ -154,30 +248,30 @@ func sign(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
-	certificate, err := eps.LoadCertificate(settings.Signing.CertificateFile, true)
+	certificate, err := helpers.LoadCertificate(settings.Signing.CertificateFile, true)
 
 	if err != nil {
 		eps.Log.Fatal(err)
 	}
 
-	rootCertificate, err := eps.LoadCertificate(settings.Signing.CACertificateFile, false)
+	rootCertificate, err := helpers.LoadCertificate(settings.Signing.CACertificateFile, false)
 
 	if err != nil {
 		eps.Log.Fatal(err)
 	}
 
 	// we ensure the certificate is valid for signing
-	if err := eps.VerifyCertificate(certificate, rootCertificate, settings.Name); err != nil {
+	if err := helpers.VerifyCertificate(certificate, rootCertificate, settings.Name); err != nil {
 		eps.Log.Fatal(err)
 	}
 
-	key, err := eps.LoadPrivateKey(settings.Signing.KeyFile)
+	key, err := helpers.LoadPrivateKey(settings.Signing.KeyFile)
 
 	if err != nil {
 		eps.Log.Fatal(err)
 	}
 
-	signedData, err := eps.Sign(jsonData, key, certificate)
+	signedData, err := helpers.Sign(jsonData, key, certificate)
 
 	if err != nil {
 		eps.Log.Fatal(err)
@@ -191,13 +285,13 @@ func sign(c *cli.Context, settings *eps.Settings) error {
 
 	fmt.Println(string(signedDataBytes))
 
-	loadedSignedData, err := eps.LoadSignedData(signedDataBytes)
+	loadedSignedData, err := helpers.LoadSignedData(signedDataBytes)
 
 	if err != nil {
 		eps.Log.Fatal(err)
 	}
 
-	if ok, err := eps.Verify(loadedSignedData, rootCertificate, settings.Name); err != nil {
+	if ok, err := helpers.Verify(loadedSignedData, rootCertificate, settings.Name); err != nil {
 		eps.Log.Fatal(err)
 	} else if !ok {
 		eps.Log.Fatal("Signature is not valid!")
@@ -236,13 +330,13 @@ func verify(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
-	rootCertificate, err := eps.LoadCertificate(settings.Signing.CACertificateFile, false)
+	rootCertificate, err := helpers.LoadCertificate(settings.Signing.CACertificateFile, false)
 
 	if err != nil {
 		eps.Log.Fatal(err)
 	}
 
-	if ok, err := eps.Verify(signedData, rootCertificate, name); err != nil {
+	if ok, err := helpers.Verify(signedData, rootCertificate, name); err != nil {
 		eps.Log.Fatal(err)
 	} else if !ok {
 		eps.Log.Fatal("Signature is not valid!")
@@ -261,21 +355,27 @@ func Records(settings *eps.Settings) ([]cli.Command, error) {
 			Usage:   "Manage service-directory records.",
 			Subcommands: []cli.Command{
 				{
-					Name:   "submit",
+					Name:   "submit-record",
 					Flags:  []cli.Flag{},
-					Usage:  "Submit a JSON entry",
-					Action: func(c *cli.Context) error { return submit(c, settings) },
+					Usage:  "Submit a JSON change record",
+					Action: func(c *cli.Context) error { return submitRecord(c, settings) },
+				},
+				{
+					Name:   "submit-directory",
+					Flags:  []cli.Flag{},
+					Usage:  "Submit a full service directory",
+					Action: func(c *cli.Context) error { return submitDirectory(c, settings) },
 				},
 				{
 					Name:   "sign",
 					Flags:  []cli.Flag{},
-					Usage:  "Sign a JSON entry",
+					Usage:  "Sign a change record",
 					Action: func(c *cli.Context) error { return sign(c, settings) },
 				},
 				{
 					Name:   "verify",
 					Flags:  []cli.Flag{},
-					Usage:  "Verify a JSON entry",
+					Usage:  "Verify a change record",
 					Action: func(c *cli.Context) error { return verify(c, settings) },
 				},
 			},

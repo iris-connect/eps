@@ -55,7 +55,6 @@ type SubmitChangeRecordParams struct {
 }
 
 func (c *Server) submitChangeRecord(context *jsonrpc.Context, params *SubmitChangeRecordParams) *jsonrpc.Response {
-	eps.Log.Info(params.Record.Record.CreatedAt)
 	if err := c.directory.Append(params.Record); err != nil {
 		eps.Log.Error(err)
 		return context.Error(400, "something went wrong", nil)

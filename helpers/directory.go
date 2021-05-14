@@ -17,6 +17,9 @@
 package helpers
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/forms"
 )
@@ -33,13 +36,10 @@ func IntegrateChangeRecord(record *eps.SignedChangeRecord, entry *eps.DirectoryE
 		record.Record.Section: record.Record.Data,
 	}
 
-	if params, err := forms.DirectoryEntryForm.ValidateUpdate(config); err != nil {
+	// we directly coerce the updated settings into the entry
+	if err := forms.DirectoryEntryForm.Coerce(entry, config); err != nil {
 		return err
 	} else {
-		// we directly coerce the updated settings into the entry
-		if err := forms.DirectoryEntryForm.Coerce(entry, params); err != nil {
-			return err
-		}
 		if entry.Records == nil {
 			entry.Records = make([]*eps.SignedChangeRecord, 0)
 		}
@@ -47,4 +47,28 @@ func IntegrateChangeRecord(record *eps.SignedChangeRecord, entry *eps.DirectoryE
 		entry.Records = append(entry.Records, record)
 	}
 	return nil
+}
+
+func CalculateHash(record *eps.SignedChangeRecord, previousHash string) (string, error) {
+
+	hash, err := StructuredHash(record.Record)
+
+	if err != nil {
+		return "", err
+	}
+
+	previousHashBytes, err := hex.DecodeString(previousHash)
+
+	if err != nil {
+		return "", err
+	}
+
+	// we construct new hash data from the hash of the last record, the hash of the current
+	// record and the position in the hash chain
+	fullHashData := append(append(previousHashBytes, hash[:]...), []byte(fmt.Sprintf("%d", record.Position))...)
+
+	fullHash := sha256.Sum256(fullHashData)
+
+	return hex.EncodeToString(fullHash[:]), nil
+
 }

@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"github.com/iris-gateway/eps"
 	epsForms "github.com/iris-gateway/eps/forms"
+	"github.com/iris-gateway/eps/helpers"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"github.com/kiprotect/go-helpers/forms"
+	"sync"
 	"time"
 )
 
@@ -70,7 +72,9 @@ type APIDirectory struct {
 	eps.BaseDirectory
 	settings      APIDirectorySettings
 	jsonrpcClient *jsonrpc.Client
-	Cache         *DirectoryCache
+	entries       map[string]*eps.DirectoryEntry
+	records       []*eps.SignedChangeRecord
+	mutex         sync.Mutex
 }
 
 func APIDirectorySettingsValidator(settings map[string]interface{}) (interface{}, error) {
@@ -92,18 +96,114 @@ func MakeAPIDirectory(name string, settings interface{}) (eps.Directory, error) 
 			Name_: name,
 		},
 		jsonrpcClient: jsonrpc.MakeClient(apiSettings.JSONRPCClient),
+		entries:       make(map[string]*eps.DirectoryEntry),
+		records:       []*eps.SignedChangeRecord{},
 		settings:      apiSettings,
 	}
 
-	return d, nil
+	return d, d.update()
+}
+
+var UpdateForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "records",
+			Validators: []forms.Validator{
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &epsForms.SignedChangeRecordForm,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+type UpdateRecords struct {
+	Records []*eps.SignedChangeRecord `json:"records"`
+}
+
+func (f *APIDirectory) integrate(records []*eps.SignedChangeRecord) error {
+	for _, record := range records {
+		entry, ok := f.entries[record.Record.Name]
+		if !ok {
+			entry = eps.MakeDirectoryEntry()
+			entry.Name = record.Record.Name
+		}
+		if err := helpers.IntegrateChangeRecord(record, entry); err != nil {
+			return err
+		}
+		f.entries[record.Record.Name] = entry
+	}
+	return nil
+}
+
+// Updates the service directory with change records from the remote API
+func (f *APIDirectory) update() error {
+	// to do: ensure there's always one server name and endpoint
+	f.jsonrpcClient.SetServerName(f.settings.ServerNames[0])
+	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])
+
+	var position int64
+	if len(f.records) > 0 {
+		position = f.records[len(f.records)-1].Position + 1
+	} else {
+		position = 1
+	}
+
+	// we tell the internal proxy about an incoming connection
+	request := jsonrpc.MakeRequest("getRecords", "", map[string]interface{}{"Since": position})
+
+	if result, err := f.jsonrpcClient.Call(request); err != nil {
+		return err
+	} else {
+
+		if result.Error != nil {
+			return fmt.Errorf(result.Error.Message)
+		}
+
+		if result.Result == nil {
+			return nil
+		}
+
+		config := map[string]interface{}{
+			"records": result.Result,
+		}
+
+		if params, err := UpdateForm.Validate(config); err != nil {
+			return err
+		} else {
+			updateRecords := &UpdateRecords{}
+			if err := UpdateForm.Coerce(updateRecords, params); err != nil {
+				return err
+			} else {
+				f.records = append(f.records, updateRecords.Records...)
+				return f.integrate(updateRecords.Records)
+			}
+		}
+	}
 }
 
 func (f *APIDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntry, error) {
-	return nil, nil
+	entries := make([]*eps.DirectoryEntry, len(f.entries))
+	i := 0
+	for _, entry := range f.entries {
+		entries[i] = entry
+		i++
+	}
+	return eps.FilterDirectoryEntriesByQuery(entries, query), nil
 }
 
 func (f *APIDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
-	return nil, nil
+	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: f.Name()}); err != nil {
+		return nil, err
+	} else if len(entries) == 0 {
+		return nil, fmt.Errorf("no entry for myself")
+	} else {
+		return entries[0], nil
+	}
 }
 
 func (f *APIDirectory) Tip() (*eps.SignedChangeRecord, error) {

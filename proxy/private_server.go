@@ -55,7 +55,6 @@ func (p *ProxyConnection) Run() error {
 	proxyConnection, err := net.Dial("tcp", p.proxyEndpoint)
 
 	if err != nil {
-		proxyConnection.Close()
 		return err
 	}
 

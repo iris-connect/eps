@@ -16,30 +16,29 @@
       "services": [
         {
           "name": "locations",
-          "authorized": ["LocationAdministrators"],
+          "permissions": [{"group": "LocationAdministrators", "rights" : ["call"]}],
           "methods": [
             {
               "name": "add",
-              "authorized": ["ContactTracingProviders"],
               "params": [
                 {
                   "name": "name",
                   "validators": [
-                    {"Name": "IsString", "MinLength": 1, "MaxLength": 100},
-                    {"Name": "IsURL"}
+                    {"type": "IsString", "parameters":{"MinLength": 1, "MaxLength": 100}},
+                    {"type": "IsURL"}
                   ]
                 },
                 {
                   "name": "id",
                   "validators": [
-                    {"Name": "IsBytes", "Encoding": "base64", "MinLength": 16, "MaxLength": 16}
+                    {"type": "IsBytes", "parameters": {"Encoding": "base64", "MinLength": 16, "MaxLength": 16}}
                   ]
                 }
               ]
             },
             {
               "name": "check",
-              "authorized": ["HealthDepartments"]
+              "permissions": [{"group": "HealthDepartments", "rights" : ["call"]}]
             }
           ]
         }

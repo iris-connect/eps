@@ -19,7 +19,6 @@ package forms
 import (
 	"fmt"
 	"github.com/kiprotect/go-helpers/forms"
-	"strings"
 )
 
 var OperatorChannelForm = forms.Form{
@@ -139,20 +138,16 @@ var MethodParameterForm = forms.Form{
 	},
 }
 
-type IsValidRightsString struct{}
+type IsValidRightsList struct{}
 
-func (f IsValidRightsString) Validate(value interface{}, values map[string]interface{}) (interface{}, error) {
+func (f IsValidRightsList) Validate(value interface{}, values map[string]interface{}) (interface{}, error) {
 	// string validation happened before
-	strValue := value.(string)
-	rights := strings.Split(strValue, ",")
+	rights := value.([]string)
 
 	mapValues := map[string]bool{}
 
 	// we check that the permissions are valid
 	for _, right := range rights {
-		if right != "call" {
-			return nil, fmt.Errorf("invalid 'rights' string")
-		}
 		if _, ok := mapValues[right]; ok {
 			return nil, fmt.Errorf("duplicate 'rights' string")
 		} else {
@@ -174,8 +169,12 @@ var PermissionForm = forms.Form{
 		{
 			Name: "rights",
 			Validators: []forms.Validator{
-				forms.IsString{},
-				IsValidRightsString{},
+				forms.IsStringList{
+					Validators: []forms.Validator{
+						forms.IsIn{Choices: []interface{}{"call"}},
+					},
+				},
+				IsValidRightsList{},
 			},
 		},
 	},

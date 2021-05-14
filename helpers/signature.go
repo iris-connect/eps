@@ -14,30 +14,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package eps
+package helpers
 
 import (
 	"crypto/ecdsa"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"github.com/iris-gateway/eps"
 	"io/ioutil"
 	"math/big"
 )
-
-type Signature struct {
-	R           string `json:"r"`
-	S           string `json:"s"`
-	Certificate string `json:"c"`
-}
-
-type SignedData struct {
-	Signature *Signature  `json:"signature"`
-	Data      interface{} `json:"data"`
-}
 
 func VerifyCertificate(cert, rootCert *x509.Certificate, name string) error {
 	roots := x509.NewCertPool()
@@ -124,12 +113,12 @@ func BigInt(s string) (*big.Int, error) {
 	return i, nil
 }
 
-func LoadSignedData(data []byte) (*SignedData, error) {
-	signedData := &SignedData{}
+func LoadSignedData(data []byte) (*eps.SignedData, error) {
+	signedData := &eps.SignedData{}
 	return signedData, json.Unmarshal(data, &signedData)
 }
 
-func Verify(signedData *SignedData, rootCert *x509.Certificate, name string) (bool, error) {
+func Verify(signedData *eps.SignedData, rootCert *x509.Certificate, name string) (bool, error) {
 
 	cert, err := LoadCertificateFromString(signedData.Signature.Certificate, true)
 
@@ -144,10 +133,9 @@ func Verify(signedData *SignedData, rootCert *x509.Certificate, name string) (bo
 		}
 	}
 
-	if rawData, err := json.Marshal(signedData.Data); err != nil {
+	if hash, err := StructuredHash(signedData.Data); err != nil {
 		return false, err
 	} else {
-		s := sha256.Sum256(rawData)
 
 		ir, err := BigInt(signedData.Signature.R)
 
@@ -161,19 +149,17 @@ func Verify(signedData *SignedData, rootCert *x509.Certificate, name string) (bo
 			return false, err
 		}
 
-		return ecdsa.Verify(cert.PublicKey.(*ecdsa.PublicKey), s[:], ir, is), nil
+		return ecdsa.Verify(cert.PublicKey.(*ecdsa.PublicKey), hash, ir, is), nil
 	}
 }
 
-func Sign(data interface{}, key *ecdsa.PrivateKey, cert *x509.Certificate) (*SignedData, error) {
+func Sign(data interface{}, key *ecdsa.PrivateKey, cert *x509.Certificate) (*eps.SignedData, error) {
 
-	rawData, err := json.Marshal(data)
+	hash, err := StructuredHash(data)
 
 	if err != nil {
 		return nil, err
 	}
-
-	hash := sha256.Sum256(rawData)
 
 	r, s, err := ecdsa.Sign(rand.Reader, key, hash[:])
 
@@ -185,9 +171,9 @@ func Sign(data interface{}, key *ecdsa.PrivateKey, cert *x509.Certificate) (*Sig
 	if err != nil {
 		return nil, err
 	} else {
-		return &SignedData{
+		return &eps.SignedData{
 			Data: data,
-			Signature: &Signature{
+			Signature: &eps.Signature{
 				R:           r.String(),
 				S:           s.String(),
 				Certificate: string(pem.EncodeToMemory(block)),
