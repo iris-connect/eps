@@ -29,22 +29,36 @@ type GRPCClientChannel struct {
 	eps.BaseChannel
 	Settings    grpc.GRPCClientSettings
 	connections map[string]*GRPCServerConnection
+	stop        chan bool
 	mutex       sync.Mutex
 }
 
 type GRPCServerConnection struct {
-	Name      string
-	Address   string
-	client    *grpc.Client
-	channel   *GRPCClientChannel
-	connected bool
-	stop      chan bool
+	Name               string
+	Address            string
+	Stale              bool
+	establishedName    string
+	establishedAddress string
+	client             *grpc.Client
+	channel            *GRPCClientChannel
+	connected          bool
+	mutex              sync.Mutex
+	stop               chan bool
 }
 
 func (c *GRPCServerConnection) Open() error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	if c.connected {
-		// we're already connected
-		return nil
+		if c.establishedAddress == c.Address && c.establishedName == c.Name {
+			eps.Log.Debug("Connection still good, doing nothing...")
+			// we're already connected and nothing changed
+			return nil
+		}
+		// some connection details changed, we reestablish the connection
+		if err := c.Close(); err != nil {
+			return err
+		}
 	}
 	if client, err := grpc.MakeClient(&c.channel.Settings); err != nil {
 		return err
@@ -53,6 +67,8 @@ func (c *GRPCServerConnection) Open() error {
 	} else {
 		c.client = client
 		c.connected = true
+		c.establishedName = c.Name
+		c.establishedAddress = c.Address
 		// we open the server call in another goroutine
 		go func() {
 			for {
@@ -77,6 +93,8 @@ func (c *GRPCServerConnection) Open() error {
 }
 
 func (c *GRPCServerConnection) Close() error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	c.stop <- true
 	select {
 	case <-c.stop:
@@ -86,7 +104,6 @@ func (c *GRPCServerConnection) Close() error {
 		c.connected = false
 		return fmt.Errorf("timeout when closing channel")
 	}
-
 }
 
 type GRPCClientEntrySettings struct {
@@ -132,15 +149,45 @@ func MakeGRPCClientChannel(settings interface{}) (eps.Channel, error) {
 	return &GRPCClientChannel{
 		Settings:    settings.(grpc.GRPCClientSettings),
 		connections: make(map[string]*GRPCServerConnection),
+		stop:        make(chan bool),
 	}, nil
 }
 
 func (c *GRPCClientChannel) Open() error {
+	// we start the background task
+	go c.backgroundTask()
 	return c.openConnections()
 }
 
 func (c *GRPCClientChannel) Close() error {
+	c.stop <- true
+	<-c.stop
 	return c.closeConnections()
+}
+
+func (c *GRPCClientChannel) markConnectionsStale() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	for _, connection := range c.connections {
+		connection.Stale = true
+	}
+}
+
+func (c *GRPCClientChannel) clearStaleConnections() error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	var lastErr error
+	for key, connection := range c.connections {
+		if connection.Stale {
+			// this connection is stale, we remove it
+			if err := connection.Close(); err != nil {
+				eps.Log.Error(err)
+				lastErr = err
+			}
+			delete(c.connections, key)
+		}
+	}
+	return lastErr
 }
 
 func (c *GRPCClientChannel) getConnection(name string) *GRPCServerConnection {
@@ -169,12 +216,32 @@ func (c *GRPCClientChannel) closeConnections() error {
 	return lastErr
 }
 
+func (c *GRPCClientChannel) backgroundTask() {
+	for {
+		// we continuously watch for changes in the service directory and
+		// adapt our outgoing connections to that...
+		select {
+		case <-c.stop:
+			eps.Log.Debug("Stopping gRPC client background task")
+			c.stop <- true
+			return
+		case <-time.After(5 * time.Second):
+			if err := c.openConnections(); err != nil {
+				eps.Log.Error(err)
+			}
+		}
+	}
+}
+
 func (c *GRPCClientChannel) openConnections() error {
+	eps.Log.Debug("Opening active server connections...")
 	if entries, err := c.Directory().Entries(&eps.DirectoryQuery{
 		Channels: []string{"grpc_server"},
 	}); err != nil {
 		return err
 	} else {
+		// we mark all connections as stale
+		c.markConnectionsStale()
 		for _, entry := range entries {
 			if channel := entry.Channel("grpc_server"); channel == nil {
 				return fmt.Errorf("this should not happen: no grpc_server channel found")
@@ -191,9 +258,8 @@ func (c *GRPCClientChannel) openConnections() error {
 				}
 			}
 		}
+		return c.clearStaleConnections()
 	}
-	return nil
-
 }
 
 func (c *GRPCClientChannel) openConnection(address, name string) error {
@@ -209,6 +275,7 @@ func (c *GRPCClientChannel) openConnection(address, name string) error {
 
 	conn.Address = address
 	conn.Name = name
+	conn.Stale = false
 
 	c.setConnection(name, conn)
 
