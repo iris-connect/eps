@@ -125,6 +125,93 @@ type UpdateRecords struct {
 	Records []*eps.SignedChangeRecord `json:"records"`
 }
 
+func (f *APIDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntry, error) {
+	if err := f.update(); err != nil {
+		return nil, err
+	}
+	entries := make([]*eps.DirectoryEntry, len(f.entries))
+	i := 0
+	for _, entry := range f.entries {
+		entries[i] = entry
+		i++
+	}
+	return eps.FilterDirectoryEntriesByQuery(entries, query), nil
+}
+
+func (f *APIDirectory) EntryFor(name string) (*eps.DirectoryEntry, error) {
+	if err := f.update(); err != nil {
+		return nil, err
+	}
+	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: name}); err != nil {
+		return nil, err
+	} else if len(entries) == 0 {
+		return nil, fmt.Errorf("no entry for myself")
+	} else {
+		return entries[0], nil
+	}
+}
+
+func (f *APIDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
+	return f.EntryFor(f.Name())
+}
+
+func (f *APIDirectory) Tip() (*eps.SignedChangeRecord, error) {
+
+	// to do: ensure there's always one server name and endpoint
+	f.jsonrpcClient.SetServerName(f.settings.ServerNames[0])
+	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])
+
+	// we tell the internal proxy about an incoming connection
+	request := jsonrpc.MakeRequest("getTip", "", map[string]interface{}{})
+
+	if result, err := f.jsonrpcClient.Call(request); err != nil {
+		return nil, err
+	} else {
+		if result.Error != nil {
+			return nil, fmt.Errorf(result.Error.Message)
+		}
+
+		if result.Result == nil {
+			return nil, nil
+		}
+
+		if mapResult, ok := result.Result.(map[string]interface{}); !ok {
+			return nil, fmt.Errorf("expected a map")
+		} else if params, err := epsForms.SignedChangeRecordForm.Validate(mapResult); err != nil {
+			return nil, err
+		} else {
+			signedChangeRecord := &eps.SignedChangeRecord{}
+			if err := epsForms.SignedChangeRecordForm.Coerce(signedChangeRecord, params); err != nil {
+				return nil, err
+			} else {
+				return signedChangeRecord, nil
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+func (f *APIDirectory) Submit(signedChangeRecord *eps.SignedChangeRecord) error {
+	// to do: ensure there's always one server name and endpoint
+	f.jsonrpcClient.SetServerName(f.settings.ServerNames[0])
+	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])
+
+	// we tell the internal proxy about an incoming connection
+	request := jsonrpc.MakeRequest("submitChangeRecord", "", map[string]interface{}{"record": signedChangeRecord})
+
+	if result, err := f.jsonrpcClient.Call(request); err != nil {
+		return err
+	} else {
+		if result.Error != nil {
+			eps.Log.Error(result.Error)
+			return fmt.Errorf(result.Error.Message)
+		}
+		return nil
+	}
+
+}
+
 func (f *APIDirectory) integrate(records []*eps.SignedChangeRecord) error {
 	for _, record := range records {
 		entry, ok := f.entries[record.Record.Name]
@@ -184,81 +271,4 @@ func (f *APIDirectory) update() error {
 			}
 		}
 	}
-}
-
-func (f *APIDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntry, error) {
-	entries := make([]*eps.DirectoryEntry, len(f.entries))
-	i := 0
-	for _, entry := range f.entries {
-		entries[i] = entry
-		i++
-	}
-	return eps.FilterDirectoryEntriesByQuery(entries, query), nil
-}
-
-func (f *APIDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
-	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: f.Name()}); err != nil {
-		return nil, err
-	} else if len(entries) == 0 {
-		return nil, fmt.Errorf("no entry for myself")
-	} else {
-		return entries[0], nil
-	}
-}
-
-func (f *APIDirectory) Tip() (*eps.SignedChangeRecord, error) {
-
-	// to do: ensure there's always one server name and endpoint
-	f.jsonrpcClient.SetServerName(f.settings.ServerNames[0])
-	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])
-
-	// we tell the internal proxy about an incoming connection
-	request := jsonrpc.MakeRequest("getTip", "", map[string]interface{}{})
-
-	if result, err := f.jsonrpcClient.Call(request); err != nil {
-		return nil, err
-	} else {
-		if result.Error != nil {
-			return nil, fmt.Errorf(result.Error.Message)
-		}
-
-		if result.Result == nil {
-			return nil, nil
-		}
-
-		if mapResult, ok := result.Result.(map[string]interface{}); !ok {
-			return nil, fmt.Errorf("expected a map")
-		} else if params, err := epsForms.SignedChangeRecordForm.Validate(mapResult); err != nil {
-			return nil, err
-		} else {
-			signedChangeRecord := &eps.SignedChangeRecord{}
-			if err := epsForms.SignedChangeRecordForm.Coerce(signedChangeRecord, params); err != nil {
-				return nil, err
-			} else {
-				return signedChangeRecord, nil
-			}
-		}
-	}
-
-	return nil, nil
-}
-
-func (f *APIDirectory) Submit(signedChangeRecord *eps.SignedChangeRecord) error {
-	// to do: ensure there's always one server name and endpoint
-	f.jsonrpcClient.SetServerName(f.settings.ServerNames[0])
-	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])
-
-	// we tell the internal proxy about an incoming connection
-	request := jsonrpc.MakeRequest("submitChangeRecord", "", map[string]interface{}{"record": signedChangeRecord})
-
-	if result, err := f.jsonrpcClient.Call(request); err != nil {
-		return err
-	} else {
-		if result.Error != nil {
-			eps.Log.Error(result.Error)
-			return fmt.Errorf(result.Error.Message)
-		}
-		return nil
-	}
-
 }

@@ -59,15 +59,15 @@ func (s *Server) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 	return s.epsServer.DeliverRequest(request)
 }
 
-func MakeServer(settings *GRPCServerSettings, handler Handler) (*Server, error) {
+func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Directory) (*Server, error) {
 	var opts []grpc.ServerOption
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
 		return nil, err
 	} else {
-		opts = append(opts, grpc.Creds(credentials.NewTLS(tlsConfig)))
+		opts = append(opts, grpc.Creds(VerifyCredentials{ClientInfo: &ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}))
 	}
 
-	epsServer := MakeEPSServer(handler)
+	epsServer := MakeEPSServer(handler, directory)
 
 	grpcServer := grpc.NewServer(opts...)
 	protobuf.RegisterEPSServer(grpcServer, epsServer)

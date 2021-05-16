@@ -18,6 +18,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/protobuf"
 	"github.com/iris-gateway/eps/tls"
@@ -25,11 +26,38 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/types/known/structpb"
 	"io"
+	"net"
 )
 
 type Client struct {
 	connection *grpc.ClientConn
+	clientInfo *ClientInfo
 	settings   *GRPCClientSettings
+}
+
+type VerifyCredentials struct {
+	credentials.TransportCredentials
+	ClientInfo *ClientInfo
+}
+
+func (c VerifyCredentials) ServerHandshake(conn net.Conn) (net.Conn, credentials.AuthInfo, error) {
+	conn, authInfo, err := c.TransportCredentials.ServerHandshake(conn)
+	tlsInfo := authInfo.(credentials.TLSInfo)
+	name := tlsInfo.State.PeerCertificates[0].Subject.CommonName
+	c.ClientInfo.Name = name
+	fmt.Printf("Credential: %s\n", name)
+	return conn, authInfo, err
+}
+
+func (c VerifyCredentials) ClientHandshake(ctx context.Context, endpoint string, conn net.Conn) (net.Conn, credentials.AuthInfo, error) {
+	conn, authInfo, err := c.TransportCredentials.ClientHandshake(ctx, endpoint, conn)
+	if err != nil {
+		return conn, authInfo, err
+	}
+	tlsInfo := authInfo.(credentials.TLSInfo)
+	name := tlsInfo.State.PeerCertificates[0].Subject.CommonName
+	fmt.Printf("Credential: %s\n", name)
+	return conn, authInfo, err
 }
 
 func (c *Client) Connect(address, serverName string) error {
@@ -43,7 +71,8 @@ func (c *Client) Connect(address, serverName string) error {
 		return err
 	}
 
-	opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	vc := &VerifyCredentials{ClientInfo: &ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}
+	opts = append(opts, grpc.WithTransportCredentials(vc))
 
 	c.connection, err = grpc.Dial(address, opts...)
 
@@ -51,12 +80,17 @@ func (c *Client) Connect(address, serverName string) error {
 		return err
 	}
 
+	c.clientInfo = vc.ClientInfo
+
 	return nil
 
 }
 
 func (c *Client) Close() error {
-	return c.connection.Close()
+	err := c.connection.Close()
+	c.connection = nil
+	c.clientInfo = nil
+	return err
 }
 
 func (c *Client) ServerCall(messageBroker eps.MessageBroker, stop chan bool) error {
@@ -69,7 +103,6 @@ func (c *Client) ServerCall(messageBroker eps.MessageBroker, stop chan bool) err
 	stream, err := client.ServerCall(ctx)
 
 	if err != nil {
-		eps.Log.Error("Setup:", err)
 		return err
 	}
 

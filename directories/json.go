@@ -109,14 +109,18 @@ func (f *JSONDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntr
 	return eps.FilterDirectoryEntriesByQuery(f.Directory.Entries, query), nil
 }
 
-func (f *JSONDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
-	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: f.Name()}); err != nil {
+func (f *JSONDirectory) EntryFor(name string) (*eps.DirectoryEntry, error) {
+	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: name}); err != nil {
 		return nil, err
 	} else if len(entries) == 0 {
 		return nil, fmt.Errorf("no entry for myself")
 	} else {
 		return entries[0], nil
 	}
+}
+
+func (f *JSONDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
+	return f.EntryFor(f.Name())
 }
 
 func LoadJSONDirectory(path string) (*Directory, error) {

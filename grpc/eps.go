@@ -30,6 +30,7 @@ import (
 type EPSServer struct {
 	protobuf.UnimplementedEPSServer
 	connectedClients map[string]*ConnectedClient
+	directory        eps.Directory
 	mutex            sync.Mutex
 	handler          Handler
 }
@@ -99,9 +100,10 @@ type Handler interface {
 	HandleRequest(*eps.Request, *ClientInfo) (*eps.Response, error)
 }
 
-func MakeEPSServer(handler Handler) *EPSServer {
+func MakeEPSServer(handler Handler, directory eps.Directory) *EPSServer {
 	return &EPSServer{
 		handler:          handler,
+		directory:        directory,
 		connectedClients: make(map[string]*ConnectedClient),
 	}
 }
@@ -149,6 +151,10 @@ func (s *EPSServer) Call(context context.Context, pbRequest *protobuf.Request) (
 		Params: pbRequest.Params.AsMap(),
 		Method: pbRequest.Method,
 	}
+
+	eps.Log.Info(clientInfo)
+
+	request.Params["_client"] = clientInfo
 
 	if response, err := s.handler.HandleRequest(request, clientInfo); err != nil {
 		return nil, err
