@@ -145,7 +145,7 @@ func (f *APIDirectory) EntryFor(name string) (*eps.DirectoryEntry, error) {
 	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: name}); err != nil {
 		return nil, err
 	} else if len(entries) == 0 {
-		return nil, fmt.Errorf("no entry for myself")
+		return nil, fmt.Errorf("no entry for %s", name)
 	} else {
 		return entries[0], nil
 	}
@@ -233,15 +233,8 @@ func (f *APIDirectory) update() error {
 	f.jsonrpcClient.SetServerName(f.settings.ServerNames[0])
 	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])
 
-	var position int64
-	if len(f.records) > 0 {
-		position = f.records[len(f.records)-1].Position + 1
-	} else {
-		position = 1
-	}
-
 	// we tell the internal proxy about an incoming connection
-	request := jsonrpc.MakeRequest("getRecords", "", map[string]interface{}{"Since": position})
+	request := jsonrpc.MakeRequest("getRecords", "", map[string]interface{}{"Since": ""})
 
 	if result, err := f.jsonrpcClient.Call(request); err != nil {
 		return err
@@ -266,7 +259,8 @@ func (f *APIDirectory) update() error {
 			if err := UpdateForm.Coerce(updateRecords, params); err != nil {
 				return err
 			} else {
-				f.records = append(f.records, updateRecords.Records...)
+				f.records = updateRecords.Records
+				f.entries = make(map[string]*eps.DirectoryEntry)
 				return f.integrate(updateRecords.Records)
 			}
 		}

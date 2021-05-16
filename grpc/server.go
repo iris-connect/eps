@@ -72,7 +72,7 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
 		return nil, err
 	} else {
-		opts = append(opts, grpc.Creds(VerifyCredentials{ClientInfo: &eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}))
+		opts = append(opts, grpc.Creds(VerifyCredentials{directory: directory, ClientInfo: &eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}))
 	}
 
 	server := &Server{

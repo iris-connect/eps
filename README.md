@@ -10,13 +10,13 @@ Please ensure your Golang version is recent enough (>=1.13) before you attempt t
 
 To build the `eps` binary, simply run
 
-```
+```bash
 make
 ```
 
 For testing and development you'll also need TLS certificates, which you can generate with
 
-```
+```bash
 make certs
 ```
 
@@ -26,7 +26,7 @@ Please see below for additional dependencies you might need to install for vario
 
 To build the example services (e.g. the "locations" services `eps-ls`) simply run
 
-```
+```bash
 make examples
 ```
 
@@ -49,21 +49,43 @@ There are also role-specific development/test settings in the `settings/dev/role
 
 **Important: The settings parser includes support for variable replacement and many other things. But with great power comes great responsibility and attack surface, so make sure you only feed trusted YAML input to it, as it is not designed to handle untrusted or potentially malicious settings.**
 
+## Running The Service Directory
+
+All EPS servers use rely on the service directory (SD) to discover each other and learn about permissions, certificates etc.. For development, you can either use a JSON-based service directory, or run the service directory API like this:
+
+```bash
+SD_SETTINGS=settings/dev/roles/sd-1 sd --level debug run
+```
+
+To initialize the service directory you'll want to load some JSON files into it. The certificate generation process via `make certs` already produces a `directory.json` file in the certificate directory, which you can import via
+
+```bash
+EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-directory settings/dev/certs/directory.json
+```
+
+In addition, you can import the JSON directory via
+
+```bash
+EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-directory settings/dev/directory.json
+```
+
+This will give you a fully functional, basic service directory with certificate and service information.
+
 ## Running The Server
 
 To run the development EPS server simply run (from the main directory)
 
-```
-eps server run
+```bash
+EPS_SETTINGS=settings/dev/roles/hd-1 eps server run
 ```
 
-For this to work you need to ensure that your `GOPATH` is in your `PATH`. This will open the JSON RPC server and (depending on the settings) also a gRPC server.
+This will run the EPS server for the role `hd-1` (simulating a health department in the system). For this to work you need to ensure that your `GOPATH` is in your `PATH`. This will open the JSON RPC server and (depending on the settings) also a gRPC server.
 
 ## Testing
 
 To run the tests
 
-```
+```bash
 make test # run normal tests
 make test-races # test for race conditions
 ```
@@ -72,7 +94,7 @@ make test-races # test for race conditions
 
 To run the benchmarks
 
-```
+```bash
 make bench
 ```
 
@@ -84,7 +106,7 @@ If you're stuck debugging a problem please have a look at the [debugging guideli
 
 You can generate and update copyright headers as follows
 
-```
+```bash
 make copyright
 ```
 
@@ -98,7 +120,7 @@ Currently this code is licensed under Affero GPL 3.0.
 
 If you make modifications to the protocol buffers (`.proto` files) you need to recompile them using `protoc`. To install this on Debian/Ubuntu systems:
 
-```
+```bash
 sudo apt install protobuf-compiler
 ```
 

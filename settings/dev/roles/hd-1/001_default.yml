@@ -3,7 +3,7 @@ directory:
 # to use the JSON directory, uncomment this and comment everything below...
 #  type: json
 #  settings:
-#    path: "$DIR/../../directory/services.json"
+#    path: "$DIR/../../directory.json"
   type: api
   settings:
     jsonrpc_client:

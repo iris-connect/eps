@@ -19,7 +19,9 @@ package helpers
 import (
 	"crypto/ecdsa"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -56,6 +58,12 @@ func LoadCertificate(path string, verifyUsage bool) (*x509.Certificate, error) {
 	}
 
 	return LoadCertificateFromString(string(certificatePEM), verifyUsage)
+}
+
+func VerifyFingerprint(cert *x509.Certificate, fingerprint string) bool {
+	hash := sha256.Sum256(cert.Raw)
+	hexHash := hex.EncodeToString(hash[:])
+	return hexHash == fingerprint
 }
 
 func LoadCertificateFromString(data string, verifyUsage bool) (*x509.Certificate, error) {

@@ -22,9 +22,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/iris-gateway/eps"
+	epsForms "github.com/iris-gateway/eps/forms"
 	"github.com/iris-gateway/eps/helpers"
+	"github.com/kiprotect/go-helpers/forms"
 	"net/url"
-	"sort"
 	"sync"
 )
 
@@ -38,12 +39,14 @@ type RecordDirectorySettings struct {
 }
 
 type RecordDirectory struct {
-	rootCert  *x509.Certificate
-	dataStore helpers.DataStore
-	settings  *RecordDirectorySettings
-	entries   map[string]*eps.DirectoryEntry
-	records   []*eps.SignedChangeRecord
-	mutex     sync.Mutex
+	rootCert       *x509.Certificate
+	dataStore      helpers.DataStore
+	settings       *RecordDirectorySettings
+	entries        map[string]*eps.DirectoryEntry
+	recordsByHash  map[string]*eps.SignedChangeRecord
+	recordChildren map[string][]*eps.SignedChangeRecord
+	orderedRecords []*eps.SignedChangeRecord
+	mutex          sync.Mutex
 }
 
 func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, error) {
@@ -55,11 +58,12 @@ func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, e
 	}
 
 	f := &RecordDirectory{
-		rootCert:  cert,
-		records:   make([]*eps.SignedChangeRecord, 0),
-		entries:   make(map[string]*eps.DirectoryEntry),
-		settings:  settings,
-		dataStore: helpers.MakeFileDataStore(settings.DatabaseFile),
+		rootCert:       cert,
+		orderedRecords: make([]*eps.SignedChangeRecord, 0),
+		recordsByHash:  make(map[string]*eps.SignedChangeRecord),
+		recordChildren: make(map[string][]*eps.SignedChangeRecord),
+		settings:       settings,
+		dataStore:      helpers.MakeFileDataStore(settings.DatabaseFile),
 	}
 
 	if err := f.dataStore.Init(); err != nil {
@@ -164,8 +168,8 @@ func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord) (bool, error
 		return false, err
 	}
 
-	// operators can edit their own channels
-	if subjectInfo.Name == record.Record.Name && record.Record.Section == "channels" {
+	// operators can edit their own channels and set their own preferences
+	if subjectInfo.Name == record.Record.Name && (record.Record.Section == "channels" || record.Record.Section == "preferences") {
 		return true, nil
 	}
 
@@ -176,8 +180,14 @@ func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord) (bool, error
 		}
 	}
 
-	// to do: check that the signature is actually still valid
+	// we verify the signature of the record
+	if ok, err := f.verifySignature(record, f.orderedRecords); err != nil {
+		return false, err
+	} else if !ok {
+		return false, nil
+	}
 
+	// everything else is forbidden
 	return false, nil
 }
 
@@ -186,11 +196,8 @@ func (f *RecordDirectory) Append(record *eps.SignedChangeRecord) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
-	// we verify the signature of the record
-	if ok, err := f.verifySignature(record); err != nil {
+	if _, err := f.update(); err != nil {
 		return err
-	} else if !ok {
-		return fmt.Errorf("signature does not match")
 	}
 
 	if ok, err := f.canAppend(record); err != nil {
@@ -205,10 +212,14 @@ func (f *RecordDirectory) Append(record *eps.SignedChangeRecord) error {
 		return err
 	}
 
-	if ok, err := f.verifyHash(record, tip); err != nil {
+	if (tip != nil && record.ParentHash != tip.Hash) || (tip == nil && record.ParentHash != "") {
+		return fmt.Errorf("stale append, please try again")
+	}
+
+	if ok, err := f.verifyHash(record); err != nil {
 		return err
 	} else if !ok {
-		return fmt.Errorf("stale append, please try again")
+		return fmt.Errorf("invalid hash provided, please try again")
 	}
 
 	id, err := helpers.RandomID(16)
@@ -261,26 +272,80 @@ func (f *RecordDirectory) Tip() (*eps.SignedChangeRecord, error) {
 }
 
 func (f *RecordDirectory) tip() (*eps.SignedChangeRecord, error) {
-	if len(f.records) == 0 {
+	if len(f.orderedRecords) == 0 {
 		return nil, nil
 	}
-	return f.records[len(f.records)-1], nil
+	return f.orderedRecords[len(f.orderedRecords)-1], nil
 }
 
 // Returns all records since a given date
-func (f *RecordDirectory) Records(since int64) ([]*eps.SignedChangeRecord, error) {
+func (f *RecordDirectory) Records(since string) ([]*eps.SignedChangeRecord, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	relevantRecords := make([]*eps.SignedChangeRecord, 0)
-	for _, record := range f.records {
-		if record.Position >= since {
+	found := false
+	if since == "" {
+		found = true
+	}
+	for _, record := range f.orderedRecords {
+		if record.Hash == since {
+			found = true
+		}
+		if found {
 			relevantRecords = append(relevantRecords, record)
 		}
 	}
 	return relevantRecords, nil
 }
 
-func (f *RecordDirectory) verifySignature(record *eps.SignedChangeRecord) (bool, error) {
+type CertificatesList struct {
+	Certificates []*eps.OperatorCertificate `json:"certificates"`
+}
+
+var CertificatesListForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "certificates",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: []interface{}{}},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &epsForms.OperatorCertificateForm,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+func getFingerprint(records []*eps.SignedChangeRecord, name, keyUsage string) string {
+	lastFingerprint := ""
+	for _, record := range records {
+		if record.Record.Section != "certificates" || record.Record.Name != name {
+			continue
+		}
+		if params, err := CertificatesListForm.Validate(map[string]interface{}{"certificates": record.Record.Data}); err != nil {
+			eps.Log.Error(err)
+			continue
+		} else {
+			certificatesList := &CertificatesList{}
+			if err := CertificatesListForm.Coerce(certificatesList, params); err != nil {
+				eps.Log.Error(err)
+				continue
+			}
+			for _, certificate := range certificatesList.Certificates {
+				if certificate.KeyUsage == keyUsage {
+					lastFingerprint = certificate.Fingerprint
+				}
+			}
+		}
+	}
+	return lastFingerprint
+}
+
+func (f *RecordDirectory) verifySignature(record *eps.SignedChangeRecord, verifiedRecords []*eps.SignedChangeRecord) (bool, error) {
 	signedData := &eps.SignedData{
 		Data:      record,
 		Signature: record.Signature,
@@ -291,24 +356,36 @@ func (f *RecordDirectory) verifySignature(record *eps.SignedChangeRecord) (bool,
 	record.Signature = nil
 	defer func() { record.Signature = signature }()
 
+	cert, err := helpers.LoadCertificateFromString(signature.Certificate, true)
+
+	if err != nil {
+		return false, err
+	}
+
+	subjectInfo, err := getSubjectInfo(cert)
+
+	if err != nil {
+		return false, err
+	}
+
+	fingerprint := getFingerprint(verifiedRecords, subjectInfo.Name, "signing")
+
+	if fingerprint == "" {
+		for _, group := range subjectInfo.Groups {
+			if group == "sd-admin" {
+				// service directory admins can upload its own certificate info
+				// (but only if that info doesn't exist yet)
+				return true, nil
+			}
+		}
+	}
+
+	if !helpers.VerifyFingerprint(cert, fingerprint) {
+		// the fingerprint does not match the one we have on record
+		return false, nil
+	}
+
 	return helpers.Verify(signedData, f.rootCert, "")
-}
-
-type ByPosition struct {
-	Records []*eps.SignedChangeRecord
-}
-
-func (b ByPosition) Len() int {
-	return len(b.Records)
-}
-
-func (b ByPosition) Swap(i, j int) {
-	b.Records[i], b.Records[j] = b.Records[j], b.Records[i]
-}
-
-func (b ByPosition) Less(i, j int) bool {
-
-	return b.Records[i].Position < b.Records[j].Position
 }
 
 // Integrates a record into the directory
@@ -325,31 +402,65 @@ func (f *RecordDirectory) integrate(record *eps.SignedChangeRecord) error {
 	return nil
 }
 
-func (f *RecordDirectory) verifyHash(record, lastRecord *eps.SignedChangeRecord) (bool, error) {
+func (f *RecordDirectory) verifyHash(record *eps.SignedChangeRecord) (bool, error) {
 
-	if lastRecord != nil {
-		if lastRecord.Position+1 != record.Position {
-			return false, nil
-		}
-	}
+	submittedHash := record.Hash
 
-	lastHash := ""
-
-	if lastRecord != nil {
-		lastHash = lastRecord.Hash
-	}
-
-	reconstructedHash, err := helpers.CalculateHash(record, lastHash)
+	err := helpers.CalculateHash(record)
 
 	if err != nil {
 		return false, err
 	}
 
-	if reconstructedHash != record.Hash {
+	if submittedHash != record.Hash {
 		return false, nil
 	}
 
 	return true, nil
+}
+
+// calculates the chain length for a given record
+func (f *RecordDirectory) chainLength(record *eps.SignedChangeRecord, visited map[string]bool) (int, error) {
+
+	children, ok := f.recordChildren[record.Hash]
+
+	if !ok {
+		return 1, nil
+	}
+
+	max := 0
+	for _, child := range children {
+		if _, ok := visited[child.Hash]; ok {
+			return 0, fmt.Errorf("circular relationship detected")
+		} else {
+			visited[child.Hash] = true
+		}
+		if nm, err := f.chainLength(child, visited); err != nil {
+			return 0, err
+		} else if nm > max {
+			max = nm
+		}
+	}
+	return 1 + max, nil
+}
+
+// picks the best record from a series of alternatives (based on chain length)
+func (f *RecordDirectory) pickRecord(alternatives []*eps.SignedChangeRecord) (*eps.SignedChangeRecord, error) {
+	if len(alternatives) == 1 {
+		return alternatives[0], nil
+	}
+	maxLength := 0
+	var bestAlternative *eps.SignedChangeRecord
+	for _, alternative := range alternatives {
+		if cl, err := f.chainLength(alternative, map[string]bool{}); err != nil {
+			return nil, err
+		} else if cl > maxLength {
+			maxLength = cl
+			bestAlternative = alternative
+		}
+	}
+	return bestAlternative, nil
+
 }
 
 func (f *RecordDirectory) update() ([]*eps.SignedChangeRecord, error) {
@@ -364,44 +475,76 @@ func (f *RecordDirectory) update() ([]*eps.SignedChangeRecord, error) {
 				if err := json.Unmarshal(entry.Data, &record); err != nil {
 					return nil, fmt.Errorf("invalid record format!")
 				}
-				// we verify the signature of the record
-				if ok, err := f.verifySignature(record); err != nil {
-					return nil, err
-				} else if !ok {
-					eps.Log.Warning("signature does not match, ignoring...")
-					continue
-				}
 				changeRecords = append(changeRecords, record)
 			default:
 				return nil, fmt.Errorf("unknown entry type found...")
 			}
 		}
-		bp := &ByPosition{changeRecords}
-		sort.Sort(bp)
-		var lastRecord *eps.SignedChangeRecord
 
-		if len(f.records) > 0 {
-			lastRecord = f.records[len(f.records)-1]
+		for _, record := range changeRecords {
+			f.recordsByHash[record.Hash] = record
 		}
-		// now we validate the hash chain
-		for _, record := range bp.Records {
 
-			if ok, err := f.verifyHash(record, lastRecord); err != nil {
+		for _, record := range changeRecords {
+			var parentHash string
+			// if a parent exists we set the hash to it. Records without
+			// parent (root records) will be stored under the empty hash...
+			if parentRecord, ok := f.recordsByHash[record.ParentHash]; ok {
+				parentHash = parentRecord.Hash
+			}
+			children, ok := f.recordChildren[parentHash]
+			if !ok {
+				children = make([]*eps.SignedChangeRecord, 0)
+			}
+			children = append(children, record)
+			f.recordChildren[parentHash] = children
+		}
+
+		records := make([]*eps.SignedChangeRecord, 0)
+
+		currentRecords, ok := f.recordChildren[""]
+
+		// no records present it seems
+		if !ok {
+			return records, nil
+		}
+
+		for {
+			bestRecord, err := f.pickRecord(currentRecords)
+
+			if err != nil {
 				return nil, err
-			} else if !ok {
-				eps.Log.Warning("stale record found, ignoring...")
-				continue
 			}
 
-			lastRecord = record
+			records = append(records, bestRecord)
+
+			currentRecords, ok = f.recordChildren[bestRecord.Hash]
+
+			if !ok {
+				break
+			}
 		}
-		for _, record := range bp.Records {
+
+		for i, record := range records {
+			// we verify the signature of the record (without )
+			if ok, err := f.verifySignature(record, records[:i]); err != nil {
+				return nil, err
+			} else if !ok {
+				eps.Log.Warning("signature does not match, ignoring the remainder...")
+				records = records[:i]
+				break
+			}
+		}
+
+		// we store the ordered sequence of records
+		f.orderedRecords = records
+
+		// we regenerate the entries based on the new set of records
+		f.entries = make(map[string]*eps.DirectoryEntry)
+		for _, record := range records {
 			f.integrate(record)
 		}
 
-		allRecords := &ByPosition{append(f.records, bp.Records...)}
-		sort.Sort(allRecords)
-		f.records = allRecords.Records
-		return bp.Records, nil
+		return records, nil
 	}
 }

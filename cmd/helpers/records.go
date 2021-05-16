@@ -161,30 +161,24 @@ func submitChangeRecord(changeRecord *eps.ChangeRecord, settings *eps.Settings) 
 		eps.Log.Fatal(err)
 	}
 
-	var lastPosition int64
+	var parentHash string
 
 	if lastRecord != nil {
-		lastPosition = lastRecord.Position
+		parentHash = lastRecord.Hash
 	}
 
 	changeRecord.CreatedAt = eps.HashableTime{time.Now()}
 
 	signedChangeRecord := &eps.SignedChangeRecord{
-		Position: lastPosition + 1,
-		Record:   changeRecord,
+		ParentHash: parentHash,
+		Record:     changeRecord,
 	}
 
-	lastHash := ""
-
-	if lastRecord != nil {
-		lastHash = lastRecord.Hash
-	}
-
-	if newHash, err := helpers.CalculateHash(signedChangeRecord, lastHash); err != nil {
+	if err := helpers.CalculateHash(signedChangeRecord); err != nil {
 		eps.Log.Fatal(err)
-	} else {
-		signedChangeRecord.Hash = newHash
 	}
+
+	eps.Log.Info(signedChangeRecord.Hash)
 
 	signedData, err := helpers.Sign(signedChangeRecord, key, certificate)
 	signedChangeRecord.Signature = signedData.Signature

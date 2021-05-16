@@ -27,6 +27,7 @@ import (
 	epsForms "github.com/iris-gateway/eps/forms"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"github.com/kiprotect/go-helpers/forms"
+	"regexp"
 	"sync"
 )
 
@@ -122,7 +123,7 @@ func (c *Server) getEntry(context *jsonrpc.Context, params *GetEntryParams) *jso
 }
 
 type GetRecordsParams struct {
-	Since int64 `json:"since"`
+	Since string `json:"since"`
 }
 
 var GetRecordsForm = forms.Form{
@@ -130,10 +131,10 @@ var GetRecordsForm = forms.Form{
 		{
 			Name: "since",
 			Validators: []forms.Validator{
-				forms.IsOptional{Default: 0},
-				forms.IsInteger{
-					HasMin: true,
-					Min:    0,
+				forms.IsOptional{Default: ""},
+				forms.IsString{},
+				forms.MatchesRegex{
+					Regex: regexp.MustCompile(`^([a-f0-9]{64}|)$`),
 				},
 			},
 		},

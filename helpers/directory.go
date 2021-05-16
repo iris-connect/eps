@@ -17,9 +17,7 @@
 package helpers
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/forms"
 )
@@ -49,26 +47,19 @@ func IntegrateChangeRecord(record *eps.SignedChangeRecord, entry *eps.DirectoryE
 	return nil
 }
 
-func CalculateHash(record *eps.SignedChangeRecord, previousHash string) (string, error) {
+func CalculateHash(record *eps.SignedChangeRecord) error {
+
+	// we always reset the hash before calculating the new one
+	record.Hash = ""
 
 	hash, err := StructuredHash(record.Record)
 
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	previousHashBytes, err := hex.DecodeString(previousHash)
+	record.Hash = hex.EncodeToString(hash[:])
 
-	if err != nil {
-		return "", err
-	}
-
-	// we construct new hash data from the hash of the last record, the hash of the current
-	// record and the position in the hash chain
-	fullHashData := append(append(previousHashBytes, hash[:]...), []byte(fmt.Sprintf("%d", record.Position))...)
-
-	fullHash := sha256.Sum256(fullHashData)
-
-	return hex.EncodeToString(fullHash[:]), nil
+	return nil
 
 }

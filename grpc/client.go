@@ -18,8 +18,10 @@ package grpc
 
 import (
 	"context"
+	"crypto/x509"
 	"fmt"
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/helpers"
 	"github.com/iris-gateway/eps/protobuf"
 	"github.com/iris-gateway/eps/tls"
 	"google.golang.org/grpc"
@@ -31,6 +33,7 @@ import (
 )
 
 type Client struct {
+	directory  eps.Directory
 	connection *grpc.ClientConn
 	clientInfo *eps.ClientInfo
 	settings   *GRPCClientSettings
@@ -39,15 +42,55 @@ type Client struct {
 
 type VerifyCredentials struct {
 	credentials.TransportCredentials
+	directory  eps.Directory
 	ClientInfo *eps.ClientInfo
+}
+
+func (c VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string) (bool, error) {
+	if entry, err := c.directory.EntryFor(name); err != nil {
+		return false, err
+	} else {
+		// we go through all certificates for the entry
+		for _, directoryCert := range entry.Certificates {
+			// we make sure the certificate is good for encryption
+			if directoryCert.KeyUsage != "encryption" {
+				continue
+			}
+			// we check if this is a valid certificate for this operator
+			if helpers.VerifyFingerprint(cert, directoryCert.Fingerprint) {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+}
+
+func (c VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInfo) (net.Conn, credentials.AuthInfo, error) {
+
+	tlsInfo := authInfo.(credentials.TLSInfo)
+	cert := tlsInfo.State.PeerCertificates[0]
+	name := cert.Subject.CommonName
+
+	if ok, err := c.checkFingerprint(cert, name); err != nil {
+		return conn, authInfo, err
+	} else if !ok {
+		return conn, authInfo, fmt.Errorf("invalid certificate")
+	}
+
+	c.ClientInfo.Name = name
+	return conn, authInfo, nil
+
 }
 
 func (c VerifyCredentials) ServerHandshake(conn net.Conn) (net.Conn, credentials.AuthInfo, error) {
 	conn, authInfo, err := c.TransportCredentials.ServerHandshake(conn)
-	tlsInfo := authInfo.(credentials.TLSInfo)
-	name := tlsInfo.State.PeerCertificates[0].Subject.CommonName
-	c.ClientInfo.Name = name
-	return conn, authInfo, err
+
+	if err != nil {
+		return conn, authInfo, err
+	}
+
+	return c.handshake(conn, authInfo)
+
 }
 
 func (c VerifyCredentials) ClientHandshake(ctx context.Context, endpoint string, conn net.Conn) (net.Conn, credentials.AuthInfo, error) {
@@ -55,11 +98,8 @@ func (c VerifyCredentials) ClientHandshake(ctx context.Context, endpoint string,
 	if err != nil {
 		return conn, authInfo, err
 	}
-	tlsInfo := authInfo.(credentials.TLSInfo)
-	name := tlsInfo.State.PeerCertificates[0].Subject.CommonName
-	c.ClientInfo.Name = name
-	fmt.Printf("Credential: %s\n", name)
-	return conn, authInfo, err
+
+	return c.handshake(conn, authInfo)
 }
 
 func (c *Client) Connect(address, serverName string) error {
@@ -75,7 +115,7 @@ func (c *Client) Connect(address, serverName string) error {
 		return err
 	}
 
-	vc := &VerifyCredentials{ClientInfo: &eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}
+	vc := &VerifyCredentials{directory: c.directory, ClientInfo: &eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}
 	opts = append(opts, grpc.WithTransportCredentials(vc))
 
 	c.connection, err = grpc.Dial(address, opts...)
@@ -139,7 +179,6 @@ func (c *Client) ServerCall(handler Handler, stop chan bool) error {
 		}
 
 		if err != nil {
-			eps.Log.Error("Call err:", err)
 			return err
 		}
 
@@ -239,10 +278,11 @@ func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 
 }
 
-func MakeClient(settings *GRPCClientSettings) (*Client, error) {
+func MakeClient(settings *GRPCClientSettings, directory eps.Directory) (*Client, error) {
 
 	return &Client{
-		settings: settings,
+		settings:  settings,
+		directory: directory,
 	}, nil
 
 }

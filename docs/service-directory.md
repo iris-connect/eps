@@ -31,7 +31,7 @@ EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-record settings
 This will submit the change record stored in `example-change-record.json`. We can also convert a JSON-based service directory into change records and submit all of them to the service directory API via the `sd submit-directory` command:
 
 ```bash
-EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-directory settings/dev/directory/services.json
+EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-directory settings/dev/directory.json
 ```
 
 ### Retrieving entries and records

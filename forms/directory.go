@@ -19,6 +19,7 @@ package forms
 import (
 	"fmt"
 	"github.com/kiprotect/go-helpers/forms"
+	"regexp"
 )
 
 var OperatorChannelForm = forms.Form{
@@ -45,7 +46,7 @@ var OperatorChannelForm = forms.Form{
 var OperatorCertificateForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "serial_number",
+			Name: "fingerprint",
 			Validators: []forms.Validator{
 				forms.IsString{},
 			},
@@ -212,6 +213,37 @@ var OperatorSettingsForm = forms.Form{
 	},
 }
 
+var OperatorPreferencesForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "operator",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: ""},
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "service",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: ""},
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "environment",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: ""},
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "settings",
+			Validators: []forms.Validator{
+				forms.IsStringMap{}, // to do: restrict size of settings (?)
+			},
+		},
+	},
+}
 var OperatorServiceForm = forms.Form{
 	Fields: []forms.Field{
 		{
@@ -296,6 +328,19 @@ var DirectoryEntryForm = forms.Form{
 			},
 		},
 		{
+			Name: "preferences",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: []interface{}{}},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &OperatorPreferencesForm,
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "certificates",
 			Validators: []forms.Validator{
 				forms.IsOptional{Default: []interface{}{}},
@@ -314,21 +359,22 @@ var DirectoryEntryForm = forms.Form{
 var SignedChangeRecordForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "position",
-			Validators: []forms.Validator{
-				forms.IsInteger{
-					HasMin: true,
-					Min:    0,
-				},
-			},
-		},
-		{
 			Name: "hash",
 			Validators: []forms.Validator{
 				forms.IsHex{
 					Strict:    true, // we don't allow any '-' characters
 					MinLength: 32,   // this is the binary length
 					MaxLength: 32,   // this is the binary length
+				},
+			},
+		},
+		{
+			Name: "parent_hash",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: ""},
+				forms.IsString{},
+				forms.MatchesRegex{
+					Regex: regexp.MustCompile(`^([a-f0-9]{64}|)$`),
 				},
 			},
 		},

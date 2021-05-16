@@ -60,7 +60,7 @@ func (c *GRPCServerConnection) Open() error {
 			return err
 		}
 	}
-	if client, err := grpc.MakeClient(&c.channel.Settings); err != nil {
+	if client, err := grpc.MakeClient(&c.channel.Settings, c.channel.Directory()); err != nil {
 		return err
 	} else if err := client.Connect(c.Address, c.Name); err != nil {
 		return err
@@ -315,7 +315,7 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 		return nil, err
 	}
 
-	if client, err := grpc.MakeClient(&c.Settings); err != nil {
+	if client, err := grpc.MakeClient(&c.Settings, c.Directory()); err != nil {
 		return nil, err
 	} else if err := client.Connect(settings.Address, entry.Name); err != nil {
 		return nil, err

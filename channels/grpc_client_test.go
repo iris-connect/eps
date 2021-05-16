@@ -28,8 +28,8 @@ func TestGRPCClientConnection(t *testing.T) {
 
 	fixtures := []th.FC{
 		{fixtures.Settings{}, "settings"},
-		{fixtures.MessageBroker{}, "broker"},
 		{fixtures.Directory{}, "directory"},
+		{fixtures.MessageBroker{}, "broker"},
 		{fixtures.Channel{"test gRPC client"}, "client"},
 		{fixtures.Channel{"test gRPC server"}, "server"},
 	}

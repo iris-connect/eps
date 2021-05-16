@@ -50,9 +50,9 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 
 func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *ClientInfo) (*Response, error) {
 
-	// we always add the client information to the request
-	if request.Params != nil {
-		request.Params["_client"] = clientInfo
+	// we always add the client information to the request (if it exists)
+	if request.Params != nil && clientInfo != nil {
+		request.Params["_client"] = clientInfo.AsStruct()
 	}
 
 	address, err := GetAddress(request.ID)

@@ -39,6 +39,13 @@ type ClientInfo struct {
 	Name string `json:"name"`
 }
 
+// for inclusion in protobuf...
+func (c *ClientInfo) AsStruct() map[string]interface{} {
+	return map[string]interface{}{
+		"name": c.Name,
+	}
+}
+
 func GetAddress(id string) (*Address, error) {
 	if groups := IDAddressRegexp.FindStringSubmatch(id); groups == nil {
 		return nil, fmt.Errorf("invalid ID format")

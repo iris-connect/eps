@@ -45,9 +45,19 @@ type DirectoryEntry struct {
 	Services     []*OperatorService     `json:"services"`
 	Certificates []*OperatorCertificate `json:"certificates"`
 	Settings     []*OperatorSettings    `json:"settings"`
+	Preferences  []*OperatorPreferences `json:"preferences"`
 	Records      []*SignedChangeRecord  `json:"records"`
 }
 
+// preferences may be set by the corresponding operator itself
+type OperatorPreferences struct {
+	Operator    string                 `json:"operator"`
+	Service     string                 `json:"service"`
+	Environment string                 `json:"environment"`
+	Preferences map[string]interface{} `json:"preferences"`
+}
+
+// settings may only be set by a directory admin
 type OperatorSettings struct {
 	Operator    string                 `json:"operator"`
 	Service     string                 `json:"service"`
@@ -61,8 +71,8 @@ type OperatorChannel struct {
 }
 
 type OperatorCertificate struct {
-	SerialNumber string `json:"serial_number"`
-	KeyUsage     string `json:"key_usage"`
+	Fingerprint string `json:"fingerprint"`
+	KeyUsage    string `json:"key_usage"`
 }
 
 type OperatorService struct {
@@ -93,10 +103,10 @@ type ServiceValidator struct {
 }
 
 type SignedChangeRecord struct {
-	Position  int64         `json:"position"`
-	Hash      string        `json:"hash"`
-	Signature *Signature    `json:"signature"`
-	Record    *ChangeRecord `json:"record"`
+	ParentHash string        `json:"parent_hash"`
+	Hash       string        `json:"hash"`
+	Signature  *Signature    `json:"signature"`
+	Record     *ChangeRecord `json:"record"`
 }
 
 type Signature struct {
@@ -190,6 +200,8 @@ func FilterDirectoryEntriesByQuery(entries []*DirectoryEntry, query *DirectoryQu
 					break
 				}
 			}
+		} else {
+			found = true
 		}
 		if !found {
 			continue
