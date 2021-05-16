@@ -72,7 +72,7 @@ func (c *GRPCServerConnection) Open() error {
 		// we open the server call in another goroutine
 		go func() {
 			for {
-				if err := client.ServerCall(c.channel.MessageBroker(), c.stop); err != nil {
+				if err := client.ServerCall(c.channel, c.stop); err != nil {
 					eps.Log.Error(err)
 				} else {
 					// the call stopped because it was requested to
@@ -281,6 +281,10 @@ func (c *GRPCClientChannel) openConnection(address, name string) error {
 
 	return conn.Open()
 
+}
+
+func (c *GRPCClientChannel) HandleRequest(request *eps.Request, clientInfo *eps.ClientInfo) (*eps.Response, error) {
+	return c.MessageBroker().DeliverRequest(request, clientInfo)
 }
 
 func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {

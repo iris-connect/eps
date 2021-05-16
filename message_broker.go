@@ -23,16 +23,18 @@ import (
 type MessageBroker interface {
 	AddChannel(Channel) error
 	Channels() []Channel
-	DeliverRequest(*Request) (*Response, error)
+	DeliverRequest(*Request, *ClientInfo) (*Response, error)
 }
 
 type BasicMessageBroker struct {
-	channels []Channel
+	channels  []Channel
+	directory Directory
 }
 
-func MakeBasicMessageBroker() (*BasicMessageBroker, error) {
+func MakeBasicMessageBroker(directory Directory) (*BasicMessageBroker, error) {
 	return &BasicMessageBroker{
-		channels: make([]Channel, 0),
+		channels:  make([]Channel, 0),
+		directory: directory,
 	}, nil
 }
 
@@ -46,14 +48,16 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 	return nil
 }
 
-func (b *BasicMessageBroker) DeliverRequest(request *Request) (*Response, error) {
+func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *ClientInfo) (*Response, error) {
 
-	Log.Info(request.ID)
+	// we always add the client information to the request
+	if request.Params != nil {
+		request.Params["_client"] = clientInfo
+	}
 
 	address, err := GetAddress(request.ID)
 
 	if err != nil {
-		Log.Error("addressing errro...")
 		return nil, err
 	}
 

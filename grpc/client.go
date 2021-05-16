@@ -27,17 +27,19 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"io"
 	"net"
+	"sync"
 )
 
 type Client struct {
 	connection *grpc.ClientConn
-	clientInfo *ClientInfo
+	clientInfo *eps.ClientInfo
 	settings   *GRPCClientSettings
+	mutex      sync.Mutex
 }
 
 type VerifyCredentials struct {
 	credentials.TransportCredentials
-	ClientInfo *ClientInfo
+	ClientInfo *eps.ClientInfo
 }
 
 func (c VerifyCredentials) ServerHandshake(conn net.Conn) (net.Conn, credentials.AuthInfo, error) {
@@ -45,7 +47,6 @@ func (c VerifyCredentials) ServerHandshake(conn net.Conn) (net.Conn, credentials
 	tlsInfo := authInfo.(credentials.TLSInfo)
 	name := tlsInfo.State.PeerCertificates[0].Subject.CommonName
 	c.ClientInfo.Name = name
-	fmt.Printf("Credential: %s\n", name)
 	return conn, authInfo, err
 }
 
@@ -56,13 +57,16 @@ func (c VerifyCredentials) ClientHandshake(ctx context.Context, endpoint string,
 	}
 	tlsInfo := authInfo.(credentials.TLSInfo)
 	name := tlsInfo.State.PeerCertificates[0].Subject.CommonName
+	c.ClientInfo.Name = name
 	fmt.Printf("Credential: %s\n", name)
 	return conn, authInfo, err
 }
 
 func (c *Client) Connect(address, serverName string) error {
-	var err error
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
+	var err error
 	var opts []grpc.DialOption
 
 	tlsConfig, err := tls.TLSClientConfig(c.settings.TLS, serverName)
@@ -71,7 +75,7 @@ func (c *Client) Connect(address, serverName string) error {
 		return err
 	}
 
-	vc := &VerifyCredentials{ClientInfo: &ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}
+	vc := &VerifyCredentials{ClientInfo: &eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}
 	opts = append(opts, grpc.WithTransportCredentials(vc))
 
 	c.connection, err = grpc.Dial(address, opts...)
@@ -87,13 +91,17 @@ func (c *Client) Connect(address, serverName string) error {
 }
 
 func (c *Client) Close() error {
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	err := c.connection.Close()
 	c.connection = nil
 	c.clientInfo = nil
 	return err
 }
 
-func (c *Client) ServerCall(messageBroker eps.MessageBroker, stop chan bool) error {
+func (c *Client) ServerCall(handler Handler, stop chan bool) error {
 
 	client := protobuf.NewEPSClient(c.connection)
 
@@ -141,11 +149,12 @@ func (c *Client) ServerCall(messageBroker eps.MessageBroker, stop chan bool) err
 			Method: pbRequest.Method,
 		}
 
-		response, err := messageBroker.DeliverRequest(request)
+		response, err := handler.HandleRequest(request, c.clientInfo)
 
 		pbResponse := &protobuf.Response{
 			Id: pbRequest.Id,
 		}
+
 		if err != nil {
 			pbResponse.Error = &protobuf.Error{
 				Code:    -100,

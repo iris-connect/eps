@@ -35,6 +35,10 @@ type Request struct {
 	ID     string                 `json:"id"`
 }
 
+type ClientInfo struct {
+	Name string `json:"name"`
+}
+
 func GetAddress(id string) (*Address, error) {
 	if groups := IDAddressRegexp.FindStringSubmatch(id); groups == nil {
 		return nil, fmt.Errorf("invalid ID format")

@@ -45,8 +45,8 @@ func MakeGRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	}, nil
 }
 
-func (c *GRPCServerChannel) HandleRequest(request *eps.Request, clientInfo *grpc.ClientInfo) (*eps.Response, error) {
-	return c.MessageBroker().DeliverRequest(request)
+func (c *GRPCServerChannel) HandleRequest(request *eps.Request, clientInfo *eps.ClientInfo) (*eps.Response, error) {
+	return c.MessageBroker().DeliverRequest(request, clientInfo)
 }
 
 func (c *GRPCServerChannel) Open() error {

@@ -24,6 +24,7 @@ package proxy
 import (
 	"fmt"
 	"github.com/iris-gateway/eps"
+	epsForms "github.com/iris-gateway/eps/forms"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"github.com/kiprotect/go-helpers/forms"
 	"net"
@@ -123,16 +124,26 @@ var IncomingConnectionForm = forms.Form{
 				forms.IsString{},
 			},
 		},
+		{
+			Name: "_client",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &epsForms.ClientInfoForm,
+				},
+			},
+		},
 	},
 }
 
 type IncomingConnectionParams struct {
-	Endpoint string `json:"endpoint"`
-	Token    []byte `json:"token"`
+	Endpoint string          `json:"endpoint"`
+	Token    []byte          `json:"token"`
+	Client   *eps.ClientInfo `json:"_client"`
 }
 
 func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *IncomingConnectionParams) *jsonrpc.Response {
 
+	eps.Log.Info(params.Client)
 	connection := MakeProxyConnection(params.Endpoint, c.settings.InternalEndpoint, params.Token)
 
 	go func() {
