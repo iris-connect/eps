@@ -33,8 +33,17 @@ func handler(context *http.Context) {
 
 func main() {
 
+	bindAddress := os.Getenv("IS_BIND_ADDRESS")
+
+	if bindAddress == "" {
+		// this is just a test server so we bind it to 0.0.0.0 by default to
+		// make testing and development easier. We'll never bind production
+		// servers to 0.0.0.0 by default for security reasons.
+		bindAddress = "0.0.0.0:8888"
+	}
+
 	settings := &http.HTTPServerSettings{
-		BindAddress: "localhost:8888",
+		BindAddress: bindAddress,
 		TLS: &tls.TLSSettings{
 			CACertificateFile: "settings/dev/certs/root.crt",
 			CertificateFile: "settings/dev/certs/internal-server.crt",
