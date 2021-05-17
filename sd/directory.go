@@ -18,14 +18,10 @@ package sd
 
 import (
 	"crypto/x509"
-	"encoding/asn1"
 	"encoding/json"
 	"fmt"
 	"github.com/iris-gateway/eps"
-	epsForms "github.com/iris-gateway/eps/forms"
 	"github.com/iris-gateway/eps/helpers"
-	"github.com/kiprotect/go-helpers/forms"
-	"net/url"
 	"sync"
 )
 
@@ -103,56 +99,6 @@ func (f *RecordDirectory) Entries(*eps.DirectoryQuery) ([]*eps.DirectoryEntry, e
 	return nil, nil
 }
 
-type SubjectInfo struct {
-	Name     string
-	DNSNames []string
-	Groups   []string
-}
-
-func getSubjectInfo(cert *x509.Certificate) (*SubjectInfo, error) {
-
-	// subject alternative name extension
-	id := asn1.ObjectIdentifier{2, 5, 29, 17}
-
-	subjectInfo := &SubjectInfo{
-		DNSNames: make([]string, 0),
-		Groups:   make([]string, 0),
-	}
-
-	for _, extension := range cert.Extensions {
-		if !extension.Id.Equal(id) {
-			continue
-		}
-		// we unmarshal the ASN.1 object
-		altNames := []asn1.RawValue{}
-		if _, err := asn1.Unmarshal(extension.Value, &altNames); err != nil {
-			return nil, err
-		}
-		for _, altName := range altNames {
-			if altName.Tag == 6 {
-				// tag 6 is URI (don't ask why...)
-				if groupUrl, err := url.Parse(string(altName.Bytes)); err != nil {
-					return nil, err
-				} else {
-					switch groupUrl.Scheme {
-					case "iris-group":
-						if groupUrl.Host != "" {
-							subjectInfo.Groups = append(subjectInfo.Groups, groupUrl.Host)
-						}
-					case "iris-name":
-						subjectInfo.Name = groupUrl.Host
-					}
-				}
-			} else if altName.Tag == 2 {
-				// tag 2 is DNS (don't ask why...)
-				subjectInfo.DNSNames = append(subjectInfo.DNSNames, string(altName.Bytes))
-			}
-		}
-	}
-	return subjectInfo, nil
-
-}
-
 // determines whether a subject can append to the service directory
 func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord) (bool, error) {
 
@@ -162,7 +108,7 @@ func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord) (bool, error
 		return false, err
 	}
 
-	subjectInfo, err := getSubjectInfo(cert)
+	subjectInfo, err := helpers.GetSubjectInfo(cert)
 
 	if err != nil {
 		return false, err
@@ -180,8 +126,8 @@ func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord) (bool, error
 		}
 	}
 
-	// we verify the signature of the record
-	if ok, err := f.verifySignature(record, f.orderedRecords); err != nil {
+	// we verify the signature and hash of the record
+	if ok, err := helpers.VerifyRecord(record, f.orderedRecords, f.rootCert); err != nil {
 		return false, err
 	} else if !ok {
 		return false, nil
@@ -214,12 +160,6 @@ func (f *RecordDirectory) Append(record *eps.SignedChangeRecord) error {
 
 	if (tip != nil && record.ParentHash != tip.Hash) || (tip == nil && record.ParentHash != "") {
 		return fmt.Errorf("stale append, please try again")
-	}
-
-	if ok, err := f.verifyHash(record); err != nil {
-		return err
-	} else if !ok {
-		return fmt.Errorf("invalid hash provided, please try again")
 	}
 
 	id, err := helpers.RandomID(16)
@@ -298,96 +238,6 @@ func (f *RecordDirectory) Records(since string) ([]*eps.SignedChangeRecord, erro
 	return relevantRecords, nil
 }
 
-type CertificatesList struct {
-	Certificates []*eps.OperatorCertificate `json:"certificates"`
-}
-
-var CertificatesListForm = forms.Form{
-	Fields: []forms.Field{
-		{
-			Name: "certificates",
-			Validators: []forms.Validator{
-				forms.IsOptional{Default: []interface{}{}},
-				forms.IsList{
-					Validators: []forms.Validator{
-						forms.IsStringMap{
-							Form: &epsForms.OperatorCertificateForm,
-						},
-					},
-				},
-			},
-		},
-	},
-}
-
-func getFingerprint(records []*eps.SignedChangeRecord, name, keyUsage string) string {
-	lastFingerprint := ""
-	for _, record := range records {
-		if record.Record.Section != "certificates" || record.Record.Name != name {
-			continue
-		}
-		if params, err := CertificatesListForm.Validate(map[string]interface{}{"certificates": record.Record.Data}); err != nil {
-			eps.Log.Error(err)
-			continue
-		} else {
-			certificatesList := &CertificatesList{}
-			if err := CertificatesListForm.Coerce(certificatesList, params); err != nil {
-				eps.Log.Error(err)
-				continue
-			}
-			for _, certificate := range certificatesList.Certificates {
-				if certificate.KeyUsage == keyUsage {
-					lastFingerprint = certificate.Fingerprint
-				}
-			}
-		}
-	}
-	return lastFingerprint
-}
-
-func (f *RecordDirectory) verifySignature(record *eps.SignedChangeRecord, verifiedRecords []*eps.SignedChangeRecord) (bool, error) {
-	signedData := &eps.SignedData{
-		Data:      record,
-		Signature: record.Signature,
-	}
-
-	// we temporarily remove the signature from the signed record
-	signature := record.Signature
-	record.Signature = nil
-	defer func() { record.Signature = signature }()
-
-	cert, err := helpers.LoadCertificateFromString(signature.Certificate, true)
-
-	if err != nil {
-		return false, err
-	}
-
-	subjectInfo, err := getSubjectInfo(cert)
-
-	if err != nil {
-		return false, err
-	}
-
-	fingerprint := getFingerprint(verifiedRecords, subjectInfo.Name, "signing")
-
-	if fingerprint == "" {
-		for _, group := range subjectInfo.Groups {
-			if group == "sd-admin" {
-				// service directory admins can upload its own certificate info
-				// (but only if that info doesn't exist yet)
-				return true, nil
-			}
-		}
-	}
-
-	if !helpers.VerifyFingerprint(cert, fingerprint) {
-		// the fingerprint does not match the one we have on record
-		return false, nil
-	}
-
-	return helpers.Verify(signedData, f.rootCert, "")
-}
-
 // Integrates a record into the directory
 func (f *RecordDirectory) integrate(record *eps.SignedChangeRecord) error {
 	entry, ok := f.entries[record.Record.Name]
@@ -402,64 +252,35 @@ func (f *RecordDirectory) integrate(record *eps.SignedChangeRecord) error {
 	return nil
 }
 
-func (f *RecordDirectory) verifyHash(record *eps.SignedChangeRecord) (bool, error) {
-
-	submittedHash := record.Hash
-
-	err := helpers.CalculateHash(record)
-
-	if err != nil {
-		return false, err
-	}
-
-	if submittedHash != record.Hash {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-// calculates the chain length for a given record
-func (f *RecordDirectory) chainLength(record *eps.SignedChangeRecord, visited map[string]bool) (int, error) {
-
-	children, ok := f.recordChildren[record.Hash]
-
-	if !ok {
-		return 1, nil
-	}
-
-	max := 0
-	for _, child := range children {
-		if _, ok := visited[child.Hash]; ok {
-			return 0, fmt.Errorf("circular relationship detected")
-		} else {
-			visited[child.Hash] = true
-		}
-		if nm, err := f.chainLength(child, visited); err != nil {
-			return 0, err
-		} else if nm > max {
-			max = nm
-		}
-	}
-	return 1 + max, nil
-}
-
 // picks the best record from a series of alternatives (based on chain length)
-func (f *RecordDirectory) pickRecord(alternatives []*eps.SignedChangeRecord) (*eps.SignedChangeRecord, error) {
-	if len(alternatives) == 1 {
-		return alternatives[0], nil
-	}
-	maxLength := 0
-	var bestAlternative *eps.SignedChangeRecord
-	for _, alternative := range alternatives {
-		if cl, err := f.chainLength(alternative, map[string]bool{}); err != nil {
-			return nil, err
-		} else if cl > maxLength {
-			maxLength = cl
-			bestAlternative = alternative
+func (f *RecordDirectory) buildChains(records []*eps.SignedChangeRecord, visited map[string]bool) ([][]*eps.SignedChangeRecord, error) {
+
+	chains := make([][]*eps.SignedChangeRecord, 0)
+
+	for _, record := range records {
+		if _, ok := visited[record.Hash]; ok {
+			return nil, fmt.Errorf("circular relationship detected")
+		} else {
+			visited[record.Hash] = true
+		}
+		chain := make([]*eps.SignedChangeRecord, 1)
+		chain[0] = record
+		children, ok := f.recordChildren[record.Hash]
+		if ok {
+			childChains, err := f.buildChains(children, visited)
+			if err != nil {
+				return nil, err
+			}
+			for _, childChain := range childChains {
+				fullChain := append(chain, childChain...)
+				chains = append(chains, fullChain)
+			}
+		} else {
+			chains = append(chains, chain)
 		}
 	}
-	return bestAlternative, nil
+
+	return chains, nil
 
 }
 
@@ -500,51 +321,66 @@ func (f *RecordDirectory) update() ([]*eps.SignedChangeRecord, error) {
 			f.recordChildren[parentHash] = children
 		}
 
-		records := make([]*eps.SignedChangeRecord, 0)
-
-		currentRecords, ok := f.recordChildren[""]
+		rootRecords, ok := f.recordChildren[""]
 
 		// no records present it seems
 		if !ok {
-			return records, nil
+			return nil, nil
 		}
 
-		for {
-			bestRecord, err := f.pickRecord(currentRecords)
+		chains, err := f.buildChains(rootRecords, map[string]bool{})
 
-			if err != nil {
-				return nil, err
+		eps.Log.Infof("Found %d chains, %d root records", len(chains), len(rootRecords))
+
+		if err != nil {
+			return nil, err
+		}
+
+		verifiedChains := make([][]*eps.SignedChangeRecord, 0)
+		for i, chain := range chains {
+			valid := true
+			for j, record := range chain {
+				eps.Log.Infof("Chain %d, record %d: %s", i, j, record.Hash)
+				// we verify the signature of the record
+				if ok, err := helpers.VerifyRecord(record, chain[:j], f.rootCert); err != nil {
+					return nil, err
+				} else if !ok {
+					eps.Log.Warning("signature does not match, ignoring this chain...")
+					valid = false
+					break
+				}
 			}
-
-			records = append(records, bestRecord)
-
-			currentRecords, ok = f.recordChildren[bestRecord.Hash]
-
-			if !ok {
-				break
+			if valid {
+				verifiedChains = append(verifiedChains, chain)
 			}
 		}
 
-		for i, record := range records {
-			// we verify the signature of the record (without )
-			if ok, err := f.verifySignature(record, records[:i]); err != nil {
-				return nil, err
-			} else if !ok {
-				eps.Log.Warning("signature does not match, ignoring the remainder...")
-				records = records[:i]
-				break
+		eps.Log.Infof("%d verified chains", len(verifiedChains))
+
+		var bestChain []*eps.SignedChangeRecord
+		var maxLength int
+		for _, chain := range verifiedChains {
+			if len(chain) > maxLength {
+				bestChain = chain
+				maxLength = len(chain)
 			}
+		}
+
+		eps.Log.Infof("Best chain with length %d", len(bestChain))
+
+		if bestChain == nil {
+			return nil, nil
 		}
 
 		// we store the ordered sequence of records
-		f.orderedRecords = records
+		f.orderedRecords = bestChain
 
 		// we regenerate the entries based on the new set of records
 		f.entries = make(map[string]*eps.DirectoryEntry)
-		for _, record := range records {
+		for _, record := range bestChain {
 			f.integrate(record)
 		}
 
-		return records, nil
+		return bestChain, nil
 	}
 }

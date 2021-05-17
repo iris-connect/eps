@@ -24,7 +24,6 @@ package proxy
 
 import (
 	"encoding/base64"
-	"fmt"
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/helpers"
 	"github.com/iris-gateway/eps/jsonrpc"
@@ -131,7 +130,7 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 	}
 
 	// we give the client 1 second to announce itself
-	internalConnection.SetReadDeadline(time.Now().Add(1 * time.Second))
+	internalConnection.SetReadDeadline(time.Now().Add(5 * time.Second))
 	// we expect a secret token to be transmitted over the connection
 	tokenBuf := make([]byte, 32)
 
@@ -213,7 +212,7 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 
 func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 	// we give the client 1 second to announce itself
-	conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 
 	// 2 kB is more than enough for a TLS ClientHello packet
 	buf := make([]byte, 2048)
@@ -247,8 +246,6 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 		return
 	} else {
 
-		id := fmt.Sprintf("%d", 1)
-
 		randomBytes, err := helpers.RandomBytes(32)
 
 		if err != nil {
@@ -265,7 +262,7 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 		s.mutex.Unlock()
 
 		// we tell the internal proxy about an incoming connection
-		request := jsonrpc.MakeRequest("private-proxy-1.incomingConnection", id, map[string]interface{}{
+		request := jsonrpc.MakeRequest("private-proxy-1.incomingConnection", "", map[string]interface{}{
 			"hostname": hostName,
 			"token":    randomStr,
 			"endpoint": s.settings.InternalEndpoint,

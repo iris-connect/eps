@@ -48,6 +48,7 @@ type VerifyCredentials struct {
 
 func (c VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string) (bool, error) {
 	if entry, err := c.directory.EntryFor(name); err != nil {
+		eps.Log.Error("can't verify entry...")
 		return false, err
 	} else {
 		// we go through all certificates for the entry
@@ -95,6 +96,7 @@ func (c VerifyCredentials) ServerHandshake(conn net.Conn) (net.Conn, credentials
 
 func (c VerifyCredentials) ClientHandshake(ctx context.Context, endpoint string, conn net.Conn) (net.Conn, credentials.AuthInfo, error) {
 	conn, authInfo, err := c.TransportCredentials.ClientHandshake(ctx, endpoint, conn)
+
 	if err != nil {
 		return conn, authInfo, err
 	}

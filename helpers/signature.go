@@ -21,6 +21,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
@@ -28,6 +29,7 @@ import (
 	"github.com/iris-gateway/eps"
 	"io/ioutil"
 	"math/big"
+	"net/url"
 )
 
 func VerifyCertificate(cert, rootCert *x509.Certificate, name string) error {
@@ -161,6 +163,55 @@ func Verify(signedData *eps.SignedData, rootCert *x509.Certificate, name string)
 	}
 }
 
+type SubjectInfo struct {
+	Name     string
+	DNSNames []string
+	Groups   []string
+}
+
+func GetSubjectInfo(cert *x509.Certificate) (*SubjectInfo, error) {
+
+	// subject alternative name extension
+	id := asn1.ObjectIdentifier{2, 5, 29, 17}
+
+	subjectInfo := &SubjectInfo{
+		DNSNames: make([]string, 0),
+		Groups:   make([]string, 0),
+	}
+
+	for _, extension := range cert.Extensions {
+		if !extension.Id.Equal(id) {
+			continue
+		}
+		// we unmarshal the ASN.1 object
+		altNames := []asn1.RawValue{}
+		if _, err := asn1.Unmarshal(extension.Value, &altNames); err != nil {
+			return nil, err
+		}
+		for _, altName := range altNames {
+			if altName.Tag == 6 {
+				// tag 6 is URI (don't ask why...)
+				if groupUrl, err := url.Parse(string(altName.Bytes)); err != nil {
+					return nil, err
+				} else {
+					switch groupUrl.Scheme {
+					case "iris-group":
+						if groupUrl.Host != "" {
+							subjectInfo.Groups = append(subjectInfo.Groups, groupUrl.Host)
+						}
+					case "iris-name":
+						subjectInfo.Name = groupUrl.Host
+					}
+				}
+			} else if altName.Tag == 2 {
+				// tag 2 is DNS (don't ask why...)
+				subjectInfo.DNSNames = append(subjectInfo.DNSNames, string(altName.Bytes))
+			}
+		}
+	}
+	return subjectInfo, nil
+
+}
 func Sign(data interface{}, key *ecdsa.PrivateKey, cert *x509.Certificate) (*eps.SignedData, error) {
 
 	hash, err := StructuredHash(data)

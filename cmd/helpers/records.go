@@ -174,7 +174,7 @@ func submitChangeRecord(changeRecord *eps.ChangeRecord, settings *eps.Settings) 
 		Record:     changeRecord,
 	}
 
-	if err := helpers.CalculateHash(signedChangeRecord); err != nil {
+	if err := helpers.CalculateRecordHash(signedChangeRecord); err != nil {
 		eps.Log.Fatal(err)
 	}
 

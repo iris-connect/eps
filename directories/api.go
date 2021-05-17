@@ -126,6 +126,10 @@ type UpdateRecords struct {
 }
 
 func (f *APIDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntry, error) {
+
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
 	if err := f.update(); err != nil {
 		return nil, err
 	}
@@ -139,9 +143,7 @@ func (f *APIDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntry
 }
 
 func (f *APIDirectory) EntryFor(name string) (*eps.DirectoryEntry, error) {
-	if err := f.update(); err != nil {
-		return nil, err
-	}
+	// locking is done by Entries method
 	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: name}); err != nil {
 		return nil, err
 	} else if len(entries) == 0 {
@@ -152,6 +154,7 @@ func (f *APIDirectory) EntryFor(name string) (*eps.DirectoryEntry, error) {
 }
 
 func (f *APIDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
+	// locking is done by Entries method
 	return f.EntryFor(f.Name())
 }
 

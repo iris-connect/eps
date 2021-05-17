@@ -18,6 +18,7 @@ package eps
 
 import (
 	"fmt"
+	"sync"
 )
 
 type MessageBroker interface {
@@ -27,14 +28,17 @@ type MessageBroker interface {
 }
 
 type BasicMessageBroker struct {
-	channels  []Channel
-	directory Directory
+	channels          []Channel
+	directory         Directory
+	mutex             sync.Mutex
+	requestsInTransit map[string]bool
 }
 
 func MakeBasicMessageBroker(directory Directory) (*BasicMessageBroker, error) {
 	return &BasicMessageBroker{
-		channels:  make([]Channel, 0),
-		directory: directory,
+		channels:          make([]Channel, 0),
+		requestsInTransit: make(map[string]bool),
+		directory:         directory,
 	}, nil
 }
 
@@ -49,6 +53,22 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 }
 
 func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *ClientInfo) (*Response, error) {
+
+	b.mutex.Lock()
+
+	if inTransit, ok := b.requestsInTransit[request.ID]; ok && inTransit {
+		b.mutex.Unlock()
+		return nil, fmt.Errorf("request is already being processed (maybe a delivery loop)")
+	} else {
+		b.requestsInTransit[request.ID] = true
+		defer func() {
+			b.mutex.Lock()
+			delete(b.requestsInTransit, request.ID)
+			b.mutex.Unlock()
+		}()
+	}
+
+	b.mutex.Unlock()
 
 	// we always add the client information to the request (if it exists)
 	if request.Params != nil && clientInfo != nil {
@@ -65,7 +85,6 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 		if !channel.CanDeliverTo(address) {
 			continue
 		}
-		Log.Infof("found channel that can deliver!")
 		return channel.DeliverRequest(request)
 	}
 	return nil, fmt.Errorf("no channel can deliver this request")
