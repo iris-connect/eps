@@ -132,7 +132,7 @@ You can easily deploy the server as a service using `systemd` or Docke. Specific
 
 # Feedback
 
-If you have any questions [just contact us](mailto:iris@steiger-stiftung.de).
+If you have any questions [just contact us](mailto:iris@inoeg.de).
 
 # Participation
 
