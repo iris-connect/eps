@@ -28,11 +28,19 @@ Change records can be submitted to the service directory via the JSON-RPC API. T
 EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-record settings/dev/roles/hd-1/example-change-record.json
 ```
 
-This will submit the change record stored in `example-change-record.json`. We can also convert a JSON-based service directory into change records and submit all of them to the service directory API via the `sd submit-directory` command:
+This will submit the change record stored in `example-change-record.json`. We can also submit a JSON-based service directory into change records and submit all of them to the service directory API via the `sd submit-records` command:
 
 ```bash
-EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-directory settings/dev/directory.json
+EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-records settings/dev/directory/001_base.json
 ```
+
+You can also reset the service directory by specifying the `--reset` flag:
+
+```
+EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-records --reset settings/dev/directory/001_base.json
+```
+
+**Warning:** This will erase all previous records from the service directory. Only operators with an `sd-admin` role can do this.
 
 ### Retrieving entries and records
 

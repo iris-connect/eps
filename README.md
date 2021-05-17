@@ -51,7 +51,7 @@ There are also role-specific development/test settings in the `settings/dev/role
 
 ## Running The Service Directory
 
-All EPS servers use rely on the service directory (SD) to discover each other and learn about permissions, certificates etc.. For development, you can either use a JSON-based service directory, or run the service directory API like this:
+All EPS servers rely on the service directory (SD) to discover each other and learn about permissions, certificates and other important settings. For development, you can either use a JSON-based service directory, or run the service directory API like this:
 
 ```bash
 SD_SETTINGS=settings/dev/roles/sd-1 sd --level debug run
@@ -60,16 +60,16 @@ SD_SETTINGS=settings/dev/roles/sd-1 sd --level debug run
 To initialize the service directory you'll want to load some JSON files into it. The certificate generation process via `make certs` already produces a `directory.json` file in the certificate directory, which you can import via
 
 ```bash
-EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-directory settings/dev/certs/directory.json
+EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-records settings/dev/directory/002_certificates.json
 ```
 
-In addition, you can import the JSON directory via
+In addition, you can import the regular JSON directory records via
 
 ```bash
-EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-directory settings/dev/directory.json
+EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-records settings/dev/directory/001_base.json
 ```
 
-This will give you a fully functional, basic service directory with certificate and service information.
+This will give you a fully functional API-based service directory with certificate and service information.
 
 ## Running The Server
 
