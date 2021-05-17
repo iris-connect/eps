@@ -166,7 +166,7 @@ type WritableDirectory interface {
 	Directory
 	// required for submitting change records
 	Tip() (*SignedChangeRecord, error)
-	Submit(*SignedChangeRecord) error
+	Submit([]*SignedChangeRecord) error
 }
 
 type BaseDirectory struct {

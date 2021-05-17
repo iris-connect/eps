@@ -38,25 +38,29 @@ type Server struct {
 	mutex         sync.Mutex
 }
 
-var SubmitChangeRecordForm = forms.Form{
+var SubmitChangeRecordsForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "record",
+			Name: "records",
 			Validators: []forms.Validator{
-				forms.IsStringMap{
-					Form: &epsForms.SignedChangeRecordForm,
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &epsForms.SignedChangeRecordForm,
+						},
+					},
 				},
 			},
 		},
 	},
 }
 
-type SubmitChangeRecordParams struct {
-	Record *eps.SignedChangeRecord `json:"record"`
+type SubmitChangeRecordsParams struct {
+	Records []*eps.SignedChangeRecord `json:"records"`
 }
 
-func (c *Server) submitChangeRecord(context *jsonrpc.Context, params *SubmitChangeRecordParams) *jsonrpc.Response {
-	if err := c.directory.Append(params.Record); err != nil {
+func (c *Server) submitChangeRecords(context *jsonrpc.Context, params *SubmitChangeRecordsParams) *jsonrpc.Response {
+	if err := c.directory.Append(params.Records); err != nil {
 		eps.Log.Error(err)
 		return context.Error(400, "something went wrong", nil)
 	} else {
@@ -164,9 +168,9 @@ func MakeServer(settings *Settings) (*Server, error) {
 	}
 
 	methods := map[string]*jsonrpc.Method{
-		"submitChangeRecord": {
-			Form:    &SubmitChangeRecordForm,
-			Handler: server.submitChangeRecord,
+		"submitChangeRecords": {
+			Form:    &SubmitChangeRecordsForm,
+			Handler: server.submitChangeRecords,
 		},
 		"getTip": {
 			Form:    &GetTipForm,

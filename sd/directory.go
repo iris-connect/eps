@@ -138,8 +138,8 @@ func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord, records []*e
 	return false, nil
 }
 
-// Appends a new record
-func (f *RecordDirectory) Append(record *eps.SignedChangeRecord) error {
+// Appends a series of records
+func (f *RecordDirectory) Append(records []*eps.SignedChangeRecord) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -147,64 +147,72 @@ func (f *RecordDirectory) Append(record *eps.SignedChangeRecord) error {
 		return err
 	}
 
-	records := f.orderedRecords
+	for _, record := range records {
 
-	if record.ParentHash != "" {
+		records := f.orderedRecords
 
-		tip, err := f.tip()
+		if record.ParentHash != "" {
+
+			tip, err := f.tip()
+
+			if err != nil {
+				return err
+			}
+
+			if (tip != nil && record.ParentHash != tip.Hash) || (tip == nil && record.ParentHash != "") {
+				return fmt.Errorf("stale append, please try again")
+			}
+		} else {
+			// this is a new root records, we disregard all previous root records
+			// new root records can only be created by directory admins
+			records = make([]*eps.SignedChangeRecord, 0)
+		}
+
+		if ok, err := f.canAppend(record, records); err != nil {
+			return err
+		} else if !ok {
+			return fmt.Errorf("you cannot append")
+		}
+
+		id, err := helpers.RandomID(16)
 
 		if err != nil {
 			return err
 		}
 
-		if (tip != nil && record.ParentHash != tip.Hash) || (tip == nil && record.ParentHash != "") {
-			return fmt.Errorf("stale append, please try again")
+		rawData, err := json.Marshal(record)
+
+		if err != nil {
+			return err
 		}
-	} else {
-		// this is a new root records, we disregard all previous root records
-		// new root records can only be created by directory admins
-		records = make([]*eps.SignedChangeRecord, 0)
-	}
 
-	if ok, err := f.canAppend(record, records); err != nil {
-		return err
-	} else if !ok {
-		return fmt.Errorf("you cannot append")
-	}
+		dataEntry := &helpers.DataEntry{
+			Type: SignedChangeRecordEntry,
+			ID:   id,
+			Data: rawData,
+		}
 
-	id, err := helpers.RandomID(16)
+		if err := f.dataStore.Write(dataEntry); err != nil {
+			return err
+		}
 
-	if err != nil {
-		return err
-	}
-
-	rawData, err := json.Marshal(record)
-
-	if err != nil {
-		return err
-	}
-
-	dataEntry := &helpers.DataEntry{
-		Type: SignedChangeRecordEntry,
-		ID:   id,
-		Data: rawData,
-	}
-
-	if err := f.dataStore.Write(dataEntry); err != nil {
-		return err
-	}
-
-	// we update the store
-	if newRecords, err := f.update(); err != nil {
-		return err
-	} else {
-		for _, newRecord := range newRecords {
-			if newRecord.Hash == record.Hash {
-				return nil
+		// we update the store
+		if newRecords, err := f.update(); err != nil {
+			return err
+		} else {
+			found := false
+			for _, newRecord := range newRecords {
+				if newRecord.Hash == record.Hash {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("new record not found")
 			}
 		}
-		return fmt.Errorf("new record not found")
 	}
+	return nil
 }
 
 func (f *RecordDirectory) Update() error {

@@ -22,13 +22,7 @@ All changes in the service directory are cryptographically signed. For this, eve
 
 ### Submitting Change records
 
-Change records can be submitted to the service directory via the JSON-RPC API. The `eps` CLI provides a function for this via the `sd submit-record`:
-
-```bash
-EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-record settings/dev/roles/hd-1/example-change-record.json
-```
-
-This will submit the change record stored in `example-change-record.json`. We can also submit a JSON-based service directory into change records and submit all of them to the service directory API via the `sd submit-records` command:
+Change records can be submitted to the service directory via the JSON-RPC API. The `eps` CLI provides a function for this via the `sd submit-records`:
 
 ```bash
 EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-records settings/dev/directory/001_base.json

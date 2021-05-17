@@ -181,7 +181,6 @@ func (f *APIDirectory) Tip() (*eps.SignedChangeRecord, error) {
 	f.jsonrpcClient.SetServerName(f.settings.ServerNames[0])
 	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])
 
-	// we tell the internal proxy about an incoming connection
 	request := jsonrpc.MakeRequest("getTip", "", map[string]interface{}{})
 
 	if result, err := f.jsonrpcClient.Call(request); err != nil {
@@ -212,13 +211,13 @@ func (f *APIDirectory) Tip() (*eps.SignedChangeRecord, error) {
 	return nil, nil
 }
 
-func (f *APIDirectory) Submit(signedChangeRecord *eps.SignedChangeRecord) error {
+func (f *APIDirectory) Submit(signedChangeRecords []*eps.SignedChangeRecord) error {
 	// to do: ensure there's always one server name and endpoint
 	f.jsonrpcClient.SetServerName(f.settings.ServerNames[0])
 	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])
 
 	// we tell the internal proxy about an incoming connection
-	request := jsonrpc.MakeRequest("submitChangeRecord", "", map[string]interface{}{"record": signedChangeRecord})
+	request := jsonrpc.MakeRequest("submitChangeRecords", "", map[string]interface{}{"records": signedChangeRecords})
 
 	if result, err := f.jsonrpcClient.Call(request); err != nil {
 		return err

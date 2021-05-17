@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script generates test & development certificates. Not for production use!
 
-# You can addd an entry to this list to generate a certificate for a given
+# You can add an entry to this list to generate a certificate for a given
 # operator. The name of the operator will be added as the common name as well
 # as the subject alternative name (SAN), which is required for some newer
 # TLS libraries.

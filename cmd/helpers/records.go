@@ -82,26 +82,15 @@ func submitRecords(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
-	submitRecord := func(changeRecord *eps.ChangeRecord) {
-		asRoot := false
-		if reset {
-			reset = false
-			asRoot = true
-		}
-		if err := submitChangeRecord(changeRecord, settings, asRoot); err != nil {
-			eps.Log.Fatal(err)
-		}
-	}
-
-	for _, record := range records.Records {
-		submitRecord(record)
+	if err := submitChangeRecords(records.Records, settings, reset); err != nil {
+		eps.Log.Fatal(err)
 	}
 
 	return nil
 
 }
 
-func submitChangeRecord(changeRecord *eps.ChangeRecord, settings *eps.Settings, asRoot bool) error {
+func submitChangeRecords(changeRecords []*eps.ChangeRecord, settings *eps.Settings, reset bool) error {
 
 	directory, err := helpers.InitializeDirectory(settings)
 
@@ -146,60 +135,44 @@ func submitChangeRecord(changeRecord *eps.ChangeRecord, settings *eps.Settings, 
 
 	var parentHash string
 
-	if lastRecord != nil && !asRoot {
+	if lastRecord != nil && !reset {
 		parentHash = lastRecord.Hash
 	}
 
-	changeRecord.CreatedAt = eps.HashableTime{time.Now()}
+	signedChangeRecords := make([]*eps.SignedChangeRecord, 0)
 
-	signedChangeRecord := &eps.SignedChangeRecord{
-		ParentHash: parentHash,
-		Record:     changeRecord,
+	for _, changeRecord := range changeRecords {
+
+		changeRecord.CreatedAt = eps.HashableTime{time.Now()}
+
+		signedChangeRecord := &eps.SignedChangeRecord{
+			ParentHash: parentHash,
+			Record:     changeRecord,
+		}
+
+		if err := helpers.CalculateRecordHash(signedChangeRecord); err != nil {
+			eps.Log.Fatal(err)
+		}
+
+		eps.Log.Info(signedChangeRecord.Hash)
+
+		signedData, err := helpers.Sign(signedChangeRecord, key, certificate)
+
+		if err != nil {
+			eps.Log.Fatal(err)
+		}
+
+		signedChangeRecord.Signature = signedData.Signature
+		signedChangeRecords = append(signedChangeRecords, signedChangeRecord)
+		parentHash = signedChangeRecord.Hash
 	}
 
-	if err := helpers.CalculateRecordHash(signedChangeRecord); err != nil {
+	if err := writableDirectory.Submit(signedChangeRecords); err != nil {
 		eps.Log.Fatal(err)
 	}
-
-	eps.Log.Info(signedChangeRecord.Hash)
-
-	signedData, err := helpers.Sign(signedChangeRecord, key, certificate)
-	signedChangeRecord.Signature = signedData.Signature
-
-	if err := writableDirectory.Submit(signedChangeRecord); err != nil {
-		eps.Log.Fatal(err)
-	}
-
-	eps.Log.Info("Successfully submitted record!")
 
 	return nil
 
-}
-
-func submitRecord(c *cli.Context, settings *eps.Settings) error {
-	if settings.Signing == nil {
-		eps.Log.Fatalf("Signing settings undefined!")
-	}
-
-	filename := c.Args().Get(0)
-
-	if filename == "" {
-		eps.Log.Fatal("please specify a filename")
-	}
-
-	jsonBytes, err := ioutil.ReadFile(filename)
-
-	if err != nil {
-		eps.Log.Fatal(err)
-	}
-
-	var changeRecord *eps.ChangeRecord
-
-	if err := json.Unmarshal(jsonBytes, &changeRecord); err != nil {
-		eps.Log.Fatal(err)
-	}
-
-	return submitChangeRecord(changeRecord, settings, false)
 }
 
 func sign(c *cli.Context, settings *eps.Settings) error {
@@ -331,12 +304,6 @@ func RecordsCommands(settings *eps.Settings) ([]cli.Command, error) {
 			Flags:   []cli.Flag{},
 			Usage:   "Manage service-directory records.",
 			Subcommands: []cli.Command{
-				{
-					Name:   "submit-record",
-					Flags:  []cli.Flag{},
-					Usage:  "Submit a JSON change record",
-					Action: func(c *cli.Context) error { return submitRecord(c, settings) },
-				},
 				{
 					Name: "submit-records",
 					Flags: []cli.Flag{
