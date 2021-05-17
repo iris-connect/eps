@@ -1,8 +1,10 @@
 {
-  "entries" : [
+  "records" : [
     {
       "name": "op-1",
-      "channels" : [
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "channels",
+      "data" : [
         {
           "type" : "grpc_server",
           "settings" : {
@@ -13,7 +15,9 @@
     },
     {
       "name": "ls-1",
-      "services": [
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "services",
+      "data": [
         {
           "name": "locations",
           "permissions": [{"group": "LocationAdministrators", "rights" : ["call"]}],
@@ -42,8 +46,13 @@
             }
           ]
         }
-      ],
-      "channels" : [
+      ]
+    },
+    {
+      "name": "ls-1",
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "channels",
+      "data" : [
         {
           "type" : "grpc_server",
           "settings" : {
@@ -54,23 +63,29 @@
     },
     {
       "name": "hd-1",
-      "channels" : [
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "channels",
+      "data" : [
         {
           "type" : "grpc_client"
         }
       ]
     },
     {
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "channels",
       "name": "private-proxy-1",
-      "channels" : [
+      "data" : [
         {
           "type" : "grpc_client"
         }
       ]
     },
     {
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "channels",
       "name": "public-proxy-1",
-      "channels" : [
+      "data" : [
         {
           "type" : "grpc_server",
           "settings" : {

@@ -17,6 +17,7 @@
 package directories
 
 import (
+	"crypto/x509"
 	"fmt"
 	"github.com/iris-gateway/eps"
 	epsForms "github.com/iris-gateway/eps/forms"
@@ -50,13 +51,20 @@ var APIDirectorySettingsForm = forms.Form{
 				},
 			},
 		},
+		{
+			Name: "ca_certificate_file",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
 	},
 }
 
 type APIDirectorySettings struct {
-	Endpoints     []string                       `json:"endpoints"`
-	ServerNames   []string                       `json:"server_names"`
-	JSONRPCClient *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
+	Endpoints         []string                       `json:"endpoints"`
+	ServerNames       []string                       `json:"server_names"`
+	JSONRPCClient     *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
+	CACertificateFile string                         `json:"ca_certificate_file"`
 }
 
 type CacheEntry struct {
@@ -72,6 +80,7 @@ type APIDirectory struct {
 	eps.BaseDirectory
 	settings      APIDirectorySettings
 	jsonrpcClient *jsonrpc.Client
+	rootCert      *x509.Certificate
 	entries       map[string]*eps.DirectoryEntry
 	records       []*eps.SignedChangeRecord
 	mutex         sync.Mutex
@@ -91,6 +100,13 @@ func APIDirectorySettingsValidator(settings map[string]interface{}) (interface{}
 
 func MakeAPIDirectory(name string, settings interface{}) (eps.Directory, error) {
 	apiSettings := settings.(APIDirectorySettings)
+
+	cert, err := helpers.LoadCertificate(apiSettings.CACertificateFile, false)
+
+	if err != nil {
+		return nil, err
+	}
+
 	d := &APIDirectory{
 		BaseDirectory: eps.BaseDirectory{
 			Name_: name,
@@ -98,6 +114,7 @@ func MakeAPIDirectory(name string, settings interface{}) (eps.Directory, error) 
 		jsonrpcClient: jsonrpc.MakeClient(apiSettings.JSONRPCClient),
 		entries:       make(map[string]*eps.DirectoryEntry),
 		records:       []*eps.SignedChangeRecord{},
+		rootCert:      cert,
 		settings:      apiSettings,
 	}
 
@@ -236,8 +253,14 @@ func (f *APIDirectory) update() error {
 	f.jsonrpcClient.SetServerName(f.settings.ServerNames[0])
 	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])
 
+	var tipHash string
+
+	if len(f.records) > 0 {
+		tipHash = f.records[len(f.records)-1].Hash
+	}
+
 	// we tell the internal proxy about an incoming connection
-	request := jsonrpc.MakeRequest("getRecords", "", map[string]interface{}{"Since": ""})
+	request := jsonrpc.MakeRequest("getRecords", "", map[string]interface{}{"after": tipHash})
 
 	if result, err := f.jsonrpcClient.Call(request); err != nil {
 		return err
@@ -262,9 +285,44 @@ func (f *APIDirectory) update() error {
 			if err := UpdateForm.Coerce(updateRecords, params); err != nil {
 				return err
 			} else {
-				f.records = updateRecords.Records
-				f.entries = make(map[string]*eps.DirectoryEntry)
-				return f.integrate(updateRecords.Records)
+				records := updateRecords.Records
+
+				var fullRecords []*eps.SignedChangeRecord
+				var resetEntries bool
+
+				if len(records) > 0 && records[0].ParentHash != tipHash {
+					if records[0].ParentHash != "" {
+						return fmt.Errorf("expected a new root record but got one with parent hash '%s'", records[0].ParentHash)
+					}
+					// seems the directory changed, we make sure the new one is actually newer than the current one
+					if len(f.records) > 0 && records[0].Record.CreatedAt.Time.Before(f.records[0].Record.CreatedAt.Time) {
+						return fmt.Errorf("server tried to provide an outdated service directory")
+					} else {
+						eps.Log.Warning("Service directory root changed!")
+						// we reset the entries
+						fullRecords = records
+						resetEntries = true
+					}
+				} else {
+					fullRecords = append(f.records, records...)
+				}
+
+				// we verify all records before we integate them
+				for i, record := range fullRecords {
+					if ok, err := helpers.VerifyRecord(record, fullRecords[:i], f.rootCert); err != nil {
+						return err
+					} else if !ok {
+						return fmt.Errorf("invalid record found")
+					}
+				}
+
+				f.records = fullRecords
+				if resetEntries {
+					f.entries = make(map[string]*eps.DirectoryEntry)
+				}
+
+				// we integrate the new records
+				return f.integrate(records)
 			}
 		}
 	}

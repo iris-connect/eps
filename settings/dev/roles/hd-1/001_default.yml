@@ -11,6 +11,7 @@ directory:
         certificate_file: "$DIR/../../certs/hd-1.crt"
         key_file: "$DIR/../../certs/hd-1.key"
         ca_certificate_file: "$DIR/../../certs/root.crt"
+    ca_certificate_file: "$DIR/../../certs/root.crt"
     endpoints: ["https://localhost:3322/jsonrpc"]
     server_names: ["sd-1"]
 channels: # defines all the channels that we want to open when starting the server

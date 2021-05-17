@@ -1,8 +1,10 @@
 {
-  "entries" : [
+  "records" : [
     {
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "channels",
       "name": "op-1",
-      "channels" : [
+      "data" : [
         {
           "type" : "grpc_client"
         }
@@ -10,7 +12,9 @@
     },
     {
       "name": "ls-1",
-      "channels" : [
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "channels",
+      "data" : [
         {
           "type" : "grpc_client"
         }
@@ -18,7 +22,9 @@
     },
     {
       "name": "hd-1",
-      "channels" : [
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "channels",
+      "data" : [
         {
           "type" : "grpc_server",
           "settings" : {

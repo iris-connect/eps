@@ -22,12 +22,12 @@ LEN="2048"
 # second-level wildcards (e.g. "*.internal-server") will not work. Probably a good security
 # measure as one could otherwise register a wildcard like "*.com"
 
-DIRECTORY_FILE=directory.json
+DIRECTORY_FILE=../directory/002_certificates.json
 
 openssl genrsa -out root.key ${LEN}
 openssl req -x509 -new -nodes -key root.key -sha256 -days 1024 -out root.crt -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${CN}"
 
-echo -n "{\"entries\": [" > $DIRECTORY_FILE
+echo -n "{\"records\": [" > $DIRECTORY_FILE
 
 for cert in "${certs[@]}"
 do
@@ -61,7 +61,7 @@ do
 
 	FINGERPRINT_SIGNING=`openssl x509 -noout -fingerprint -sha256 -inform pem -in "${cert}-sign.crt" | sed -e 's/://g' | sed -r 's/.*=(.*)$/\1/g' | awk '{print tolower($0)}'`
 	FINGERPRINT_ENCRYPTION=`openssl x509 -noout -fingerprint -sha256 -inform pem -in "${cert}.crt" | sed -e 's/://g' | sed -r 's/.*=(.*)$/\1/g' | awk '{print tolower($0)}'`
-	echo -n "{\"name\": \"${cert}\", \"certificates\": [{\"fingerprint\": \"${FINGERPRINT_SIGNING}\", \"key_usage\": \"signing\"},{\"fingerprint\": \"${FINGERPRINT_ENCRYPTION}\", \"key_usage\": \"encryption\"}]}" >> $DIRECTORY_FILE
+	echo -n "{\"section\": \"certificates\", \"created_at\":\"`date --rfc-3339=seconds | sed 's/ /T/'`\", \"name\": \"${cert}\", \"data\": [{\"fingerprint\": \"${FINGERPRINT_SIGNING}\", \"key_usage\": \"signing\"},{\"fingerprint\": \"${FINGERPRINT_ENCRYPTION}\", \"key_usage\": \"encryption\"}]}" >> $DIRECTORY_FILE
 	LAST=1
 done
 

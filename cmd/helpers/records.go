@@ -28,15 +28,15 @@ import (
 	"time"
 )
 
-var DirectoryForm = forms.Form{
+var RecordsForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "entries",
+			Name: "records",
 			Validators: []forms.Validator{
 				forms.IsList{
 					Validators: []forms.Validator{
 						forms.IsStringMap{
-							Form: &epsForms.DirectoryEntryForm,
+							Form: &epsForms.ChangeRecordForm,
 						},
 					},
 				},
@@ -45,11 +45,13 @@ var DirectoryForm = forms.Form{
 	},
 }
 
-type Directory struct {
-	Entries []*eps.DirectoryEntry `json:"entries"`
+type Records struct {
+	Records []*eps.ChangeRecord `json:"records"`
 }
 
-func submitDirectory(c *cli.Context, settings *eps.Settings) error {
+func submitRecords(c *cli.Context, settings *eps.Settings) error {
+
+	reset := c.Bool("reset")
 
 	if settings.Signing == nil {
 		eps.Log.Fatalf("Signing settings undefined!")
@@ -67,58 +69,39 @@ func submitDirectory(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
-	var directory *Directory
+	records := &Records{}
+	var rawRecords map[string]interface{}
 
-	if err := json.Unmarshal(jsonBytes, &directory); err != nil {
+	if err := json.Unmarshal(jsonBytes, &rawRecords); err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	if params, err := RecordsForm.Validate(rawRecords); err != nil {
+		eps.Log.Fatal(err)
+	} else if RecordsForm.Coerce(records, params); err != nil {
 		eps.Log.Fatal(err)
 	}
 
 	submitRecord := func(changeRecord *eps.ChangeRecord) {
-		if err := submitChangeRecord(changeRecord, settings); err != nil {
+		asRoot := false
+		if reset {
+			reset = false
+			asRoot = true
+		}
+		if err := submitChangeRecord(changeRecord, settings, asRoot); err != nil {
 			eps.Log.Fatal(err)
 		}
 	}
 
-	for i, entry := range directory.Entries {
-		changeRecord := &eps.ChangeRecord{}
-		changeRecord.Name = entry.Name
-		if len(entry.Settings) > 0 {
-			eps.Log.Infof("Submitting settings for entry %d...", i)
-			changeRecord.Section = "settings"
-			changeRecord.Data = entry.Settings
-			submitRecord(changeRecord)
-		}
-		if len(entry.Channels) > 0 {
-			eps.Log.Infof("Submitting channels for entry %d...", i)
-			changeRecord.Section = "channels"
-			changeRecord.Data = entry.Channels
-			submitRecord(changeRecord)
-		}
-		if len(entry.Services) > 0 {
-			eps.Log.Infof("Submitting services for entry %d...", i)
-			changeRecord.Section = "services"
-			changeRecord.Data = entry.Services
-			submitRecord(changeRecord)
-		}
-		if len(entry.Certificates) > 0 {
-			eps.Log.Infof("Submitting certificates for entry %d...", i)
-			changeRecord.Section = "certificates"
-			changeRecord.Data = entry.Certificates
-			submitRecord(changeRecord)
-		}
-		if len(entry.Settings) > 0 {
-			eps.Log.Infof("Submitting settings for entry %d...", i)
-			changeRecord.Section = "settings"
-			changeRecord.Data = entry.Settings
-			submitRecord(changeRecord)
-		}
+	for _, record := range records.Records {
+		submitRecord(record)
 	}
 
 	return nil
 
 }
 
-func submitChangeRecord(changeRecord *eps.ChangeRecord, settings *eps.Settings) error {
+func submitChangeRecord(changeRecord *eps.ChangeRecord, settings *eps.Settings, asRoot bool) error {
 
 	directory, err := helpers.InitializeDirectory(settings)
 
@@ -163,7 +146,7 @@ func submitChangeRecord(changeRecord *eps.ChangeRecord, settings *eps.Settings) 
 
 	var parentHash string
 
-	if lastRecord != nil {
+	if lastRecord != nil && !asRoot {
 		parentHash = lastRecord.Hash
 	}
 
@@ -216,7 +199,7 @@ func submitRecord(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
-	return submitChangeRecord(changeRecord, settings)
+	return submitChangeRecord(changeRecord, settings, false)
 }
 
 func sign(c *cli.Context, settings *eps.Settings) error {
@@ -339,7 +322,7 @@ func verify(c *cli.Context, settings *eps.Settings) error {
 	}
 	return nil
 }
-func Records(settings *eps.Settings) ([]cli.Command, error) {
+func RecordsCommands(settings *eps.Settings) ([]cli.Command, error) {
 
 	return []cli.Command{
 		{
@@ -355,10 +338,15 @@ func Records(settings *eps.Settings) ([]cli.Command, error) {
 					Action: func(c *cli.Context) error { return submitRecord(c, settings) },
 				},
 				{
-					Name:   "submit-directory",
-					Flags:  []cli.Flag{},
-					Usage:  "Submit a full service directory",
-					Action: func(c *cli.Context) error { return submitDirectory(c, settings) },
+					Name: "submit-records",
+					Flags: []cli.Flag{
+						cli.BoolFlag{
+							Name:  "reset",
+							Usage: "reset the remote records (dangerous)",
+						},
+					},
+					Usage:  "Submit several records at once",
+					Action: func(c *cli.Context) error { return submitRecords(c, settings) },
 				},
 				{
 					Name:   "sign",

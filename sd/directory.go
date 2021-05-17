@@ -23,6 +23,7 @@ import (
 	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/helpers"
 	"sync"
+	"time"
 )
 
 const (
@@ -100,7 +101,7 @@ func (f *RecordDirectory) Entries(*eps.DirectoryQuery) ([]*eps.DirectoryEntry, e
 }
 
 // determines whether a subject can append to the service directory
-func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord) (bool, error) {
+func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord, records []*eps.SignedChangeRecord) (bool, error) {
 
 	cert, err := helpers.LoadCertificateFromString(record.Signature.Certificate, true)
 
@@ -127,7 +128,7 @@ func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord) (bool, error
 	}
 
 	// we verify the signature and hash of the record
-	if ok, err := helpers.VerifyRecord(record, f.orderedRecords, f.rootCert); err != nil {
+	if ok, err := helpers.VerifyRecord(record, records, f.rootCert); err != nil {
 		return false, err
 	} else if !ok {
 		return false, nil
@@ -146,20 +147,29 @@ func (f *RecordDirectory) Append(record *eps.SignedChangeRecord) error {
 		return err
 	}
 
-	if ok, err := f.canAppend(record); err != nil {
+	records := f.orderedRecords
+
+	if record.ParentHash != "" {
+
+		tip, err := f.tip()
+
+		if err != nil {
+			return err
+		}
+
+		if (tip != nil && record.ParentHash != tip.Hash) || (tip == nil && record.ParentHash != "") {
+			return fmt.Errorf("stale append, please try again")
+		}
+	} else {
+		// this is a new root records, we disregard all previous root records
+		// new root records can only be created by directory admins
+		records = make([]*eps.SignedChangeRecord, 0)
+	}
+
+	if ok, err := f.canAppend(record, records); err != nil {
 		return err
 	} else if !ok {
 		return fmt.Errorf("you cannot append")
-	}
-
-	tip, err := f.tip()
-
-	if err != nil {
-		return err
-	}
-
-	if (tip != nil && record.ParentHash != tip.Hash) || (tip == nil && record.ParentHash != "") {
-		return fmt.Errorf("stale append, please try again")
 	}
 
 	id, err := helpers.RandomID(16)
@@ -218,22 +228,27 @@ func (f *RecordDirectory) tip() (*eps.SignedChangeRecord, error) {
 	return f.orderedRecords[len(f.orderedRecords)-1], nil
 }
 
-// Returns all records since a given date
-func (f *RecordDirectory) Records(since string) ([]*eps.SignedChangeRecord, error) {
+// Returns all records after a given hash
+func (f *RecordDirectory) Records(after string) ([]*eps.SignedChangeRecord, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	relevantRecords := make([]*eps.SignedChangeRecord, 0)
 	found := false
-	if since == "" {
+	if after == "" {
 		found = true
 	}
 	for _, record := range f.orderedRecords {
-		if record.Hash == since {
-			found = true
-		}
 		if found {
 			relevantRecords = append(relevantRecords, record)
 		}
+		if record.Hash == after {
+			found = true
+		}
+	}
+	if !found {
+		// we can't find the hash, so we return all records instead
+		// (as the client probably has an outdated version of the directory)
+		return f.orderedRecords, nil
 	}
 	return relevantRecords, nil
 }
@@ -357,16 +372,17 @@ func (f *RecordDirectory) update() ([]*eps.SignedChangeRecord, error) {
 
 		eps.Log.Infof("%d verified chains", len(verifiedChains))
 
+		// the most recently created chain always wins
 		var bestChain []*eps.SignedChangeRecord
-		var maxLength int
+		var maxCreatedAt time.Time
 		for _, chain := range verifiedChains {
-			if len(chain) > maxLength {
+			if bestChain == nil || (len(chain) > 0 && chain[0].Record.CreatedAt.Time.After(maxCreatedAt)) {
 				bestChain = chain
-				maxLength = len(chain)
+				maxCreatedAt = chain[0].Record.CreatedAt.Time
 			}
 		}
 
-		eps.Log.Infof("Best chain with length %d", len(bestChain))
+		eps.Log.Infof("Best chain created at %v with length %d", maxCreatedAt, len(bestChain))
 
 		if bestChain == nil {
 			return nil, nil

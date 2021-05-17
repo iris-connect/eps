@@ -123,13 +123,13 @@ func (c *Server) getEntry(context *jsonrpc.Context, params *GetEntryParams) *jso
 }
 
 type GetRecordsParams struct {
-	Since string `json:"since"`
+	After string `json:"after"`
 }
 
 var GetRecordsForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "since",
+			Name: "after",
 			Validators: []forms.Validator{
 				forms.IsOptional{Default: ""},
 				forms.IsString{},
@@ -142,7 +142,8 @@ var GetRecordsForm = forms.Form{
 }
 
 func (c *Server) getRecords(context *jsonrpc.Context, params *GetRecordsParams) *jsonrpc.Response {
-	if records, err := c.directory.Records(params.Since); err != nil {
+	eps.Log.Infof("Getting records after '%s'", params.After)
+	if records, err := c.directory.Records(params.After); err != nil {
 		return context.InternalError()
 	} else {
 		return context.Result(records)

@@ -28,6 +28,6 @@ var Commands = eps.CommandsDefinitions{
 	},
 	eps.CommandsDefinition{
 		Name:  "records",
-		Maker: helpers.Records,
+		Maker: helpers.RecordsCommands,
 	},
 }
