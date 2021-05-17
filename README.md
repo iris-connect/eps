@@ -57,19 +57,16 @@ All EPS servers rely on the service directory (SD) to discover each other and le
 SD_SETTINGS=settings/dev/roles/sd-1 sd --level debug run
 ```
 
-To initialize the service directory you'll want to load some JSON files into it. The certificate generation process via `make certs` already produces a `directory.json` file in the certificate directory, which you can import via
+To initialize the service directory you can upload the JSON-based directory:
 
 ```bash
-EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-records settings/dev/directory/002_certificates.json
+# for development
+make sd-setup
+# for testing
+make sd-test-setup
 ```
 
-In addition, you can import the regular JSON directory records via
-
-```bash
-EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug sd submit-records settings/dev/directory/001_base.json
-```
-
-This will give you a fully functional API-based service directory with certificate and service information.
+This should give you a fully functional API-based service directory with certificate and service information.
 
 ## Running The Server
 

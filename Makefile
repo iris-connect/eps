@@ -46,11 +46,11 @@ certs:
 	(cd settings/dev/certs; ../../../.scripts/make_certs.sh)
 	(cd settings/test/certs; ../../../.scripts/make_certs.sh)
 
-certs-into-sd:
-	@EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-directory settings/dev/certs/directory.json
+sd-setup:
+	.scripts/sd_setup.sh settings/dev/directory
 
-test-certs-into-sd:
-	@EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-directory settings/test/certs/directory.json
+sd-test-setup:
+	.scripts/sd_setup.sh settings/test/directory
 
 examples:
 	@go build $(GOFLAGS) -tags examples ./...
