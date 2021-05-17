@@ -168,7 +168,7 @@ func MakeServer(settings *Settings) (*Server, error) {
 	}
 
 	methods := map[string]*jsonrpc.Method{
-		"submitChangeRecords": {
+		"submitRecords": {
 			Form:    &SubmitChangeRecordsForm,
 			Handler: server.submitChangeRecords,
 		},

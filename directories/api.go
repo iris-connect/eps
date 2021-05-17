@@ -217,7 +217,7 @@ func (f *APIDirectory) Submit(signedChangeRecords []*eps.SignedChangeRecord) err
 	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])
 
 	// we tell the internal proxy about an incoming connection
-	request := jsonrpc.MakeRequest("submitChangeRecords", "", map[string]interface{}{"records": signedChangeRecords})
+	request := jsonrpc.MakeRequest("submitRecords", "", map[string]interface{}{"records": signedChangeRecords})
 
 	if result, err := f.jsonrpcClient.Call(request); err != nil {
 		return err
