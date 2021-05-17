@@ -419,7 +419,7 @@ var ChangeRecordForm = forms.Form{
 			Validators: []forms.Validator{
 				forms.IsString{},
 				forms.IsIn{
-					Choices: []interface{}{"channels", "certificates", "services", "clientData"},
+					Choices: []interface{}{"channels", "certificates", "services", "preferences", "settings", "groups"},
 				},
 			},
 		},
@@ -434,6 +434,31 @@ var ChangeRecordForm = forms.Form{
 								Validators: []forms.Validator{
 									forms.IsStringMap{
 										Form: &OperatorChannelForm,
+									},
+								},
+							},
+						},
+						"groups": []forms.Validator{
+							forms.IsList{
+								Validators: []forms.Validator{
+									forms.IsString{},
+								},
+							},
+						},
+						"settings": []forms.Validator{
+							forms.IsList{
+								Validators: []forms.Validator{
+									forms.IsStringMap{
+										Form: &OperatorSettingsForm,
+									},
+								},
+							},
+						},
+						"preferences": []forms.Validator{
+							forms.IsList{
+								Validators: []forms.Validator{
+									forms.IsStringMap{
+										Form: &OperatorPreferencesForm,
 									},
 								},
 							},

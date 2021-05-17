@@ -83,6 +83,47 @@
     },
     {
       "created_at": "2021-05-17T10:00:00Z",
+      "section": "groups",
+      "name": "private-proxy-1",
+      "data" : ["proxy-users"]
+    },
+    {
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "services",
+      "name": "private-proxy-1",
+      "data" : [
+        {
+          "name": "proxy-client",
+          "permissions": [
+            {
+              "group": "proxy-providers",
+              "rights": ["call"]
+            }
+          ],
+          "methods": [
+            {
+              "name": "incomingConnection"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "settings",
+      "name": "private-proxy-1",
+      "data" : [
+        {
+          "service": "proxy",
+          "environment": "production",
+          "settings": {
+            "allowed_domains": ["^[a-z0-9-]{2,200}\\.internal-server\\.local$"]
+          }
+        }
+      ]
+    },
+    {
+      "created_at": "2021-05-17T10:00:00Z",
       "section": "channels",
       "name": "public-proxy-1",
       "data" : [
@@ -94,6 +135,33 @@
         },
         {
           "type" : "grpc_client"
+        }
+      ]
+    },
+    {
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "groups",
+      "name": "public-proxy-1",
+      "data" : ["proxy-providers"]
+    },
+    {
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "services",
+      "name": "public-proxy-1",
+      "data" : [
+        {
+          "name": "proxy",
+          "permissions": [
+            {
+              "group": "proxy-users",
+              "rights": ["call"]
+            }
+          ],
+          "methods": [
+            {
+              "name": "announceConnection"
+            }
+          ]
         }
       ]
     }

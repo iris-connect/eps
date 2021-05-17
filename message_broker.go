@@ -72,7 +72,19 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 
 	// we always add the client information to the request (if it exists)
 	if request.Params != nil && clientInfo != nil {
-		request.Params["_client"] = clientInfo.AsStruct()
+
+		// we always update the directory entry of the client info struct
+		if entry, err := b.directory.EntryFor(clientInfo.Name); err != nil {
+			return nil, err
+		} else {
+			clientInfo.Entry = entry
+		}
+
+		if clientInfoStruct, err := clientInfo.AsStruct(); err != nil {
+			return nil, err
+		} else {
+			request.Params["_client"] = clientInfoStruct
+		}
 	}
 
 	address, err := GetAddress(request.ID)
@@ -80,6 +92,9 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 	if err != nil {
 		return nil, err
 	}
+
+	// To do: Check if a client can actually call the service method of the
+	// given operator, reject the request if that's not the case.
 
 	for _, channel := range b.channels {
 		if !channel.CanDeliverTo(address) {

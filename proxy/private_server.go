@@ -22,6 +22,7 @@ server and forwards them to an internal endpoint.
 package proxy
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/iris-gateway/eps"
 	epsForms "github.com/iris-gateway/eps/forms"
@@ -143,7 +144,12 @@ type IncomingConnectionParams struct {
 
 func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *IncomingConnectionParams) *jsonrpc.Response {
 
-	eps.Log.Info(params.Client)
+	data, err := json.Marshal(params.Client)
+
+	if err != nil {
+		return context.InternalError()
+	}
+	eps.Log.Info(string(data))
 	connection := MakeProxyConnection(params.Endpoint, c.settings.InternalEndpoint, params.Token)
 
 	go func() {

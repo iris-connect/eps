@@ -28,5 +28,14 @@ var ClientInfoForm = forms.Form{
 				forms.IsString{},
 			},
 		},
+		{
+			Name: "entry",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsStringMap{
+					Form: &DirectoryEntryForm,
+				},
+			},
+		},
 	},
 }

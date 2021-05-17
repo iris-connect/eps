@@ -17,6 +17,7 @@
 package eps
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 )
@@ -36,13 +37,21 @@ type Request struct {
 }
 
 type ClientInfo struct {
-	Name string `json:"name"`
+	Name  string          `json:"name"`
+	Entry *DirectoryEntry `json:"entry"`
 }
 
-// for inclusion in protobuf...
-func (c *ClientInfo) AsStruct() map[string]interface{} {
-	return map[string]interface{}{
-		"name": c.Name,
+// for inclusion in protobuf... A bit dirty as we use JSON here, but it works...
+func (c *ClientInfo) AsStruct() (map[string]interface{}, error) {
+	if data, err := json.Marshal(c); err != nil {
+		return nil, err
+	} else {
+		var mapStruct map[string]interface{}
+		if err := json.Unmarshal(data, &mapStruct); err != nil {
+			return nil, err
+		} else {
+			return mapStruct, nil
+		}
 	}
 }
 

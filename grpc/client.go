@@ -46,11 +46,17 @@ type VerifyCredentials struct {
 	ClientInfo *eps.ClientInfo
 }
 
-func (c VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string) (bool, error) {
+type ClientInfoAuthInfo struct {
+	credentials.AuthInfo
+	ClientInfo *eps.ClientInfo
+}
+
+func (c VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string, clientInfo *eps.ClientInfo) (bool, error) {
 	if entry, err := c.directory.EntryFor(name); err != nil {
 		eps.Log.Error("can't verify entry...")
 		return false, err
 	} else {
+		clientInfo.Entry = entry
 		// we go through all certificates for the entry
 		for _, directoryCert := range entry.Certificates {
 			// we make sure the certificate is good for encryption
@@ -72,14 +78,16 @@ func (c VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInf
 	cert := tlsInfo.State.PeerCertificates[0]
 	name := cert.Subject.CommonName
 
-	if ok, err := c.checkFingerprint(cert, name); err != nil {
+	if ok, err := c.checkFingerprint(cert, name, c.ClientInfo); err != nil {
 		return conn, authInfo, err
 	} else if !ok {
 		return conn, authInfo, fmt.Errorf("invalid certificate")
 	}
 
 	c.ClientInfo.Name = name
-	return conn, authInfo, nil
+	clientInfoAuthInfo := &ClientInfoAuthInfo{authInfo, c.ClientInfo}
+
+	return conn, clientInfoAuthInfo, nil
 
 }
 

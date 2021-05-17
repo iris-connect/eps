@@ -167,14 +167,16 @@ func (s *Server) CanDeliverTo(address *eps.Address) bool {
 
 func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*protobuf.Response, error) {
 
-	clientInfo := &eps.ClientInfo{}
-
 	peer, ok := peer.FromContext(context)
-	if ok {
-		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
-		clientInfo.Name = tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
-	} else {
-		return nil, fmt.Errorf("cannot determine client name")
+
+	if !ok {
+		return nil, fmt.Errorf("cannot get peer")
+	}
+
+	clientInfoAuthInfo, ok := peer.AuthInfo.(*ClientInfoAuthInfo)
+
+	if !ok {
+		return nil, fmt.Errorf("cannot determine client info")
 	}
 
 	request := &eps.Request{
@@ -183,7 +185,7 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 		Method: pbRequest.Method,
 	}
 
-	if response, err := s.handler.HandleRequest(request, clientInfo); err != nil {
+	if response, err := s.handler.HandleRequest(request, clientInfoAuthInfo.ClientInfo); err != nil {
 		return nil, err
 	} else {
 
@@ -236,21 +238,23 @@ func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 
 	// this is a bidirectional message stream
 
-	clientInfo := &eps.ClientInfo{}
-
 	peer, ok := peer.FromContext(server.Context())
-	if ok {
-		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
-		clientInfo.Name = tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
-	} else {
-		return fmt.Errorf("cannot determine client name")
+
+	if !ok {
+		return fmt.Errorf("cannot get peer")
 	}
 
-	client := s.getClient(clientInfo.Name)
+	clientInfoAuthInfo, ok := peer.AuthInfo.(*ClientInfoAuthInfo)
+
+	if !ok {
+		return fmt.Errorf("cannot determine client info")
+	}
+
+	client := s.getClient(clientInfoAuthInfo.ClientInfo.Name)
 
 	if client == nil {
 		client = &ConnectedClient{
-			Info: clientInfo,
+			Info: clientInfoAuthInfo.ClientInfo,
 			Stop: make(chan bool),
 		}
 		s.setClient(client)
