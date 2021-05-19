@@ -59,6 +59,7 @@ func (c *JSONRPCClientChannel) Close() error {
 }
 
 func (c *JSONRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
+
 	client := jsonrpc.MakeClient(c.Settings)
 	jsonrpcRequest := &jsonrpc.Request{}
 	jsonrpcRequest.FromEPSRequest(request)

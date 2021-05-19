@@ -309,7 +309,7 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 		return nil, fmt.Errorf("cannot find channel")
 	}
 
-	settings, err := getEntrySettings(entry.Channels[0].Settings)
+	settings, err := getEntrySettings(entry.Channel("grpc_server").Settings)
 
 	if err != nil {
 		return nil, err
@@ -325,6 +325,11 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 }
 
 func (c *GRPCClientChannel) CanDeliverTo(address *eps.Address) bool {
+
+	// we'll never deliver to ourselves...
+	if address.Operator == c.Directory().Name() {
+		return false
+	}
 
 	// we check if the requested service offers a gRPC server
 	if entry, err := c.DirectoryEntry(address, "grpc_server"); entry != nil {

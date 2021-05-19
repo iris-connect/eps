@@ -24,86 +24,204 @@ package proxy
 
 import (
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"github.com/iris-gateway/eps"
+	epsForms "github.com/iris-gateway/eps/forms"
 	"github.com/iris-gateway/eps/helpers"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"github.com/iris-gateway/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
 	"net"
-	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
 
 type PublicServer struct {
-	settings             *PublicServerSettings
-	jsonrpcServer        *jsonrpc.JSONRPCServer
-	jsonrpcClient        *jsonrpc.Client
-	tlsListener          net.Listener
-	internalListener     net.Listener
-	tlsConnections       map[string]net.Conn
-	announcedConnections []*AnnouncedConnection
-	tlsHellos            map[string][]byte
-	mutex                sync.Mutex
+	dataStore        helpers.DataStore
+	settings         *PublicServerSettings
+	jsonrpcServer    *jsonrpc.JSONRPCServer
+	jsonrpcClient    *jsonrpc.Client
+	tlsListener      net.Listener
+	internalListener net.Listener
+	tlsConnections   map[string]net.Conn
+	announcements    []*PublicAnnouncement
+	tlsHellos        map[string][]byte
+	mutex            sync.Mutex
 }
 
-type AnnouncedConnection struct {
-	Name    string         `json:"name"`
-	Pattern *regexp.Regexp `json:"pattern"`
-}
-
-type IsValidRegexp struct{}
-
-func (i IsValidRegexp) Validate(value interface{}, values map[string]interface{}) (interface{}, error) {
-	// we assume IsString{} was called before...
-	if regexp, err := regexp.Compile(value.(string)); err != nil {
-		return nil, err
-	} else {
-		return regexp, nil
-	}
-}
-
-var AnnounceConnectionForm = forms.Form{
+var PublicAnnounceConnectionForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "name",
+			Name: "expires_at",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsString{},
+				forms.IsTime{
+					Format: "rfc3339",
+				},
+				IsValidExpiresAtTime{},
+			},
+		},
+		{
+			Name: "domain",
 			Validators: []forms.Validator{
 				forms.IsString{},
 			},
 		},
 		{
-			Name: "pattern",
+			Name: "_client",
 			Validators: []forms.Validator{
-				forms.IsString{},
-				IsValidRegexp{},
+				forms.IsStringMap{
+					Form: &epsForms.ClientInfoForm,
+				},
 			},
 		},
 	},
 }
 
-type AnnounceConnectionParams struct {
-	Name    string `json:"name"`
-	Pattern string `json:"pattern"`
+type PublicAnnounceConnectionParams struct {
+	Domain     string          `json:"domain"`
+	ExpiresAt  *time.Time      `json:"expires_at"`
+	ClientInfo *eps.ClientInfo `json:"_client"`
 }
 
-func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *AnnounceConnectionParams) *jsonrpc.Response {
+func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *PublicAnnounceConnectionParams) *jsonrpc.Response {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	eps.Log.Info("Received announcement!")
+
+	settings := params.ClientInfo.Entry.SettingsFor("proxy", c.settings.Name)
+
+	if settings == nil {
+		return context.Error(403, "not authorized", nil)
+	} else {
+		directorySettings := &DirectorySettings{}
+
+		if directoryParams, err := DirectorySettingsForm.Validate(settings.Settings); err != nil {
+			return context.Error(500, "invalid directory settings", nil)
+		} else if err := DirectorySettingsForm.Coerce(directorySettings, directoryParams); err != nil {
+			return context.InternalError()
+		} else {
+			found := false
+			for _, allowedDomain := range directorySettings.AllowedDomains {
+				if strings.HasSuffix(params.Domain, allowedDomain) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return context.Error(403, "not allowed to forward this domain", directorySettings)
+			}
+		}
+	}
+
+	var newAnnouncement *PublicAnnouncement
+	changed := false
+	for _, announcement := range c.announcements {
+		if announcement.Domain == params.Domain {
+			if announcement.Operator != params.ClientInfo.Name {
+				return context.Error(400, "already taken", announcement)
+			}
+			newAnnouncement = announcement
+			if newAnnouncement.ExpiresAt != announcement.ExpiresAt || announcement.ExpiresAt != nil && newAnnouncement.ExpiresAt != nil && !params.ExpiresAt.Equal(*announcement.ExpiresAt) {
+				changed = true
+				// we update the expiration time
+				announcement.ExpiresAt = params.ExpiresAt
+			}
+			break
+		}
+	}
+
+	if newAnnouncement == nil {
+		newAnnouncement = &PublicAnnouncement{
+			Domain:    params.Domain,
+			ExpiresAt: params.ExpiresAt,
+			Operator:  params.ClientInfo.Name,
+		}
+		c.announcements = append(c.announcements, newAnnouncement)
+		changed = true
+	}
+
+	if changed {
+
+		id, err := helpers.RandomID(16)
+
+		if err != nil {
+			eps.Log.Error(err)
+			return context.InternalError()
+		}
+
+		rawData, err := json.Marshal(newAnnouncement)
+
+		if err != nil {
+			eps.Log.Error(err)
+			return context.InternalError()
+		}
+
+		dataEntry := &helpers.DataEntry{
+			Type: PublicAnnouncementType,
+			ID:   id,
+			Data: rawData,
+		}
+
+		if err := c.dataStore.Write(dataEntry); err != nil {
+			eps.Log.Error(err)
+			return context.InternalError()
+		}
+
+	}
+
+	return context.Acknowledge()
+}
+
+func (c *PublicServer) revokeAnnouncement(context *jsonrpc.Context, params *PublicAnnounceConnectionParams) *jsonrpc.Response {
 	return context.InternalError()
+}
+
+var GetPublicAnnouncementsForm = forms.Form{
+	Fields: []forms.Field{},
+}
+
+type GetPublicAnnouncementsParams struct{}
+
+func (c *PublicServer) getAnnouncements(context *jsonrpc.Context, params *GetPublicAnnouncementsParams) *jsonrpc.Response {
+	return context.Result(c.announcements)
 }
 
 func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
 	server := &PublicServer{
-		settings:             settings,
-		jsonrpcClient:        jsonrpc.MakeClient(settings.JSONRPCClient),
-		tlsConnections:       make(map[string]net.Conn),
-		tlsHellos:            make(map[string][]byte),
-		announcedConnections: make([]*AnnouncedConnection, 0),
+		settings:       settings,
+		jsonrpcClient:  jsonrpc.MakeClient(settings.JSONRPCClient),
+		tlsConnections: make(map[string]net.Conn),
+		tlsHellos:      make(map[string][]byte),
+		announcements:  make([]*PublicAnnouncement, 0),
+		dataStore:      helpers.MakeFileDataStore(settings.DatabaseFile),
 	}
 
 	methods := map[string]*jsonrpc.Method{
 		"announceConnection": {
-			Form:    &AnnounceConnectionForm,
+			Form:    &PublicAnnounceConnectionForm,
 			Handler: server.announceConnection,
 		},
+		"revokeAnnouncement": {
+			Form:    &PublicAnnounceConnectionForm,
+			Handler: server.revokeAnnouncement,
+		},
+		"getAnnouncements": {
+			Form:    &GetPublicAnnouncementsForm,
+			Handler: server.getAnnouncements,
+		},
+	}
+
+	if err := server.dataStore.Init(); err != nil {
+		return nil, err
+	}
+
+	if err := server.update(); err != nil {
+		return nil, err
 	}
 
 	handler, err := jsonrpc.MethodsHandler(methods)
@@ -121,6 +239,58 @@ func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
 	server.jsonrpcServer = jsonrpcServer
 
 	return server, nil
+}
+
+func (s *PublicServer) update() error {
+	if entries, err := s.dataStore.Read(); err != nil {
+		return err
+	} else {
+		announcements := make([]*PublicAnnouncement, 0, len(entries))
+		for _, entry := range entries {
+			switch entry.Type {
+			case PublicAnnouncementType:
+				announcement := &PublicAnnouncement{}
+				if err := json.Unmarshal(entry.Data, &announcement); err != nil {
+					return fmt.Errorf("invalid record format!")
+				}
+				announcements = append(announcements, announcement)
+			default:
+				return fmt.Errorf("unknown entry type found...")
+			}
+		}
+		validAnnouncements := make([]*PublicAnnouncement, 0)
+		for _, announcement := range announcements {
+			if announcement.Revoked {
+				newAnnouncements := make([]*PublicAnnouncement, 0)
+				for _, validAnnouncement := range validAnnouncements {
+					if validAnnouncement.Domain == announcement.Domain && validAnnouncement.Operator == announcement.Operator {
+						continue
+					}
+					newAnnouncements = append(newAnnouncements, validAnnouncement)
+				}
+				validAnnouncements = newAnnouncements
+			} else {
+				found := false
+				for _, validAnnouncement := range validAnnouncements {
+					if announcement.Domain == validAnnouncement.Domain && announcement.Operator == validAnnouncement.Operator {
+						// we update an existing announcement
+						validAnnouncement.ExpiresAt = announcement.ExpiresAt
+						found = true
+						break
+					}
+				}
+				if !found {
+					validAnnouncements = append(validAnnouncements, &PublicAnnouncement{
+						Domain:    announcement.Domain,
+						Operator:  announcement.Operator,
+						ExpiresAt: announcement.ExpiresAt,
+					})
+				}
+			}
+		}
+		s.announcements = validAnnouncements
+		return nil
+	}
 }
 
 func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {

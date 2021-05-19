@@ -145,6 +145,15 @@ func (d *DirectoryEntry) Channel(channelType string) *OperatorChannel {
 	return nil
 }
 
+func (d *DirectoryEntry) SettingsFor(service, operator string) *OperatorSettings {
+	for _, settings := range d.Settings {
+		if (settings.Service == service || settings.Service == "") && (settings.Operator == operator || settings.Operator == "") {
+			return settings
+		}
+	}
+	return nil
+}
+
 type DirectoryQuery struct {
 	Operator string
 	Channels []string

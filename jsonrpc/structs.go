@@ -51,6 +51,48 @@ type Response struct {
 	ID      interface{} `json:"id"`
 }
 
+func fromEPSStruct(value map[string]interface{}) interface{} {
+	if len(value) == 1 {
+		var key string
+		// get the first key
+		for key, _ = range value {
+			break
+		}
+		if key == "_" {
+			return value[key]
+		}
+	}
+	return value
+}
+
+func toEPSStruct(value interface{}) map[string]interface{} {
+	mapResult, ok := value.(map[string]interface{})
+	if !ok {
+		mapResult = map[string]interface{}{"_": value}
+	}
+	return mapResult
+}
+
+func FromEPSResponse(response *eps.Response) *Response {
+
+	var error *Error
+
+	if response.Error != nil {
+		error = &Error{
+			Code:    response.Error.Code,
+			Message: response.Error.Message,
+			Data:    fromEPSStruct(response.Error.Data),
+		}
+	}
+
+	return &Response{
+		JSONRPC: "2.0",
+		Result:  fromEPSStruct(response.Result),
+		Error:   error,
+		ID:      response.ID,
+	}
+}
+
 func (r *Response) ToEPSResponse() *eps.Response {
 
 	strId, ok := r.ID.(string)
@@ -64,11 +106,7 @@ func (r *Response) ToEPSResponse() *eps.Response {
 	}
 
 	if r.Result != nil {
-		mapResult, ok := r.Result.(map[string]interface{})
-		if !ok {
-			mapResult = map[string]interface{}{"_": r.Result}
-		}
-		response.Result = mapResult
+		response.Result = toEPSStruct(r.Result)
 	}
 
 	if r.Error != nil {
@@ -77,11 +115,7 @@ func (r *Response) ToEPSResponse() *eps.Response {
 			Message: r.Error.Message,
 		}
 		if r.Error.Data != nil {
-			mapErrorData, ok := r.Error.Data.(map[string]interface{})
-			if !ok {
-				mapErrorData = map[string]interface{}{"_": r.Error.Data}
-			}
-			error.Data = mapErrorData
+			error.Data = toEPSStruct(r.Error.Data)
 		}
 		response.Error = error
 	}

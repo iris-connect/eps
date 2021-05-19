@@ -26,16 +26,23 @@ import (
 	"fmt"
 	"github.com/iris-gateway/eps"
 	epsForms "github.com/iris-gateway/eps/forms"
+	"github.com/iris-gateway/eps/helpers"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"github.com/kiprotect/go-helpers/forms"
 	"net"
+	"strings"
+	"sync"
+	"time"
 )
 
 type PrivateServer struct {
+	dataStore     helpers.DataStore
 	settings      *PrivateServerSettings
+	announcements []*PrivateAnnouncement
 	jsonrpcServer *jsonrpc.JSONRPCServer
 	jsonrpcClient *jsonrpc.Client
 	l             net.Listener
+	mutex         sync.Mutex
 }
 
 type ProxyConnection struct {
@@ -136,6 +143,16 @@ var IncomingConnectionForm = forms.Form{
 	},
 }
 
+var GetPrivateAnnouncementsForm = forms.Form{
+	Fields: []forms.Field{},
+}
+
+type GetPrivateAnnouncementsParams struct{}
+
+func (c *PrivateServer) getAnnouncements(context *jsonrpc.Context, params *GetPrivateAnnouncementsParams) *jsonrpc.Response {
+	return context.Result(c.announcements)
+}
+
 type IncomingConnectionParams struct {
 	Endpoint string          `json:"endpoint"`
 	Token    []byte          `json:"token"`
@@ -165,6 +182,7 @@ func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) 
 
 	server := &PrivateServer{
 		settings:      settings,
+		dataStore:     helpers.MakeFileDataStore(settings.DatabaseFile),
 		jsonrpcClient: jsonrpc.MakeClient(settings.JSONRPCClient),
 	}
 
@@ -173,6 +191,22 @@ func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) 
 			Form:    &IncomingConnectionForm,
 			Handler: server.incomingConnection,
 		},
+		"announceConnection": {
+			Form:    &PrivateAnnounceConnectionForm,
+			Handler: server.announceConnection,
+		},
+		"getAnnouncements": {
+			Form:    &GetPrivateAnnouncementsForm,
+			Handler: server.getAnnouncements,
+		},
+	}
+
+	if err := server.dataStore.Init(); err != nil {
+		return nil, err
+	}
+
+	if err := server.update(); err != nil {
+		return nil, err
 	}
 
 	handler, err := jsonrpc.MethodsHandler(methods)
@@ -193,27 +227,209 @@ func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) 
 
 }
 
-func (s *PrivateServer) announceConnections() error {
-	return nil
-	/*
-		request := jsonrpc.MakeRequest("private-proxy-1.incomingConnection", id, map[string]interface{}{
-			"hostname": hostName,
-			"token":    randomStr,
-			"endpoint": s.settings.InternalBindAddress,
-		})
+var PrivateAnnounceConnectionForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "expires_at",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsString{},
+				forms.IsTime{
+					Format: "rfc3339",
+				},
+				IsValidExpiresAtTime{},
+			},
+		},
+		{
+			Name: "proxy",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "domain",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "_client",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &epsForms.ClientInfoForm,
+				},
+			},
+		},
+	},
+}
 
-		if result, err := s.jsonrpcClient.Call(request); err != nil {
-			eps.Log.Error(err)
+type PrivateAnnounceConnectionParams struct {
+	ClientInfo *eps.ClientInfo `json:"_client"`
+	ExpiresAt  *time.Time      `json:"expires_at"`
+	Domain     string          `json:"domain"`
+	Proxy      string
+}
+
+func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *PrivateAnnounceConnectionParams) *jsonrpc.Response {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	settings := params.ClientInfo.Entry.SettingsFor("proxy", c.settings.Name)
+
+	if settings == nil {
+		return context.Error(403, "not authorized", nil)
+	} else {
+		directorySettings := &DirectorySettings{}
+
+		if directoryParams, err := DirectorySettingsForm.Validate(settings.Settings); err != nil {
+			return context.Error(500, "invalid directory settings", nil)
+		} else if err := DirectorySettingsForm.Coerce(directorySettings, directoryParams); err != nil {
+			return context.InternalError()
 		} else {
-			eps.Log.Info(result)
+			found := false
+			for _, allowedDomain := range directorySettings.AllowedDomains {
+				if strings.HasSuffix(params.Domain, allowedDomain) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return context.Error(403, "not allowed to forward this domain", directorySettings)
+			}
 		}
-	*/
+	}
+
+	var newAnnouncement *PrivateAnnouncement
+	changed := false
+	for _, announcement := range c.announcements {
+		if announcement.Domain == params.Domain {
+			if announcement.Proxy == params.Proxy {
+				return context.Error(400, "already taken", announcement)
+			}
+			newAnnouncement = announcement
+			if newAnnouncement.ExpiresAt != announcement.ExpiresAt || announcement.ExpiresAt != nil && newAnnouncement.ExpiresAt != nil && !params.ExpiresAt.Equal(*announcement.ExpiresAt) {
+				changed = true
+				// we update the expiration time
+				announcement.ExpiresAt = params.ExpiresAt
+			}
+			break
+		}
+	}
+
+	if newAnnouncement == nil {
+		newAnnouncement = &PrivateAnnouncement{
+			Domain:    params.Domain,
+			ExpiresAt: params.ExpiresAt,
+			Proxy:     params.Proxy,
+		}
+		c.announcements = append(c.announcements, newAnnouncement)
+		changed = true
+	}
+
+	if changed {
+
+		id, err := helpers.RandomID(16)
+
+		if err != nil {
+			eps.Log.Error(err)
+			return context.InternalError()
+		}
+
+		rawData, err := json.Marshal(newAnnouncement)
+
+		if err != nil {
+			eps.Log.Error(err)
+			return context.InternalError()
+		}
+
+		dataEntry := &helpers.DataEntry{
+			Type: PrivateAnnouncementType,
+			ID:   id,
+			Data: rawData,
+		}
+
+		if err := c.dataStore.Write(dataEntry); err != nil {
+			eps.Log.Error(err)
+			return context.InternalError()
+		}
+
+	}
+
+	return context.Acknowledge()
+}
+
+func (s *PrivateServer) announceConnectionRPC(domain string, proxy string) error {
+	eps.Log.Infof("Sending announcement to %s", proxy)
+	request := jsonrpc.MakeRequest(fmt.Sprintf("%s.announceConnection", proxy), "", map[string]interface{}{
+		"operator": s.settings.Name,
+		"domain":   domain,
+	})
+	response, err := s.jsonrpcClient.Call(request)
+	eps.Log.Info(response.Error)
+	return err
+
 }
 
 func (s *PrivateServer) Start() error {
+	for _, announcement := range s.announcements {
+		if err := s.announceConnectionRPC(announcement.Domain, announcement.Proxy); err != nil {
+			eps.Log.Error(err)
+		}
+	}
 	return s.jsonrpcServer.Start()
 }
 
 func (s *PrivateServer) Stop() error {
 	return s.jsonrpcServer.Stop()
+}
+
+func (s *PrivateServer) update() error {
+	if entries, err := s.dataStore.Read(); err != nil {
+		return err
+	} else {
+		announcements := make([]*PrivateAnnouncement, 0, len(entries))
+		for _, entry := range entries {
+			switch entry.Type {
+			case PrivateAnnouncementType:
+				announcement := &PrivateAnnouncement{}
+				if err := json.Unmarshal(entry.Data, &announcement); err != nil {
+					return fmt.Errorf("invalid record format!")
+				}
+				announcements = append(announcements, announcement)
+			default:
+				return fmt.Errorf("unknown entry type found...")
+			}
+		}
+		validAnnouncements := make([]*PrivateAnnouncement, 0)
+		for _, announcement := range announcements {
+			if announcement.Revoked {
+				newAnnouncements := make([]*PrivateAnnouncement, 0)
+				for _, validAnnouncement := range validAnnouncements {
+					if validAnnouncement.Domain == announcement.Domain && validAnnouncement.Proxy == announcement.Proxy {
+						continue
+					}
+					newAnnouncements = append(newAnnouncements, validAnnouncement)
+				}
+				validAnnouncements = newAnnouncements
+			} else {
+				found := false
+				for _, validAnnouncement := range validAnnouncements {
+					if announcement.Domain == validAnnouncement.Domain && announcement.Proxy == validAnnouncement.Proxy {
+						// we update an existing announcement
+						validAnnouncement.ExpiresAt = announcement.ExpiresAt
+						found = true
+						break
+					}
+				}
+				if !found {
+					validAnnouncements = append(validAnnouncements, &PrivateAnnouncement{
+						Domain:    announcement.Domain,
+						Proxy:     announcement.Proxy,
+						ExpiresAt: announcement.ExpiresAt,
+					})
+				}
+			}
+		}
+		s.announcements = validAnnouncements
+		return nil
+	}
 }

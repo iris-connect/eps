@@ -17,9 +17,26 @@
 package proxy
 
 import (
+	"fmt"
 	"github.com/iris-gateway/eps/jsonrpc"
 	"github.com/kiprotect/go-helpers/forms"
+	"time"
 )
+
+var DirectorySettingsForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "allowed_domains",
+			Validators: []forms.Validator{
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsString{},
+					},
+				},
+			},
+		},
+	},
+}
 
 var SettingsForm = forms.Form{
 	Fields: []forms.Field{
@@ -43,8 +60,35 @@ var SettingsForm = forms.Form{
 		},
 	},
 }
+
+type IsValidExpiresAtTime struct{}
+
+func (i IsValidExpiresAtTime) Validate(value interface{}, values map[string]interface{}) (interface{}, error) {
+	timeValue, ok := value.(time.Time)
+	if !ok {
+		return nil, fmt.Errorf("expected a time")
+	}
+	// we subtract 48 hours from the time value and make sure it's before the current time
+	if timeValue.Add(-48 * time.Hour).After(time.Now()) {
+		return nil, fmt.Errorf("connections need to expire in 48 hours or less")
+	}
+	return timeValue, nil
+}
+
 var PrivateSettingsForm = forms.Form{
 	Fields: []forms.Field{
+		{
+			Name: "database_file",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
 		{
 			Name: "internal_endpoint",
 			Validators: []forms.Validator{
@@ -73,6 +117,18 @@ var PrivateSettingsForm = forms.Form{
 
 var PublicSettingsForm = forms.Form{
 	Fields: []forms.Field{
+		{
+			Name: "database_file",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
 		{
 			Name: "tls_bind_address",
 			Validators: []forms.Validator{

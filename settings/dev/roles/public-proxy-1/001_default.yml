@@ -1,4 +1,6 @@
 public:
+  name: public-proxy-1
+  database_file: /tmp/public-proxy-announcements.db
   tls_bind_address: localhost:4433
   internal_bind_address: localhost:9999
   jsonrpc_client:

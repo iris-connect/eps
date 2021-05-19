@@ -64,17 +64,29 @@ func (c *JSONRPCServerChannel) handler(context *jsonrpc.Context) *jsonrpc.Respon
 		ID:     fmt.Sprintf("%s(%s)", context.Request.Method, context.Request.ID),
 	}
 
-	if response, err := c.MessageBroker().DeliverRequest(request, nil); err != nil {
+	// this request comes from the server itself
+	clientInfo := &eps.ClientInfo{
+		Name: c.Directory().Name(),
+	}
+
+	if entry, err := c.Directory().OwnEntry(); err != nil {
+		return context.InternalError()
+	} else {
+		clientInfo.Entry = entry
+	}
+
+	if response, err := c.MessageBroker().DeliverRequest(request, clientInfo); err != nil {
 		eps.Log.Error(err)
 		return context.Error(1, "cannot deliver JSON-RPC request", err)
 	} else {
 		if response == nil {
 			return context.Result(map[string]interface{}{"message": "submitted"})
 		}
-		if response.Error != nil {
-			return context.Error(2, response.Error.Message, response.Error.Data)
+		jsonrpcResponse := jsonrpc.FromEPSResponse(response)
+		if jsonrpcResponse.Error != nil {
+			return context.Error(2, jsonrpcResponse.Error.Message, jsonrpcResponse.Error.Data)
 		} else {
-			return context.Result(response.Result)
+			return context.Result(jsonrpcResponse.Result)
 		}
 	}
 }

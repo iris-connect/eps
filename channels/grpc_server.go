@@ -66,5 +66,11 @@ func (c *GRPCServerChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 }
 
 func (c *GRPCServerChannel) CanDeliverTo(address *eps.Address) bool {
+
+	// we'll never deliver to ourselves...
+	if address.Operator == c.Directory().Name() {
+		return false
+	}
+
 	return c.server.CanDeliverTo(address)
 }

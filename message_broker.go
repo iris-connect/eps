@@ -58,7 +58,7 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 
 	if inTransit, ok := b.requestsInTransit[request.ID]; ok && inTransit {
 		b.mutex.Unlock()
-		return nil, fmt.Errorf("request is already being processed (maybe a delivery loop)")
+		return nil, fmt.Errorf("request %s is already being processed (maybe a delivery loop)", request.ID)
 	} else {
 		b.requestsInTransit[request.ID] = true
 		defer func() {
@@ -69,6 +69,8 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 	}
 
 	b.mutex.Unlock()
+
+	Log.Info("Checking request details...")
 
 	// we always add the client information to the request (if it exists)
 	if request.Params != nil && clientInfo != nil {
@@ -93,14 +95,21 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 		return nil, err
 	}
 
+	Log.Info("Checking channels...")
+
 	// To do: Check if a client can actually call the service method of the
 	// given operator, reject the request if that's not the case.
 
-	for _, channel := range b.channels {
+	for i, channel := range b.channels {
 		if !channel.CanDeliverTo(address) {
 			continue
 		}
-		return channel.DeliverRequest(request)
+		if response, err := channel.DeliverRequest(request); err != nil {
+			Log.Errorf("Channel %d encountered an error delivering message", i)
+			continue
+		} else {
+			return response, nil
+		}
 	}
 	return nil, fmt.Errorf("no channel can deliver this request")
 }

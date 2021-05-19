@@ -18,6 +18,12 @@ package proxy
 
 import (
 	"github.com/iris-gateway/eps/jsonrpc"
+	"time"
+)
+
+const (
+	PublicAnnouncementType  uint8 = 1
+	PrivateAnnouncementType uint8 = 2
 )
 
 type Settings struct {
@@ -25,7 +31,13 @@ type Settings struct {
 	Public  *PublicServerSettings  `json:"public"`
 }
 
+type DirectorySettings struct {
+	AllowedDomains []string `json:"allowed_domains"`
+}
+
 type PublicServerSettings struct {
+	DatabaseFile        string                         `json:"database_file"`
+	Name                string                         `json:"name"`
 	TLSBindAddress      string                         `json:"tls_bind_address"`
 	InternalBindAddress string                         `json:"internal_bind_address"`
 	InternalEndpoint    string                         `json:"internal_endpoint"`
@@ -33,7 +45,32 @@ type PublicServerSettings struct {
 	JSONRPCServer       *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
 }
 
+type PublicAnnouncement struct {
+	// When the announcement expires
+	ExpiresAt *time.Time `json:"expires_at"`
+	// the name of the operator to forward the connection to
+	Operator string `json:"operator"`
+	// the name of the domain to forward
+	Domain string `json:"domain"`
+	// only used in storage
+	Revoked bool `json:"revoked"`
+}
+
+type PrivateAnnouncement struct {
+	// When the announcement expires
+	ExpiresAt *time.Time `json:"expires_at"`
+	// the name of the public proxy to announce this to
+	Proxy string `json:"proxy"`
+	// the pattern to announce, as a regexp
+	Domain string `json:"domain"`
+	// only used in storage
+	Revoked bool `json:"revoked"`
+}
+
 type PrivateServerSettings struct {
+	DatabaseFile     string                         `json:"database_file"`
+	Name             string                         `json:"name"`
+	Announcements    []*PrivateAnnouncement         `json:"announcements"`
 	InternalEndpoint string                         `json:"internal_endpoint"`
 	JSONRPCClient    *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
 	JSONRPCServer    *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
