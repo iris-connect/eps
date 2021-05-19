@@ -97,7 +97,7 @@
           "service": "proxy",
           "environment": "production",
           "settings": {
-            "allowed_domains": [".hd-1.local"]
+            "allowed_domains": [".internal-server.local"]
           }
         }
       ]
@@ -111,7 +111,7 @@
           "service": "proxy",
           "environment": "production",
           "settings": {
-            "allowed_domains": [".hd-1.local"]
+            "allowed_domains": [".internal-server.local"]
           }
         }
       ]

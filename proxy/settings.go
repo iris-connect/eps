@@ -52,8 +52,6 @@ type PublicAnnouncement struct {
 	Operator string `json:"operator"`
 	// the name of the domain to forward
 	Domain string `json:"domain"`
-	// only used in storage
-	Revoked bool `json:"revoked"`
 }
 
 type PrivateAnnouncement struct {
@@ -63,8 +61,6 @@ type PrivateAnnouncement struct {
 	Proxy string `json:"proxy"`
 	// the pattern to announce, as a regexp
 	Domain string `json:"domain"`
-	// only used in storage
-	Revoked bool `json:"revoked"`
 }
 
 type PrivateServerSettings struct {

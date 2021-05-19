@@ -41,6 +41,7 @@ type PrivateServer struct {
 	announcements []*PrivateAnnouncement
 	jsonrpcServer *jsonrpc.JSONRPCServer
 	jsonrpcClient *jsonrpc.Client
+	stop          chan bool
 	l             net.Listener
 	mutex         sync.Mutex
 }
@@ -150,7 +151,14 @@ var GetPrivateAnnouncementsForm = forms.Form{
 type GetPrivateAnnouncementsParams struct{}
 
 func (c *PrivateServer) getAnnouncements(context *jsonrpc.Context, params *GetPrivateAnnouncementsParams) *jsonrpc.Response {
-	return context.Result(c.announcements)
+	relevantAnnouncements := make([]*PrivateAnnouncement, 0)
+	for _, announcement := range c.announcements {
+		if announcement.ExpiresAt != nil && announcement.ExpiresAt.Before(time.Now()) {
+			continue
+		}
+		relevantAnnouncements = append(relevantAnnouncements, announcement)
+	}
+	return context.Result(relevantAnnouncements)
 }
 
 type IncomingConnectionParams struct {
@@ -181,6 +189,7 @@ func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *Inc
 func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) {
 
 	server := &PrivateServer{
+		stop:          make(chan bool),
 		settings:      settings,
 		dataStore:     helpers.MakeFileDataStore(settings.DatabaseFile),
 		jsonrpcClient: jsonrpc.MakeClient(settings.JSONRPCClient),
@@ -301,12 +310,9 @@ func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *Pri
 	var newAnnouncement *PrivateAnnouncement
 	changed := false
 	for _, announcement := range c.announcements {
-		if announcement.Domain == params.Domain {
-			if announcement.Proxy == params.Proxy {
-				return context.Error(400, "already taken", announcement)
-			}
+		if announcement.Domain == params.Domain && announcement.Proxy == params.Proxy {
 			newAnnouncement = announcement
-			if newAnnouncement.ExpiresAt != announcement.ExpiresAt || announcement.ExpiresAt != nil && newAnnouncement.ExpiresAt != nil && !params.ExpiresAt.Equal(*announcement.ExpiresAt) {
+			if params.ExpiresAt != announcement.ExpiresAt || announcement.ExpiresAt != nil && params.ExpiresAt != nil && !announcement.ExpiresAt.Equal(*params.ExpiresAt) {
 				changed = true
 				// we update the expiration time
 				announcement.ExpiresAt = params.ExpiresAt
@@ -357,28 +363,55 @@ func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *Pri
 	return context.Acknowledge()
 }
 
-func (s *PrivateServer) announceConnectionRPC(domain string, proxy string) error {
-	eps.Log.Infof("Sending announcement to %s", proxy)
-	request := jsonrpc.MakeRequest(fmt.Sprintf("%s.announceConnection", proxy), "", map[string]interface{}{
-		"operator": s.settings.Name,
-		"domain":   domain,
+func (s *PrivateServer) announceConnectionRPC(announcement *PrivateAnnouncement) error {
+	eps.Log.Debugf("Sending announcement to %s (%v)", announcement.Proxy, announcement.ExpiresAt)
+	request := jsonrpc.MakeRequest(fmt.Sprintf("%s.announceConnection", announcement.Proxy), "", map[string]interface{}{
+		"operator":   s.settings.Name,
+		"expires_at": announcement.ExpiresAt,
+		"domain":     announcement.Domain,
 	})
-	response, err := s.jsonrpcClient.Call(request)
-	eps.Log.Info(response.Error)
+	_, err := s.jsonrpcClient.Call(request)
 	return err
 
 }
 
-func (s *PrivateServer) Start() error {
-	for _, announcement := range s.announcements {
-		if err := s.announceConnectionRPC(announcement.Domain, announcement.Proxy); err != nil {
-			eps.Log.Error(err)
+func (s *PrivateServer) announceConnections() {
+	for {
+
+		s.mutex.Lock()
+
+		for _, announcement := range s.announcements {
+			if err := s.announceConnectionRPC(announcement); err != nil {
+				eps.Log.Error(err)
+			}
+		}
+
+		s.mutex.Unlock()
+
+		select {
+		// in case of an error we try to reconnect after 1 second
+		case <-time.After(10 * time.Second):
+		case <-s.stop:
+			s.stop <- true
+			break
 		}
 	}
+}
+
+func (s *PrivateServer) Start() error {
+	go s.announceConnections()
 	return s.jsonrpcServer.Start()
 }
 
 func (s *PrivateServer) Stop() error {
+
+	s.stop <- true
+	select {
+	case <-s.stop:
+	case <-time.After(5 * time.Second):
+		eps.Log.Error("timeout when closing announcements")
+	}
+
 	return s.jsonrpcServer.Stop()
 }
 
@@ -401,32 +434,21 @@ func (s *PrivateServer) update() error {
 		}
 		validAnnouncements := make([]*PrivateAnnouncement, 0)
 		for _, announcement := range announcements {
-			if announcement.Revoked {
-				newAnnouncements := make([]*PrivateAnnouncement, 0)
-				for _, validAnnouncement := range validAnnouncements {
-					if validAnnouncement.Domain == announcement.Domain && validAnnouncement.Proxy == announcement.Proxy {
-						continue
-					}
-					newAnnouncements = append(newAnnouncements, validAnnouncement)
+			found := false
+			for _, validAnnouncement := range validAnnouncements {
+				if announcement.Domain == validAnnouncement.Domain && announcement.Proxy == validAnnouncement.Proxy {
+					// we update an existing announcement
+					validAnnouncement.ExpiresAt = announcement.ExpiresAt
+					found = true
+					break
 				}
-				validAnnouncements = newAnnouncements
-			} else {
-				found := false
-				for _, validAnnouncement := range validAnnouncements {
-					if announcement.Domain == validAnnouncement.Domain && announcement.Proxy == validAnnouncement.Proxy {
-						// we update an existing announcement
-						validAnnouncement.ExpiresAt = announcement.ExpiresAt
-						found = true
-						break
-					}
-				}
-				if !found {
-					validAnnouncements = append(validAnnouncements, &PrivateAnnouncement{
-						Domain:    announcement.Domain,
-						Proxy:     announcement.Proxy,
-						ExpiresAt: announcement.ExpiresAt,
-					})
-				}
+			}
+			if !found {
+				validAnnouncements = append(validAnnouncements, &PrivateAnnouncement{
+					Domain:    announcement.Domain,
+					Proxy:     announcement.Proxy,
+					ExpiresAt: announcement.ExpiresAt,
+				})
 			}
 		}
 		s.announcements = validAnnouncements

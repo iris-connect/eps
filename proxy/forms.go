@@ -68,9 +68,9 @@ func (i IsValidExpiresAtTime) Validate(value interface{}, values map[string]inte
 	if !ok {
 		return nil, fmt.Errorf("expected a time")
 	}
-	// we subtract 48 hours from the time value and make sure it's before the current time
-	if timeValue.Add(-48 * time.Hour).After(time.Now()) {
-		return nil, fmt.Errorf("connections need to expire in 48 hours or less")
+	// we subtract 7*24 hours from the time value and make sure it's before the current time
+	if timeValue.Add(-7 * 24 * time.Hour).After(time.Now()) {
+		return nil, fmt.Errorf("timed announcements need to expire in 7 days or less")
 	}
 	return timeValue, nil
 }

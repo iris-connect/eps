@@ -91,7 +91,7 @@ func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *Publ
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	eps.Log.Info("Received announcement!")
+	eps.Log.Infof("Received announcement! %v", params.ExpiresAt)
 
 	settings := params.ClientInfo.Entry.SettingsFor("proxy", c.settings.Name)
 
@@ -126,7 +126,8 @@ func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *Publ
 				return context.Error(400, "already taken", announcement)
 			}
 			newAnnouncement = announcement
-			if newAnnouncement.ExpiresAt != announcement.ExpiresAt || announcement.ExpiresAt != nil && newAnnouncement.ExpiresAt != nil && !params.ExpiresAt.Equal(*announcement.ExpiresAt) {
+			eps.Log.Info(params.ExpiresAt)
+			if announcement.ExpiresAt != params.ExpiresAt || announcement.ExpiresAt != nil && params.ExpiresAt != nil && !params.ExpiresAt.Equal(*announcement.ExpiresAt) {
 				changed = true
 				// we update the expiration time
 				announcement.ExpiresAt = params.ExpiresAt
@@ -177,10 +178,6 @@ func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *Publ
 	return context.Acknowledge()
 }
 
-func (c *PublicServer) revokeAnnouncement(context *jsonrpc.Context, params *PublicAnnounceConnectionParams) *jsonrpc.Response {
-	return context.InternalError()
-}
-
 var GetPublicAnnouncementsForm = forms.Form{
 	Fields: []forms.Field{},
 }
@@ -188,7 +185,14 @@ var GetPublicAnnouncementsForm = forms.Form{
 type GetPublicAnnouncementsParams struct{}
 
 func (c *PublicServer) getAnnouncements(context *jsonrpc.Context, params *GetPublicAnnouncementsParams) *jsonrpc.Response {
-	return context.Result(c.announcements)
+	relevantAnnouncements := make([]*PublicAnnouncement, 0)
+	for _, announcement := range c.announcements {
+		if announcement.ExpiresAt != nil && announcement.ExpiresAt.Before(time.Now()) {
+			continue
+		}
+		relevantAnnouncements = append(relevantAnnouncements, announcement)
+	}
+	return context.Result(relevantAnnouncements)
 }
 
 func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
@@ -205,10 +209,6 @@ func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
 		"announceConnection": {
 			Form:    &PublicAnnounceConnectionForm,
 			Handler: server.announceConnection,
-		},
-		"revokeAnnouncement": {
-			Form:    &PublicAnnounceConnectionForm,
-			Handler: server.revokeAnnouncement,
 		},
 		"getAnnouncements": {
 			Form:    &GetPublicAnnouncementsForm,
@@ -260,32 +260,21 @@ func (s *PublicServer) update() error {
 		}
 		validAnnouncements := make([]*PublicAnnouncement, 0)
 		for _, announcement := range announcements {
-			if announcement.Revoked {
-				newAnnouncements := make([]*PublicAnnouncement, 0)
-				for _, validAnnouncement := range validAnnouncements {
-					if validAnnouncement.Domain == announcement.Domain && validAnnouncement.Operator == announcement.Operator {
-						continue
-					}
-					newAnnouncements = append(newAnnouncements, validAnnouncement)
+			found := false
+			for _, validAnnouncement := range validAnnouncements {
+				if announcement.Domain == validAnnouncement.Domain && announcement.Operator == validAnnouncement.Operator {
+					// we update an existing announcement
+					validAnnouncement.ExpiresAt = announcement.ExpiresAt
+					found = true
+					break
 				}
-				validAnnouncements = newAnnouncements
-			} else {
-				found := false
-				for _, validAnnouncement := range validAnnouncements {
-					if announcement.Domain == validAnnouncement.Domain && announcement.Operator == validAnnouncement.Operator {
-						// we update an existing announcement
-						validAnnouncement.ExpiresAt = announcement.ExpiresAt
-						found = true
-						break
-					}
-				}
-				if !found {
-					validAnnouncements = append(validAnnouncements, &PublicAnnouncement{
-						Domain:    announcement.Domain,
-						Operator:  announcement.Operator,
-						ExpiresAt: announcement.ExpiresAt,
-					})
-				}
+			}
+			if !found {
+				validAnnouncements = append(validAnnouncements, &PublicAnnouncement{
+					Domain:    announcement.Domain,
+					Operator:  announcement.Operator,
+					ExpiresAt: announcement.ExpiresAt,
+				})
 			}
 		}
 		s.announcements = validAnnouncements
@@ -416,6 +405,27 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 		return
 	} else {
 
+		var announcement *PublicAnnouncement
+
+		found := false
+		for _, announcement = range s.announcements {
+			if announcement.Domain == hostName {
+				// if this announcement is already expired we ignore it
+				eps.Log.Info(announcement.ExpiresAt)
+				if announcement.ExpiresAt != nil && announcement.ExpiresAt.Before(time.Now()) {
+					continue
+				}
+				found = true
+				break
+			}
+		}
+
+		// no matching announcement found...
+		if !found {
+			close()
+			return
+		}
+
 		randomBytes, err := helpers.RandomBytes(32)
 
 		if err != nil {
@@ -432,7 +442,7 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 		s.mutex.Unlock()
 
 		// we tell the internal proxy about an incoming connection
-		request := jsonrpc.MakeRequest("private-proxy-1.incomingConnection", "", map[string]interface{}{
+		request := jsonrpc.MakeRequest(fmt.Sprintf("%s.incomingConnection", announcement.Operator), "", map[string]interface{}{
 			"hostname": hostName,
 			"token":    randomStr,
 			"endpoint": s.settings.InternalEndpoint,
