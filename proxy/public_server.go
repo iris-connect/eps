@@ -443,7 +443,7 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 
 		// we tell the internal proxy about an incoming connection
 		request := jsonrpc.MakeRequest(fmt.Sprintf("%s.incomingConnection", announcement.Operator), "", map[string]interface{}{
-			"hostname": hostName,
+			"domain":   hostName,
 			"token":    randomStr,
 			"endpoint": s.settings.InternalEndpoint,
 		})

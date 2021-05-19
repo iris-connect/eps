@@ -134,6 +134,12 @@ var IncomingConnectionForm = forms.Form{
 			},
 		},
 		{
+			Name: "domain",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
 			Name: "_client",
 			Validators: []forms.Validator{
 				forms.IsStringMap{
@@ -162,6 +168,7 @@ func (c *PrivateServer) getAnnouncements(context *jsonrpc.Context, params *GetPr
 }
 
 type IncomingConnectionParams struct {
+	Domain   string          `json:"domain"`
 	Endpoint string          `json:"endpoint"`
 	Token    []byte          `json:"token"`
 	Client   *eps.ClientInfo `json:"_client"`
@@ -169,12 +176,22 @@ type IncomingConnectionParams struct {
 
 func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *IncomingConnectionParams) *jsonrpc.Response {
 
-	data, err := json.Marshal(params.Client)
-
-	if err != nil {
-		return context.InternalError()
+	found := false
+	for _, announcement := range c.announcements {
+		if announcement.Proxy == params.Client.Name && announcement.Domain == params.Domain {
+			// we make sure the announcement is not expired
+			if announcement.ExpiresAt != nil && announcement.ExpiresAt.Before(time.Now()) {
+				continue
+			}
+			found = true
+			break
+		}
 	}
-	eps.Log.Info(string(data))
+
+	if !found {
+		return context.Error(404, "no matching connection found", nil)
+	}
+
 	connection := MakeProxyConnection(params.Endpoint, c.settings.InternalEndpoint, params.Token)
 
 	go func() {
