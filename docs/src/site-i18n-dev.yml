@@ -1,0 +1,11 @@
+i18n:
+  source_language: de
+languages:
+  en:
+    prefix: ""
+    language_title: English
+    $include: site-en.yml
+  de:
+    prefix: "de"
+    language_title: Deutsch
+    $include: site-de.yml

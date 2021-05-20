@@ -1,0 +1,248 @@
+@import 'colors.scss';
+@import 'variables.scss';
+@import 'breakpoints.scss';
+@import 'fonts.scss';
+@import 'sequence.scss';
+@import 'comments.scss';
+@import '../css/bulma.min.css';
+
+body {
+    font-family: "Open Sans", sans-serif;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 1.6;
+    min-height: 100vh;
+    color: #222;
+    @media(max-width: $mobile){
+        font-size: 16px;
+    }
+}
+
+.content {
+
+    aside {
+        img {
+            width: 100%;
+            height: auto;
+        }
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: 400;
+        margin-top: 30px;
+        &:not(:first-child) {
+            margin-top: 40px;
+        }
+    }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+h2.title,
+h2.subtitle {
+    font-weight: 400;
+    font-family: "Oxanium", sans-serif;
+}
+
+.highlight {
+    margin-top: 8px;
+}
+
+#translation-notice {
+    display: none;
+    .message .message-body {
+        border-radius: 0;
+        margin-right: 30px;
+    }
+    span.x {
+        position: absolute;
+        right: 20px;
+        background: #fff;
+        border-radius: 15px;
+        padding-left: 10px;
+        padding-top: 2px;
+        top: 18px;
+        height: 30px;
+        width: 30px;
+        cursor: pointer;
+    }
+}
+
+.navbar {
+
+    z-index: auto;
+
+    @media(min-width: $tablet + 1px){
+        display: none;
+    }
+
+    .navbar-brand, .navbar-menu {
+        background: #333;
+    }
+
+    .navbar-dropdown.is-active {
+        display: block;
+    }
+
+    .navbar-menu {
+        margin-right: 0;
+    }
+
+    .navbar-burger.is-active {
+        @media(max-width: $tablet + 1px){
+            z-index: 201;
+            position: fixed;
+            top: 0;
+            right: 0;
+        }
+    }
+}
+
+section.section, .hero .hero-body {
+    max-width: 1000px;
+
+    &.wide {
+        max-width: 1600px;
+    }
+
+    @media(max-width: $mobile){
+        padding: 1rem;
+    }
+}
+
+section.section.first {
+    padding-top: 34px;
+    @media(max-width: $tablet + 1px){
+        padding-top: 20px;
+    }
+}
+
+pre, code {
+    font-family: Source Code Pro, monospace;
+    font-weight: 400;
+    background:#fafafa;
+    font-size: 0.9rem;
+}
+
+.main {
+
+    @media(min-width: $tablet + 1px){
+        min-height: 100vh;
+        padding-left: 340px;
+        position: relative;    
+    }
+
+    .side-menu {
+
+        box-shadow: $box-shadow;
+        padding: 0;
+        padding-right: 20px;
+        margin: 0;
+        background: #65a;
+        color: #fff;
+
+        a {
+            color: #fff;
+            border-left: none;
+        }
+
+        .menu-label {
+            color: #fff;
+            border-left: 10px solid rgba(0,0,0,0);
+            margin-bottom: 20px;
+            a {
+                font-family: Oxanium, Arial, Helvetica; 
+                text-align: center;
+                font-size: 20px;
+                img {
+                    margin: 0 auto;
+                    margin-top: 10px;
+                    margin-bottom: 20px;
+                    display: block;
+                }
+            }
+        }
+
+        a.is-active {
+            background: inherit;
+        }
+
+        .menu-list {
+            li ul {
+                border-left: none;
+            }
+            a:hover {
+                background: inherit;
+            }    
+        }
+
+        @media(max-width: $tablet + 1px){
+            display: none;
+        }
+    
+        @media(min-width: $tablet + 1px){
+            display: block;
+            position: absolute;
+            left: 0;
+            padding-left: 10px;
+            padding-top: 40px;
+            top: 0;
+            min-height: 100%;
+            width: 300px;
+        }
+    
+        &.mobile-only {
+            @media(min-width: $tablet + 1px){
+                display: none;
+            }
+        }
+
+        ul.menu-list {
+            li ul {
+                padding-left: 0;
+                margin-right: 0;
+                margin-top: 0;
+                padding-top: 0;
+            }
+        }
+    
+        aside.menu {
+            margin-bottom: 15px;
+    
+            &.mobile-only {
+                @media(min-width: $tablet + 1px){
+                    display: none;
+                }
+            }
+        }
+    
+        &.is-active {
+            @media(max-width: $tablet + 1px){
+                z-index: 200;
+                display: block;
+                position: fixed;
+                top:0;
+                right:0;
+                width: 300px;
+                overflow-y: auto;
+                height: 100%;
+                padding-left: 10px;
+                padding-right: 10px;
+                padding-top: 60px;
+            }
+            @media(max-width: $mobile){
+                width: 100%;
+            }
+        }
+    }    
+}
+
+.hero.is-info .content {
+    h1, h2, h3, h4, h5, h6 {
+        color: #fff;
+    }
+}

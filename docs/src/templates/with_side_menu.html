@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block mobile_side_menu %}
+{% endblock %}
+{% block main %}
+<section class="section">
+    <div class="container main">
+        {% block nav %}
+        <div class="side-menu" id="side-menu" data-toggle-class="is-active">
+            {% block extra_nav %}{% endblock %}
+            {% include "_side_menu.html" %}
+        </div>
+        {% endblock %}
+        <div class="main-content">
+            {% block content %}{% endblock %}
+        </div>    
+    </div>
+</section>  
+{% endblock %}

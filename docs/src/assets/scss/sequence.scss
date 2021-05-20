@@ -1,0 +1,44 @@
+div.sequence-container {
+	overflow: auto;
+	margin-bottom: 20px;
+
+	@for $i from 1 through 4 {
+		div.sequence.#{$i}-columns {
+			grid-template-columns: repeat(#{$i}, 1fr);
+			min-width: #{$i*300}px;
+		}
+	}
+
+	div.sequence {
+		font-size: 14px;
+		display: grid;
+		column-gap: 20px;
+		row-gap: 20px;
+		grid-auto-rows: auto;
+
+		@for $i from 1 through 10 {
+			.step-#{$i} {
+				background: #fafafa;
+				padding: 12px;
+				border: 1px solid #eee;
+				grid-row: #{$i+1};
+			}
+		}
+
+		@for $i from 1 through 5 {
+			.col-#{$i} {
+				grid-column: #{$i};
+			}
+		}
+
+		@for $i from 1 through 5 {
+			.header-#{$i} {
+				text-align: center;
+				font-weight: bolder;
+				grid-column: #{$i};
+				grid-row: 1;
+			}
+		}
+
+	}	
+}
