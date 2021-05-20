@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block main %}
+
+<div class="container">
+	<div class="row">
+		<div class="col-md-12">
+			<h1>{{'blog-title'|translate}}</h1>
+
+			<p class="lead">
+				{{'blog-description'|translate}}
+			</p>
+			<hr />
+		</div>
+	</div>
+
+	{% if articles %}
+		<div class="row articles">
+		{% for article in (articles_page.object_list if articles_page else articles) %}
+			<div class="d-flex align-content-justify col-lg-6">
+				<a href="{{article.name|href}}">
+					<div class="article-item">
+							{%if article.background%}<img src="{{'images/'+article.background|file}}" class="bg" />{%endif%}
+						<div class="header">
+							<h2>{{ article.title }}</h2>
+							<p>
+								{{article.locale_date}}
+							</p>
+						</div>
+						<div class="body">
+							<div class="summary">{{ article.summary }}</div>
+						</div>
+					</div>
+				</a>
+			</div>	
+		{% endfor %}
+		</div>
+	{%endif%}
+		
+	{% if articles_page and articles_paginator.num_pages > 1 %}
+		<div class="pagination">
+			<ul>
+				{% if articles_page.has_previous() %}
+					{% set num = articles_page.previous_page_number() %}
+					<li class="prev"><a href="/{{ page_name }}{{ num if num > 1 else '' }}.html">&larr; Previous</a></li>
+				{% else %}
+					<li class="prev disabled"><a href="#">&larr; Previous</a></li>
+				{% endif %}
+				{% for num in range( 1, 1 + articles_paginator.num_pages ) %}
+					<li class="{{ 'active' if num == articles_page.number else '' }}"><a href="{{ site.path }}/{{ page_name }}{{ num if num > 1 else '' }}.html">{{ num }}</a></li>
+				{% endfor %}
+				{% if articles_page.has_next() %}
+					<li class="next"><a href="{{ site.path }}/{{ page_name }}{{ articles_page.next_page_number() }}.html">Next &rarr;</a></li>
+				{% else %}
+					<li class="next disabled"><a href="#">&rarr; Next</a></li>
+				{% endif %}
+			</ul>
+		</div>
+	{% endif %}
+</div>
+
+{% endblock %}

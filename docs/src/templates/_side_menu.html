@@ -1,0 +1,44 @@
+<ul class="menu-list">
+    {% for pg in pages recursive %}
+        {% if not pg.hidden and pg.level == loop.depth - 1 %}
+            <li>
+            {% if pg.children and not pg.no_submenu %}
+                <a class="{%if page.slug.startswith(pg.slug)%}is-active{%endif%}" href="#" data-toggle="collapse" data-target="page-{{pg.name}}-nav">{{pg.navtitle or pg.title}}</a>
+                <ul class="{%if not page.slug.startswith(pg.slug)%}is-hidden{%endif%}" id="page-{{pg.name}}-nav">
+                    {% if pg.src %} {# This category also has its own page #}
+                    <li>
+                        <a href="{%if pg.url %}{{pg.url}}{%elif pg.href %}{{pg.href|href}}{%elif pg.name%}{{pg.name|href}}{%else%}#{%endif%}">{{pg.subtitle or pg.navtitle or pg.title}}</a>
+                    </li>
+                    {% endif %}
+                    {{loop(pg.children)}}
+                </ul>
+            {% elif pg.src %}
+                <a href="{%if pg.url %}{{pg.url}}{%elif pg.href %}{{pg.href|href}}{%elif pg.name is defined %}{{pg.name|href}}{%else%}#{%endif%}">{{pg.navtitle or pg.title}}</a>
+            {% endif %}
+            </li>
+        {% endif %}
+    {% endfor %}
+    <li>
+        <a href="#" data-toggle="collapse" data-target="menu-language-dropdown">
+            {{'languages'|translate}}
+        </a>
+        <ul id="menu-language-dropdown" class="is-hidden">
+        {% if page is defined %}
+          {% set link=page.name %}
+        {% elif name is defined %}
+          {% set link=name %}
+        {% else %}
+          {% set link='' %}
+        {% endif %}
+        {% for language, language_config in site.config.languages.items() %}
+            {% if link|href(language=language) != None %}
+            <li>
+                <a class="{% if lang == language %}is-open is-active{%endif%}" href="{{link|href(language=language)}}">
+                    {{language_config.language_title}}
+                </a>
+            </li>
+            {% endif %}
+        {% endfor %}
+        </ul>      
+    </li>
+</ul>

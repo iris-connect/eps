@@ -1,0 +1,17 @@
+{% if lang != 'de' and name is defined %}
+<div id="translation-notice">
+	<div class="message is-info">
+	    <div class="message-body">
+	        {{'hp.translation-note'|translate(url=name|href(language='de'))|markdown}}
+	        <span class="x" onClick="localStorage.setItem('translation-notice', true);notice.style.display = 'none'">x</span>
+	    </div>
+	</div>
+</div>
+{% endif %}
+
+<script>
+var notice = document.getElementById("translation-notice")
+if (localStorage.getItem("translation-notice") === null && notice !== null){
+	notice.style.display = "block"
+}
+</script>

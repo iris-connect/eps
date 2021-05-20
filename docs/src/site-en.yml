@@ -1,0 +1,56 @@
+# Warning, this is an auto-generated file, do not modify!
+# Modify this file instead: site-all.yml
+pages:
+- name: ''
+  navtitle: Start
+  src: en/index.md
+  title: EPS Documentation
+- name: getting-started
+  navtitle: Getting Started
+  src: en/getting-started.md
+  title: Getting Started
+- children: []
+  name: system
+  slug: system
+  title: System
+- children:
+  - name: index
+    src: en/eps/index.md
+    title: Overview
+  name: eps
+  navtitle: EPS Service
+  slug: eps-service
+  title: EPS Service
+- children:
+  - name: index
+    src: en/proxy/index.md
+    title: Overview
+  - name: installation
+    src: en/proxy/installation.md
+    title: Installation
+  - name: configuration
+    src: en/proxy/configuration.md
+    title: Configuration
+  name: proxy
+  navtitle: Proxy Service
+  slug: proxy-service
+  title: Proxy Service
+- children:
+  - name: index
+    src: en/sd/index.md
+    title: Overview
+  - name: installation
+    src: en/sd/installation.md
+    title: Installation
+  - name: configuration
+    src: en/sd/configuration.md
+    title: Configuration
+  name: sd
+  navtitle: Service Directory
+  slug: service-directory
+  title: Service Directory
+- name: imprint
+  slug: contact
+  src: en/imprint.md
+  title: Contact
+title: IRIS EPS (Endpoint System)

@@ -1,0 +1,42 @@
+$cw: $widescreen;
+
+.with-comments {
+    @media(min-width: $cw + 1px){
+        position: relative;
+        padding-right: calc(40% + 80px);
+        min-height: 100vh;
+    }
+
+    .comments {
+        @media(min-width: $cw + 1px){
+            background: #eee;
+            position: absolute;
+            right: 0;
+            height: 100%;
+            width: 40%;
+        }
+    }
+
+    aside {
+        background: #fafafa;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-left: 10px solid $kip-medium-blue;
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+        overflow-x: auto;
+        font-size: 16px;
+
+        code, pre {
+            font-size: 13px;
+        }
+
+        @media(min-width: $cw + 1px){
+            position: absolute;
+            right: 0;
+            width: calc(40% + 40px);
+            margin-top: -20px;
+        }
+    }
+
+}

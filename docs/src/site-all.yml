@@ -1,0 +1,87 @@
+title: IRIS EPS (Endpoint System)
+pages:
+  - src|f|exists?: "{target_language}/index.md"
+    title|t: EPS Documentation
+    navtitle|t: Start
+    name: ''
+  - src|f|exists?: "{target_language}/getting-started.md"
+    title|t: Getting Started
+    navtitle|t: Getting Started
+    name: 'getting-started'
+  - title|t: System
+    name: system
+    slug||slugify: system
+    children:
+    - title|t: Overview
+      src|f|exists?: "{target_language}/system/index.md" 
+      name: ''
+      slug||slugify: overview
+  - name: eps
+    title: EPS Service
+    navtitle: EPS Service
+    slug||slugify: eps
+    children:
+      - src|f|exists?: "{target_language}/eps/index.md"
+        title|t: Overview
+        name: index
+  - name: proxy
+    title: Proxy Service
+    navtitle: Proxy Service
+    slug||slugify: proxy
+    children:
+      - src|f|exists?: "{target_language}/proxy/index.md"
+        title|t: Overview
+        name: index
+      - src|f|exists?: "{target_language}/proxy/installation.md"
+        title|t: Installation
+        name: installation
+      - src|f|exists?: "{target_language}/proxy/configuration.md"
+        title|t: Configuration
+        name: configuration
+  - name: sd
+    title: Service Directory
+    navtitle: Service Directory
+    slug||slugify: service-directory
+    children:
+      - src|f|exists?: "{target_language}/sd/index.md"
+        title|t: Overview
+        name: index
+      - src|f|exists?: "{target_language}/sd/installation.md"
+        title|t: Installation
+        name: installation
+      - src|f|exists?: "{target_language}/sd/configuration.md"
+        title|t: Configuration
+        name: configuration
+  - title|t: Contact
+    name: imprint
+    slug||slugify: Contact
+    src|f|exists?: "{target_language}/imprint.md"
+#  - title|t: Installation
+#    navtitle|t: Installation
+#    slug||slugify: installation
+#    name: installation
+#    src|f|exists?: "{target_language}/installation.md"
+#  - title|t: Command Line Interface (CLI)
+#    navtitle|t: Command Line Interface (CLI)
+#    slug||slugify: cli
+#    name: cli
+#    children:
+#      - title|t: Overview
+#        navtitle|t: Overview
+#        name: index
+#        slug||slugify: overview
+#        src|f|exists?: "{target_language}/cli/index.md"
+#  - name: actions
+#    title|t: Actions
+#    navtitle|t: Actions
+#    slug||slugify: actions
+#    children:
+#      - src|f|exists?: "{target_language}/actions/index.md"
+#        title|t: Overview
+#        navtitle|t: Overview
+#        slug||slugify: overview
+#        name: index
+#  - name: blueprints
+#    title|t: Blueprints
+#    navtitle|t: Blueprints
+#    src|f|exists?: "{target_language}/blueprints.md"

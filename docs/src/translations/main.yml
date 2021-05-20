@@ -1,0 +1,36 @@
+hp:
+  site-title:
+    _t:
+      de: d7148d9fd0cd368b
+      en: d7148d9fd0cd368b
+    de: EPS-Dokumentation
+    en: EPS documentation
+  translation-note:
+    _t:
+      de: 89a48e9437891840
+      en: 89a48e9437891840
+    de: >-
+      Diese Website wurde größtenteils automatisch aus der [deutschen
+      Version]({url}) übersetzt. Wir entschuldigen uns für eventuelle
+      Übersetzungsfehler.
+    en: >-
+      This website was mostly translated automatically from the
+      [German version]({url}). We apologize for any translation
+      errors.
+not-found:
+  text:
+    _t:
+      de: 7e5286fb2bc20658
+      en: 7e5286fb2bc20658
+    de: >-
+      Leider ist die angeforderte URL auf dieser Seite nicht vorhanden.
+      Wir entschuldigen uns für die Unannehmlichkeiten.
+    en: >-
+      Unfortunately, the requested URL does not exist on this
+      page. We apologize for the inconvenience.
+  title:
+    _t:
+      de: 8bcbdab75b45668e
+      en: 8bcbdab75b45668e
+    de: Nicht gefunden (404)
+    en: Not found (404)

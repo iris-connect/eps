@@ -1,0 +1,201 @@
+021fb596db81e6d0:
+  de: '{'
+  en: '{'
+094e265b70eafe34:
+  de: >-
+    * Ein **privater Proxy**, der auf keinem TCP-Port lauscht
+    und sich stattdessen aktiv mit dem öffentlichen Proxy-Server
+    verbindet, wenn eine Verbindung für ihn verfügbar ist. Er
+    leitet diese Verbindung (wiederum ohne TLS zu beenden) an
+    einen internen Server weiter, der sie dann bearbeitet.
+  en: >-
+    * A **private proxy** that does not listen on any TCP port
+    and instead actively connects to the public proxy server when
+    a connection is available for it. It forwards that connection
+    (again without terminating TLS) to an internal server that
+    then handles it.
+0e1d768c29d8943a:
+  de: 'verwenden:'
+  en: 'util:'
+167b70f66ceb85ac:
+  de: '  "Meldung": "Erfolg"'
+  en: '  "message": "success"'
+1768db3c7ea5f282:
+  de: >-
+    Der private Proxy kann eingehende Verbindungen an den öffentlichen
+    Proxy **ankündigen**. Immer wenn eine neue Verbindung diesen
+    Proxy erreicht, vergleicht er sie mit den Ankündigungen, die
+    er erhalten hat. Wenn eine Übereinstimmung gefunden wird,
+    benachrichtigt er den privaten Proxy über eine eingehende
+    Verbindung über das EPS-Netzwerk und sendet ihm außerdem ein
+    zufälliges Token. Der private Proxy öffnet eine Verbindung
+    zum öffentlichen Proxy, sendet das Token und übernimmt den
+    TCP-Stream. Er leitet ihn an einen internen Server weiter.
+  en: >-
+    The private proxy can **announce** incoming connections to
+    the public proxy. Whenever a new connection reaches that proxy,
+    it compares it to the announcements it received. If a match
+    is found, it notifies the private proxy of an incoming connection
+    via the EPS network, also sending it a random token. The private
+    proxy opens a connection to the public proxy, sends the token
+    and takes over the TCP stream. It forwards it to an internal
+    server.
+2beae5b7933a7945:
+  de: '# zweites Terminal (öffentlicher Proxy)'
+  en: '# second terminal (public proxy)'
+2ff676d1fd0bcc2a:
+  de: '# die Binärdateien vorbereiten'
+  en: '# prepare the binaries'
+3488b80cfc09cc69:
+  de: 'Dies sollte die folgenden JSON-Daten zurückgeben:'
+  en: 'This should return the following JSON data:'
+42841da3f529db32:
+  de: >-
+    PROXY_SETTINGS=settings/dev/roles/private-proxy-1 proxy run
+    private
+  en: >-
+    PROXY_SETTINGS=settings/dev/roles/private-proxy-1 proxy run
+    private
+441720f43ebb9801:
+  de: '# fünftes Terminal (privater Proxy-EPS-Server)'
+  en: '# fifth terminal (private proxy EPS server)'
+53b257797179a301:
+  de: >-
+    Die Anfrage, die Sie gesendet haben, erreichte den lokalen
+    TLS-Server auf Port 8888 über die beiden Proxys, die über
+    das EPS-Netzwerk kommunizierten, um die Verbindung zu vermitteln.
+    Toll, nicht wahr?
+  en: >-
+    The request you've sent reached the local TLS server on port
+    8888 via the two proxies, which communicated through the EPS
+    network to broker the connection. Neat, isn't it?
+5d9db1bacfa2806f:
+  de: >-
+    curl --cacert settings/dev/certs/root.crt --resolve test.internal-server.local:4433:127.0.0.1
+    https://test.internal-server.local:4433/jsonrpc | jq .
+  en: >-
+    curl --cacert settings/dev/certs/root.crt --resolve test.internal-server.local:4433:127.0.0.1
+    https://test.internal-server.local:4433/jsonrpc | jq .
+6668062bb34528a5:
+  de: '# erstes Terminal'
+  en: '# first terminal'
+68b4290985f5032d:
+  de: '# drittes Terminal (privater Proxy)'
+  en: '# third terminal (private proxy)'
+78161fc388dcd3b6:
+  de: '# viertes Terminal (öffentlicher Proxy-EPS-Server)'
+  en: '# fourth terminal (public proxy EPS server)'
+79a8b05c034a6bc7:
+  de: >-
+    Der EPS-Server bietet einen TLS-Passthrough-Proxy-Dienst,
+    der eingehende TLS-Verbindungen von öffentlichen Clients an
+    einen internen Server weiterleiten kann, ohne die TLS-Verbindung
+    zu beenden. Der Dienst besteht aus zwei Servern:
+  en: >-
+    The EPS server provides a TLS-passthrough proxy service that
+    can forward incoming TLS connections from public clients to
+    an internal server without terminating the TLS connection.
+    The service consists of two servers:
+876a02aca812b50e:
+  de: '## Demo'
+  en: '## Demo'
+91c6c89ef01df1e4:
+  de: '# Der EPS TLS-Passthrough-Proxy'
+  en: '# The EPS TLS-Passthrough Proxy'
+93a5145727da9511:
+  de: make && make Beispiele
+  en: make && make examples
+a56726cde84dae15:
+  de: '`` `json'
+  en: '```json'
+ac581157fe0f9ceb:
+  de: >-
+    Sie können den Server auch einem Stresstest mit parallelen
+    Anfragen unterziehen, indem Sie den `parallel`
+  en: >-
+    You can also stress-test the server with parallel requests
+    using the `parallel`
+ad332335cfaa348c:
+  de: '`` `bash'
+  en: '```bash'
+b57dc305fcdd4e34:
+  de: >-
+    Um diesen Mechanismus zu demonstrieren, haben wir eine Beispielkonfiguration
+    vorbereitet. Führen Sie einfach die folgenden Schnipsel in
+    verschiedenen Terminals aus (aus dem Hauptverzeichnis im Repository):
+  en: >-
+    To demonstrate this mechanism we have prepared an example
+    configuration. Simply run the following snippets in different
+    terminals (from the main directory in the repository):
+b79ad50c0d893a3e:
+  de: >-
+    PROXY_SETTINGS=settings/dev/roles/public-proxy-1 proxy run
+    public
+  en: >-
+    PROXY_SETTINGS=settings/dev/roles/public-proxy-1 proxy run
+    public
+bc7f231cb2ba0b27:
+  de: >-
+    * Ein **öffentlicher Proxy**, der auf einem öffentlich zugänglichen
+    TCP-Port auf eingehende TLS-Verbindungen lauscht und auf einem
+    anderen TCP-Port auf Verbindungen von privaten Proxy-Servern.
+  en: >-
+    * A **public proxy** that listens on a publicly available
+    TCP port for incoming TLS connections, and on another TCP
+    port for connections from private proxy servers.
+c27df9dfc723201e:
+  de: >-
+    EPS_SETTINGS=settings/dev/roles/public-proxy-eps-1 eps server
+    run
+  en: >-
+    EPS_SETTINGS=settings/dev/roles/public-proxy-eps-1 eps server
+    run
+ca1be8eddc890df5:
+  de: >-
+    Wenn alle Dienste laufen, sollten Sie in der Lage sein, eine
+    Anfrage an den Proxy zu senden über
+  en: >-
+    When all services are up and running you should be able to
+    send a request to the proxy via
+d10b36aa74a59bcf:
+  de: '}'
+  en: '}'
+d5739c54f228a918:
+  de: "Sowohl die privaten als auch die öffentlichen Proxys haben\
+    \ zugehörige EPS-Server, über die sie miteinander kommunizieren. "
+  en: "Both the private and the public proxies have accompanying\
+    \ EPS servers through which they communicate with each other. "
+d9c29da250b885ae:
+  de: >-
+    eq 1 2000000 | parallel -j 25 curl --cacert settings/dev/certs/root.crt
+    --resolve test.internal-server.local:4433:127.0.0.1 https://test.internal-server.local:4433/jsonrpc
+    --data "{}"
+  en: >-
+    eq 1 2000000 | parallel -j 25 curl --cacert settings/dev/certs/root.crt
+    --resolve test.internal-server.local:4433:127.0.0.1 https://test.internal-server.local:4433/jsonrpc
+    --data "{}"
+df823acbfdbdc3e2:
+  de: >-
+    EPS_SETTINGS=settings/dev/roles/private-proxy-eps-1 eps server
+    run
+  en: >-
+    EPS_SETTINGS=settings/dev/roles/private-proxy-eps-1 eps server
+    run
+e3b0c44298fc1c14:
+  de: ''
+  en: ''
+e75676b2c16d3f6c:
+  de: >-
+    Dadurch wird versucht, 25 Anfragen parallel an den Server
+    zu senden.
+  en: This will try to send 25 requests in parallel to the server.
+e8a7e8e0eece6002:
+  de: 'internal-server #öffnet einen JSON-RPC-Server auf Port
+    8888'
+  en: 'internal-server #will open a JSON-RPC server on port 8888'
+f1b901847390b0ed:
+  de: '`` `'
+  en: '```'
+f67077b95462d7ba:
+  de: '## Stresstest'
+  en: '## Stress Testing'

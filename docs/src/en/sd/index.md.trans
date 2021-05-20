@@ -1,0 +1,281 @@
+002df7703985eaf3:
+  de: >-
+    curl --key settings/dev/certs/hd-1.key --cert settings/dev/certs/hd-1.crt
+    --cacert settings/dev/certs/root.crt --resolve sd-1:3322:127.0.0.1
+    https://sd-1:3322/jsonrpc --header "Content-Type: application/json"
+    --data '{"jsonrpc": "2.0", "method": "getRecords", "params":
+    {"since": 0}}'
+  en: >-
+    curl --key settings/dev/certs/hd-1.key --cert settings/dev/certs/hd-1.crt
+    --cacert settings/dev/certs/root.crt --resolve sd-1:3322:127.0.0.1
+    https://sd-1:3322/jsonrpc --header "Content-Type: application/json"
+    --data '{"jsonrpc": "2.0", "method": "getRecords", "params":
+    {"since": 0}}'
+021fb596db81e6d0:
+  de: '{'
+  en: '{'
+0e0f425150b648d4:
+  de: '## Dienstverzeichnis-API'
+  en: '## Service Directory API'
+0eebf0b7343a3032:
+  de: >-
+    Alle Änderungen im Dienstverzeichnis werden kryptografisch
+    signiert. Dazu besitzt jeder Akteur im EPS-System ein Paar
+    ECDSA-Schlüssel und ein dazugehöriges Zertifikat. Das Serviceverzeichnis
+    ist aus einer Reihe von **Änderungsdatensätzen** aufgebaut.
+    Jeder Änderungssatz enthält den Namen eines **Akteurs**, einen
+    **Abschnitt** und die eigentlichen Daten, die geändert werden
+    sollen.
+  en: >-
+    All changes in the service directory are cryptographically
+    signed. For this, every actor in the EPS system has a pair
+    of ECDSA keys and an accompanying certificate. The service
+    directory is constructed from a series of **change records**.
+    Each change record contains the name of an **operator**, a
+    **section** and the actual data that should be changed.
+120761db1f1b6f7f:
+  de: sdh sign settings/dev/roles/private-proxy-1/sdh/entry.json
+  en: sdh sign settings/dev/roles/private-proxy-1/sdh/entry.json
+189d032e99f7e9a4:
+  de: >-
+    **Warnung:** Dadurch werden alle vorherigen Datensätze aus
+    dem Dienstverzeichnis gelöscht. Nur Bediener mit einer `sd-admin`
+    Rolle können dies tun.
+  en: >-
+    **Warning:** This will erase all previous records from the
+    service directory. Only operators with an `sd-admin` role
+    can do this.
+1a954abe3ceebb57:
+  de: >-
+    EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-records
+    --reset settings/dev/directory/001_base.json
+  en: >-
+    EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-records
+    --reset settings/dev/directory/001_base.json
+286c8348132c91e0:
+  de: >-
+    Das Dienstverzeichnis implementiert einen gruppenbasierten
+    Berechtigungsmechanismus. Derzeit existieren nur `yes/no`
+    Berechtigungen (d. h. ein Mitglied einer bestimmten Gruppe
+    kann eine bestimmte Dienstmethode entweder aufrufen oder nicht).
+    Feinkörnigere Berechtigungen (z. B. kann ein Anbieter von
+    Kontaktverfolgungen nur seine eigenen Einträge im Dienst "Standorte"
+    bearbeiten) müssen von den Diensten selbst implementiert werden.
+    Zu diesem Zweck stellt der EPS-Server den Diensten Informationen
+    über die aufrufende Gegenstelle über einen speziellen Parameter
+    (`_caller`) zur Verfügung, der zusammen mit den anderen RPC-Methodenparametern
+    übergeben wird. Diese Struktur enthält auch den aktuellen
+    Eintrag des Aufrufers aus dem Dienstverzeichnis, was es dem
+    aufgerufenen Dienst erleichtert, den Aufrufer zu identifizieren
+    und zu autorisieren.
+  en: >-
+    The service directory implements a group-based permissions
+    mechanism. Currently, only `yes/no` permissions exist (i.e.
+    a member of a given group either can or cannot call a given
+    service method). More fine-grained permissions (e.g. a contact
+    tracing provider can only edit its own entries in the "locations"
+    service) need to be implemented by the services themselves.
+    For that purpose, the EPS server makes information about the
+    calling peer available to the services via a special parameter
+    (`_caller`) that gets passed along with the other RPC method
+    parameters. This structure also contains the current entry
+    of the caller from the service directory, making it easy for
+    the called service to identify and authorize the caller.
+2f2335f928febfe6:
+  de: >-
+    Mit Hilfe des Verzeichnisses können EPS-Server feststellen,
+    ob und wie sie sich mit einem anderen Betreiber verbinden
+    können. Betreiber, die nur über ausgehende Verbindungen verfügen
+    (z. B. `ga-leipzig` im obigen Beispiel), können das Verzeichnis
+    verwenden, um zu erfahren, dass sie möglicherweise asynchrone
+    Antworten von anderen Betreibern (z. B. `ls-1`) erhalten und
+    dann ausgehende Verbindungen zu diesen Betreibern öffnen,
+    über die sie Antworten erhalten können. EPS-Server können
+    das Dienstverzeichnis auch verwenden, um festzustellen, ob
+    sie eine Nachricht von einem bestimmten Betreiber annehmen
+    sollen.
+  en: >-
+    The directory allows EPS servers to determine whether and
+    how they can connect to another operator. Operators that only
+    have outgoing connectivity (e.g. `ga-leipzig` in the example
+    above) can use the directory to learn that they might receive
+    asynchronous responses from other operators (e.g. `ls-1`)
+    and then open outgoing connections to these operators through
+    which they can receive replies. EPS servers can also use the
+    service directory to determine whether they should accept
+    a message from a given operator.
+3288a136ca3e7c85:
+  de: '  },'
+  en: '  },'
+34aa8ad2a3b0e1a9:
+  de: >-
+    Um Änderungsdatensätze und -einträge von der Dienstverzeichnis-API
+    abzurufen, können Sie die RPC-Aufrufe `getRecords(since)`,
+    `getEntries()` und `getEntry(name)` verwenden, z. B. wie folgt:
+  en: >-
+    To retrieve change records and entries from the service directory
+    API you can use the `getRecords(since)`, `getEntries()` and
+    `getEntry(name)` RPC calls, e.g. like this:
+362d881d051b8d00:
+  de: '## Signatur-Schema'
+  en: '## Signature Schema'
+3669f761668a4539:
+  de: >-
+    Das Dienstverzeichnis ist eine zentrale Datenbank, die Informationen
+    über alle Betreiber im IRIS-Ökosystem enthält. Es enthält
+    Informationen darüber, wie die Betreiber erreicht werden können
+    und welche Dienste sie anbieten.
+  en: >-
+    The service directory is a central database that contains
+    information about all operators in the IRIS ecosystem. It
+    contains information about how operators can be reached and
+    which services they provide.
+370ba8f42421daab:
+  de: '# Service-Verzeichnis'
+  en: '# Service Directory'
+42e5f743979c8630:
+  de: '  "Signatur": {'
+  en: '  "signature": {'
+56e3c6d55f5993fe:
+  de: >2-
+        "c": "-----BEGIN CERTIFICATE-----\nMIIC1TCCAb2gAwIBAgIUe3+081Bi4Z0DXDdeBhfZZOAs4OwwDQYJKoZIhvcNAQEL\nBQAwaTELMAkGA1UEBhMCREUxDzANBgNVBAgMBkJlcmxpbjEPMA0GA1UEBwwGQmVy\nbGluMQ0wCwYDVQQKDARJUklTMQswCQYDVQQLDAJJVDEcMBoGA1UEAwwTVGVzdGlu\nZy1EZXZlbG9wbWVudDAeFw0yMTA1MTExMTMzNDBaFw0yMjA5MjMxMTMzNDBaMGUx\nCzAJBgNVBAYTAkRFMQ8wDQYDVQQIDAZCZXJsaW4xDzANBgNVBAcMBkJlcmxpbjEN\nMAsGA1UECgwESVJJUzELMAkGA1UECwwCSVQxGDAWBgNVBAMMD3ByaXZhdGUtcHJv\neHktMTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLHlILI5POvEDJc96W0dbag7\nFt8BVmitGqwS5jarYRwOUe/PiQ8tMBkMw9X/2U8G1qGYQb/CiRDh1DDy/Eh/mGKj\nRDBCMDMGA1UdEQQsMCqCD3ByaXZhdGUtcHJveHktMYIXKi5wcml2YXRlLXByb3h5\nLTEubG9jYWwwCwYDVR0PBAQDAgeAMA0GCSqGSIb3DQEBCwUAA4IBAQAmUESzD1ls\nmpECtRlinhiUduif9nVddtLeW/Ui86PHkS50vjSOVHY7ZHrfWbFB4/p4bwm8Sp1/\npFHx4WyuHiow5Ah3HV9afDcgyWBd1V8ijIFOlNF27u/caVsa9gV7iDVJ+6mBXKkf\nCgNI2bA2WoOVXQMwRoow4vSYrVAdM/Eyq8PHYOHkGqdd4uASG5df4vE+gnB2z9WD\nFuxkVYkncVP5OB+N7EAkQrVjrITdiSN0yYAVWFKz1IEnPF7GRW6KsPHW9lJeePeD\n1gLNh2KF6drrXT2PIIYVB31uepSoCqFnUUDcC/PX0qHu8jilvr/pTzhFUWbuX+Ja\nfaIRxqWB0frZ\n-----END
+    ZERTIFIKAT-----\n"
+  en: >2-
+        "c": "-----BEGIN CERTIFICATE-----\nMIIC1TCCAb2gAwIBAgIUe3+081Bi4Z0DXDdeBhfZZOAs4OwwDQYJKoZIhvcNAQEL\nBQAwaTELMAkGA1UEBhMCREUxDzANBgNVBAgMBkJlcmxpbjEPMA0GA1UEBwwGQmVy\nbGluMQ0wCwYDVQQKDARJUklTMQswCQYDVQQLDAJJVDEcMBoGA1UEAwwTVGVzdGlu\nZy1EZXZlbG9wbWVudDAeFw0yMTA1MTExMTMzNDBaFw0yMjA5MjMxMTMzNDBaMGUx\nCzAJBgNVBAYTAkRFMQ8wDQYDVQQIDAZCZXJsaW4xDzANBgNVBAcMBkJlcmxpbjEN\nMAsGA1UECgwESVJJUzELMAkGA1UECwwCSVQxGDAWBgNVBAMMD3ByaXZhdGUtcHJv\neHktMTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLHlILI5POvEDJc96W0dbag7\nFt8BVmitGqwS5jarYRwOUe/PiQ8tMBkMw9X/2U8G1qGYQb/CiRDh1DDy/Eh/mGKj\nRDBCMDMGA1UdEQQsMCqCD3ByaXZhdGUtcHJveHktMYIXKi5wcml2YXRlLXByb3h5\nLTEubG9jYWwwCwYDVR0PBAQDAgeAMA0GCSqGSIb3DQEBCwUAA4IBAQAmUESzD1ls\nmpECtRlinhiUduif9nVddtLeW/Ui86PHkS50vjSOVHY7ZHrfWbFB4/p4bwm8Sp1/\npFHx4WyuHiow5Ah3HV9afDcgyWBd1V8ijIFOlNF27u/caVsa9gV7iDVJ+6mBXKkf\nCgNI2bA2WoOVXQMwRoow4vSYrVAdM/Eyq8PHYOHkGqdd4uASG5df4vE+gnB2z9WD\nFuxkVYkncVP5OB+N7EAkQrVjrITdiSN0yYAVWFKz1IEnPF7GRW6KsPHW9lJeePeD\n1gLNh2KF6drrXT2PIIYVB31uepSoCqFnUUDcC/PX0qHu8jilvr/pTzhFUWbuX+Ja\nfaIRxqWB0frZ\n-----END
+    CERTIFICATE-----\n"
+5b0b422ea1aa52be:
+  de: >-
+    Das Tool `sdh` enthält einen Befehl `sign`, mit dem wir beliebige
+    JSON-Daten signieren können. Er verwendet die Signaturen,
+    die mit dem Befehl `make certs` Make erzeugt werden. Um zum
+    Beispiel eine JSON-Datei zu signieren, verwenden Sie einfach
+  en: >-
+    The `sdh` tool includes a `sign` command that allows us to
+    sign arbitrary JSON data. It uses the signing signatures generated
+    by the `make certs` Make command. For example, to sign a JSON
+    file, simply use
+5fc26704b2b97636:
+  de: >-
+    Wenn die Signatur gültig ist, lautet der Exit-Code `0`, andernfalls
+    `1`.
+  en: >-
+    If the signature is valid the exit code will be `0`, otherwise
+    `1`.
+63cfa334829a6f05:
+  de: SD_SETTINGS=settings/dev/roles/sd-1 sd run
+  en: SD_SETTINGS=settings/dev/roles/sd-1 sd run
+6b912c25e36b4747:
+  de: >-
+    Das EPS-Serverpaket bietet auch einen `sd` API-Server-Befehl,
+    der einen JSON-RPC-Server öffnet, der das Dienstverzeichnis
+    verteilt.
+  en: >-
+    The EPS server package also provides a `sd` API server command
+    that opens a JSON-RPC server which distributes the service
+    directory.
+737db166c79ae98e:
+  de: '  }'
+  en: '  }'
+75c4d80c505696ca:
+  de: >-
+    Änderungsdatensätze können über die JSON-RPC-API an das Dienstverzeichnis
+    übermittelt werden. Die `eps` CLI bietet dafür eine Funktion
+    über die `sd submit-records` :
+  en: >-
+    Change records can be submitted to the service directory via
+    the JSON-RPC API. The `eps` CLI provides a function for this
+    via the `sd submit-records`:
+842f408d31dc00c6:
+  de: >-
+    EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-records
+    settings/dev/directory/001_base.json
+  en: >-
+    EPS_SETTINGS=settings/dev/roles/hd-1 eps sd submit-records
+    settings/dev/directory/001_base.json
+8885213facd6943a:
+  de: '### Signierdaten'
+  en: '### Signing Data'
+8cf4691d3922b638:
+  de: '    "Name": "Privat-Proxy-1"'
+  en: '    "name": "private-proxy-1"'
+97dbfb313afa8c21:
+  de: '  "Daten": {'
+  en: '  "data": {'
+99ff84bb6a2b41e5:
+  de: '### Abrufen von Einträgen und Datensätzen'
+  en: '### Retrieving entries and records'
+9e613964c70cf533:
+  de: '### Einreichen von Änderungsdatensätzen'
+  en: '### Submitting Change records'
+a56726cde84dae15:
+  de: '`` `json'
+  en: '```json'
+aafae83735bdc54a:
+  de: >2-
+        "s": "110557266089828975725234959115295121652814407881082688883738138814924173982570",
+  en: >2-
+        "s": "110557266089828975725234959115295121652814407881082688883738138814924173982570",
+ad332335cfaa348c:
+  de: '`` `bash'
+  en: '```bash'
+b05f75bea943b551:
+  de: '# einen Dienstverzeichniseintrag signieren'
+  en: '#sign a service directory entry'
+c1c2e8608c70c263:
+  de: >-
+    Sie können das Dienstverzeichnis auch zurücksetzen, indem
+    Sie das Flag `--reset` angeben:
+  en: >-
+    You can also reset the service directory by specifying the
+    `--reset` flag:
+c43faa12dec05bd4:
+  de: 'Die Ausgabe sollte z. B. so aussehen:'
+  en: 'The output should e.g. look like this:'
+c7775c1604e41aec:
+  de: '    "foo": "bar",'
+  en: '    "foo": "bar",'
+c842b809556d9116:
+  de: sdh verify signed.json private-proxy-1
+  en: sdh verify signed.json private-proxy-1
+c8a01e306c01b313:
+  de: export SD_SETTINGS=settings/dev/roles/private-proxy-1/sdh
+  en: export SD_SETTINGS=settings/dev/roles/private-proxy-1/sdh
+d10b36aa74a59bcf:
+  de: '}'
+  en: '}'
+d1d04c27510924d7:
+  de: >-
+    Bevor wir solche Daten importieren, können wir die Signatur
+    mit dem Befehl `verify` überprüfen (Sie müssen die erwartete
+    `name` des Unterzeichners angeben):
+  en: >-
+    Before importing such data, we can check the signature using
+    the `verify` command (you need to specify the expected `name`
+    of the signer):
+d3480d1f41a64956:
+  de: >-
+    Standardmäßig werden damit Änderungsdatensätze in einer Datei
+    gespeichert und abgerufen, die sich unter `/tmp/service-directory.records`
+    befindet. Um das Dienstverzeichnis zurückzusetzen, löschen
+    Sie einfach diese Datei.
+  en: >-
+    By default, this will store and retrieve change records from
+    a file located at `/tmp/service-directory.records`. To reset
+    the service directory, simply delete this file.
+e3b0c44298fc1c14:
+  de: ''
+  en: ''
+ed513c7ed11d0422:
+  de: >2-
+        "r": "67488385997031737348502334621054744305438368369525250023542608571625588981387",
+  en: >2-
+        "r": "67488385997031737348502334621054744305438368369525250023542608571625588981387",
+efd8c4bc5036a0df:
+  de: '# definieren die SD-Einstellungen'
+  en: '# define the SD settings'
+f1b901847390b0ed:
+  de: '`` `'
+  en: '```'
+f8e46305c7a2cd91:
+  de: export SD_SETTINGS=settings/dev/roles/sd-1/sdh
+  en: export SD_SETTINGS=settings/dev/roles/sd-1/sdh
