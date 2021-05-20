@@ -4,11 +4,11 @@ i18n:
     strings: en
 languages:
   en:
-    prefix: "docs"
+    prefix: "eps/docs"
     language_title: English
     $include: site-en.yml
   de:
-    prefix: "de/doku"
+    prefix: "eps/de/doku"
     language_title: Deutsch
     $include: site-de.yml
 #  it:

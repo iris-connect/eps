@@ -1,7 +1,7 @@
 $include:
   - site.yml
   - site-i18n.yml
-url: https://docs.iris-gateway.de/eps
+url: https://iris-gateway.github.io/eps/docs
 # we generate links without extensions as nginx rewrites those URLs automatically
 hide-href-extensions: ['/index.html', 'index.html', '.html']
 context:
