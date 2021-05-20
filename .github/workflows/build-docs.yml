@@ -19,13 +19,13 @@ jobs:
           python-version: 3.8
       - name: Install dependencies
         run: |
-          apt-get update -qy
-          apt-get install -y curl tidy optipng python3 python3-pip locales rsync nodejs npm openssh-client expect
-          pip3 install virtualenv
-          npm install -g n
-          n 15
-          echo "en_US UTF-8" > /etc/locale.gen
-          locale-gen en_US.UTF-8
+          sudo apt-get update -qy
+          sudo apt-get install -y curl tidy optipng python3 python3-pip locales rsync nodejs npm openssh-client expect
+          sudo pip3 install virtualenv
+          sudo npm install -g n
+          sudo n 15
+          sudo echo "en_US UTF-8" > /etc/locale.gen
+          sudo locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
           export LANGUAGE=en_US:en
           export LC_ALL=en_US.UTF-8
