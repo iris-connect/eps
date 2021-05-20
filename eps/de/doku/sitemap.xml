@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" 
+  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" 
+  xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/proxy-service/configuration</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/service-directory/configuration</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/service-directory/installation</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/proxy-service/installation</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/eps-service</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/service-directory</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/proxy-service</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/kontakt</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/getting-started</loc>
+  </url>
+</urlset>
