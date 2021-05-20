@@ -13,7 +13,7 @@ Der private Proxy kann eingehende Verbindungen an den öffentlichen Proxy **ank�
 
 Um diesen Mechanismus zu demonstrieren, haben wir eine Beispielkonfiguration vorbereitet. Führen Sie einfach die folgenden Schnipsel in verschiedenen Terminals aus (aus dem Hauptverzeichnis im Repository):
 
-```
+```bash
 # prepare the binaries
 make && make examples
 # first terminal

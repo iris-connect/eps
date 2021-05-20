@@ -13,7 +13,7 @@ The private proxy can **announce** incoming connections to the public proxy. Whe
 
 To demonstrate this mechanism we have prepared an example configuration. Simply run the following snippets in different terminals (from the main directory in the repository):
 
-```
+```bash
 # prepare the binaries
 make && make examples
 # first terminal
