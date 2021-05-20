@@ -4,7 +4,7 @@ pages:
 - name: ''
   navtitle: Start
   src: de/index.md
-  title: EPS-Dokumentation
+  title: Willkommen
 - name: getting-started
   navtitle: Erste Schritte
   src: de/getting-started.md
