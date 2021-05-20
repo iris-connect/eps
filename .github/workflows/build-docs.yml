@@ -24,7 +24,7 @@ jobs:
           sudo pip3 install virtualenv
           sudo npm install -g n
           sudo n 15
-          sudo echo "en_US UTF-8" > /etc/locale.gen
+          sudo sh -c 'echo "en_US UTF-8" > /etc/locale.gen'
           sudo locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
           export LANGUAGE=en_US:en
