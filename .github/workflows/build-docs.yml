@@ -33,6 +33,7 @@ jobs:
           make setup
       - name: Build docs
         run: |
+          cd docs
           make SITE=src/site-prod.yml
           make optimize-html
       - name: Deploy docs
