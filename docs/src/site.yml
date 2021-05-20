@@ -1,7 +1,7 @@
 name: eps-docs
 url: http://localhost:8111
 path: /
-static-path: eps/docs/static
+static-path: docs/static
 pygments:
   style: tango
 languages:
