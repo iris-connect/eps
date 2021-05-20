@@ -7,15 +7,15 @@ hp:
     en: EPS documentation
   translation-note:
     _t:
-      de: 89a48e9437891840
-      en: 89a48e9437891840
+      de: 7c4a1c513cda1b81
+      en: 7c4a1c513cda1b81
     de: >-
-      Diese Website wurde größtenteils automatisch aus der [deutschen
+      Diese Website wurde größtenteils automatisch von der [englischen
       Version]({url}) übersetzt. Wir entschuldigen uns für eventuelle
       Übersetzungsfehler.
     en: >-
       This website was mostly translated automatically from the
-      [German version]({url}). We apologize for any translation
+      [English version]({url}). We apologize for any translation
       errors.
 not-found:
   text:
