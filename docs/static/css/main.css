@@ -49,24 +49,34 @@
   src: local(""), url("../fonts/oxanium-v6-latin-regular.eot?#iefix") format("embedded-opentype"), url("../fonts/oxanium-v6-latin-regular.woff2") format("woff2"), url("../fonts/oxanium-v6-latin-regular.woff") format("woff"), url("../fonts/oxanium-v6-latin-regular.ttf") format("truetype"), url("../fonts/oxanium-v6-latin-regular.svg#Oxanium") format("svg");
   /* Legacy iOS */ }
 
-/* oxanium-600 - latin */
+/* space-grotesk-300 - latin */
 @font-face {
-  font-family: 'Oxanium';
+  font-family: 'Space Grotesk';
   font-style: normal;
-  font-weight: 600;
-  src: url("../fonts/oxanium-v6-latin-600.eot");
+  font-weight: 300;
+  src: url("../fonts/space-grotesk-v5-latin-300.eot");
   /* IE9 Compat Modes */
-  src: local(""), url("../fonts/oxanium-v6-latin-600.eot?#iefix") format("embedded-opentype"), url("../fonts/oxanium-v6-latin-600.woff2") format("woff2"), url("../fonts/oxanium-v6-latin-600.woff") format("woff"), url("../fonts/oxanium-v6-latin-600.ttf") format("truetype"), url("../fonts/oxanium-v6-latin-600.svg#Oxanium") format("svg");
+  src: local(""), url("../fonts/space-grotesk-v5-latin-300.eot?#iefix") format("embedded-opentype"), url("../fonts/space-grotesk-v5-latin-300.woff2") format("woff2"), url("../fonts/space-grotesk-v5-latin-300.woff") format("woff"), url("../fonts/space-grotesk-v5-latin-300.ttf") format("truetype"), url("../fonts/space-grotesk-v5-latin-300.svg#SpaceGrotesk") format("svg");
   /* Legacy iOS */ }
 
-/* oxanium-800 - latin */
+/* space-grotesk-regular - latin */
 @font-face {
-  font-family: 'Oxanium';
+  font-family: 'Space Grotesk';
   font-style: normal;
-  font-weight: 800;
-  src: url("../fonts/oxanium-v6-latin-800.eot");
+  font-weight: 400;
+  src: url("../fonts/space-grotesk-v5-latin-regular.eot");
   /* IE9 Compat Modes */
-  src: local(""), url("../fonts/oxanium-v6-latin-800.eot?#iefix") format("embedded-opentype"), url("../fonts/oxanium-v6-latin-800.woff2") format("woff2"), url("../fonts/oxanium-v6-latin-800.woff") format("woff"), url("../fonts/oxanium-v6-latin-800.ttf") format("truetype"), url("../fonts/oxanium-v6-latin-800.svg#Oxanium") format("svg");
+  src: local(""), url("../fonts/space-grotesk-v5-latin-regular.eot?#iefix") format("embedded-opentype"), url("../fonts/space-grotesk-v5-latin-regular.woff2") format("woff2"), url("../fonts/space-grotesk-v5-latin-regular.woff") format("woff"), url("../fonts/space-grotesk-v5-latin-regular.ttf") format("truetype"), url("../fonts/space-grotesk-v5-latin-regular.svg#SpaceGrotesk") format("svg");
+  /* Legacy iOS */ }
+
+/* space-grotesk-600 - latin */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 600;
+  src: url("../fonts/space-grotesk-v5-latin-600.eot");
+  /* IE9 Compat Modes */
+  src: local(""), url("../fonts/space-grotesk-v5-latin-600.eot?#iefix") format("embedded-opentype"), url("../fonts/space-grotesk-v5-latin-600.woff2") format("woff2"), url("../fonts/space-grotesk-v5-latin-600.woff") format("woff"), url("../fonts/space-grotesk-v5-latin-600.ttf") format("truetype"), url("../fonts/space-grotesk-v5-latin-600.svg#SpaceGrotesk") format("svg");
   /* Legacy iOS */ }
 
 /* source-code-pro-300 - latin */
@@ -278,7 +288,7 @@ h6,
 h2.title,
 h2.subtitle {
   font-weight: 400;
-  font-family: "Oxanium", sans-serif; }
+  font-family: "Space Grotesk", sans-serif; }
 
 .highlight {
   margin-top: 8px; }
@@ -359,7 +369,7 @@ pre, code {
     border-left: 10px solid rgba(0, 0, 0, 0);
     margin-bottom: 20px; }
     .main .side-menu .menu-label a {
-      font-family: Oxanium, Arial, Helvetica;
+      font-family: Space Grotesk, Arial, Helvetica;
       text-align: center;
       font-size: 20px; }
       .main .side-menu .menu-label a img {
