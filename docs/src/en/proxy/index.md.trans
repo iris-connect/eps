@@ -40,6 +40,16 @@
     proxy opens a connection to the public proxy, sends the token
     and takes over the TCP stream. It forwards it to an internal
     server.
+18c8a1596f23525a:
+  de: "\t\tcurl --cacert settings/dev/certs/root.crt --resolve\
+    \ test.internal-server.local:4433:127.0.0.1 https://test.internal-server.local:4433/jsonrpc\
+    \ | jq ."
+  en: "\t\tcurl --cacert settings/dev/certs/root.crt --resolve\
+    \ test.internal-server.local:4433:127.0.0.1 https://test.internal-server.local:4433/jsonrpc\
+    \ | jq ."
+29d2a5981c990127:
+  de: "\t\tmake && make Beispiele"
+  en: "\t\tmake && make examples"
 2beae5b7933a7945:
   de: '# zweites Terminal (öffentlicher Proxy)'
   en: '# second terminal (public proxy)'
@@ -49,6 +59,9 @@
 3488b80cfc09cc69:
   de: 'Dies sollte die folgenden JSON-Daten zurückgeben:'
   en: 'This should return the following JSON data:'
+366e06144bcad25e:
+  de: '```Bashs'
+  en: '```bashs'
 42841da3f529db32:
   de: >-
     PROXY_SETTINGS=settings/dev/roles/private-proxy-1 proxy run
@@ -59,6 +72,24 @@
 441720f43ebb9801:
   de: '# fünftes Terminal (privater Proxy-EPS-Server)'
   en: '# fifth terminal (private proxy EPS server)'
+4ae4e4ec750a1e22:
+  de: "\t\tPROXY_SETTINGS=settings/dev/roles/private-proxy-1 proxy\
+    \ run private"
+  en: "\t\tPROXY_SETTINGS=settings/dev/roles/private-proxy-1 proxy\
+    \ run private"
+4b337b5eb3b16e1d:
+  de: "\t\t# zweites Terminal (öffentlicher Proxy)"
+  en: "\t\t# second terminal (public proxy)"
+4d006a66baa44f69:
+  de: "\t\tFünftes Terminal (privater Proxy-EPS-Server)"
+  en: "\t\t# fifth terminal (private proxy EPS server)"
+507fcc8fc0b82a9c:
+  de: >-
+    Wenn alle Dienste eingerichtet sind und laufen, sollten Sie
+    eine Anfrage an die Proxy-Vias senden können
+  en: >-
+    When all services are up and running you should be able to
+    send a request to the proxy vias
 53b257797179a301:
   de: >-
     Die Anfrage, die Sie gesendet haben, erreichte den lokalen
@@ -69,6 +100,14 @@
     The request you've sent reached the local TLS server on port
     8888 via the two proxies, which communicated through the EPS
     network to broker the connection. Neat, isn't it?
+55005f650fd8bc13:
+  de: "\t\t# drittes Terminal (privater Proxy)"
+  en: "\t\t# third terminal (private proxy)"
+5a645a1d910350c3:
+  de: "\t\tinternal-server #öffnet einen JSON-RPC-Server auf Port\
+    \ 8888"
+  en: "\t\tinternal-server #will open a JSON-RPC server on port\
+    \ 8888"
 5d9db1bacfa2806f:
   de: >-
     curl --cacert settings/dev/certs/root.crt --resolve test.internal-server.local:4433:127.0.0.1
@@ -76,12 +115,23 @@
   en: >-
     curl --cacert settings/dev/certs/root.crt --resolve test.internal-server.local:4433:127.0.0.1
     https://test.internal-server.local:4433/jsonrpc | jq .
+62208d0e5e60ac6c:
+  de: <div class="codehilite">
+  en: <div class="codehilite">
 6668062bb34528a5:
   de: '# erstes Terminal'
   en: '# first terminal'
 68b4290985f5032d:
   de: '# drittes Terminal (privater Proxy)'
   en: '# third terminal (private proxy)'
+697556db4bddc0d4:
+  de: '    {%filter highlight(strip=True, language=''bash'')%}'
+  en: '    {%filter highlight(strip=True, language=''bash'')%}'
+7153145a88455880:
+  de: "\t\tEPS_SETTINGS=settings/dev/roles/public-proxy-eps-1\
+    \ eps server run"
+  en: "\t\tEPS_SETTINGS=settings/dev/roles/public-proxy-eps-1\
+    \ eps server run"
 78161fc388dcd3b6:
   de: '# viertes Terminal (öffentlicher Proxy-EPS-Server)'
   en: '# fourth terminal (public proxy EPS server)'
@@ -96,6 +146,14 @@
     can forward incoming TLS connections from public clients to
     an internal server without terminating the TLS connection.
     The service consists of two servers:
+80ac1e1a3d9fc977:
+  de: "\t\tViertes Terminal (öffentlicher Proxy-EPS-Server)"
+  en: "\t\t# fourth terminal (public proxy EPS server)"
+83b568220689652f:
+  de: "\t\tPROXY_SETTINGS=settings/dev/roles/public-proxy-1 proxy\
+    \ run public"
+  en: "\t\tPROXY_SETTINGS=settings/dev/roles/public-proxy-1 proxy\
+    \ run public"
 876a02aca812b50e:
   de: '## Demo'
   en: '## Demo'
@@ -108,6 +166,9 @@
 a56726cde84dae15:
   de: '`` `json'
   en: '```json'
+aac32651b10f567c:
+  de: </div>
+  en: </div>
 ac581157fe0f9ceb:
   de: >-
     Sie können den Server auch einem Stresstest mit parallelen
@@ -118,6 +179,9 @@ ac581157fe0f9ceb:
 ad332335cfaa348c:
   de: '`` `bash'
   en: '```bash'
+addda7048c734af7:
+  de: "\t\t# erstes Terminal"
+  en: "\t\t# first terminal"
 b57dc305fcdd4e34:
   de: >-
     Um diesen Mechanismus zu demonstrieren, haben wir eine Beispielkonfiguration
@@ -134,6 +198,9 @@ b79ad50c0d893a3e:
   en: >-
     PROXY_SETTINGS=settings/dev/roles/public-proxy-1 proxy run
     public
+ba995a283d5f7990:
+  de: "\t{% endfilter %}"
+  en: "\t{% endfilter %}"
 bc7f231cb2ba0b27:
   de: >-
     * Ein **öffentlicher Proxy**, der auf einem öffentlich zugänglichen
@@ -165,6 +232,9 @@ d5739c54f228a918:
     \ zugehörige EPS-Server, über die sie miteinander kommunizieren. "
   en: "Both the private and the public proxies have accompanying\
     \ EPS servers through which they communicate with each other. "
+d97a247235a02a9a:
+  de: "\t\t# Bereiten Sie die Binärdateien vor"
+  en: "\t\t# prepare the binaries"
 d9c29da250b885ae:
   de: >-
     eq 1 2000000 | parallel -j 25 curl --cacert settings/dev/certs/root.crt
@@ -181,6 +251,11 @@ df823acbfdbdc3e2:
   en: >-
     EPS_SETTINGS=settings/dev/roles/private-proxy-eps-1 eps server
     run
+e1f0846014ec75ac:
+  de: "\t\tEPS_SETTINGS=settings/dev/roles/private-proxy-eps-1\
+    \ eps server run"
+  en: "\t\tEPS_SETTINGS=settings/dev/roles/private-proxy-eps-1\
+    \ eps server run"
 e3b0c44298fc1c14:
   de: ''
   en: ''
@@ -196,6 +271,9 @@ e8a7e8e0eece6002:
 f1b901847390b0ed:
   de: '`` `'
   en: '```'
+f5280ef03c25ba4e:
+  de: <div class="highlight">
+  en: <div class="highlight">
 f67077b95462d7ba:
   de: '## Stresstest'
   en: '## Stress Testing'

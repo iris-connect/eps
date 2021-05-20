@@ -13,35 +13,35 @@ Der private Proxy kann eingehende Verbindungen an den öffentlichen Proxy **ank�
 
 Um diesen Mechanismus zu demonstrieren, haben wir eine Beispielkonfiguration vorbereitet. Führen Sie einfach die folgenden Schnipsel in verschiedenen Terminals aus (aus dem Hauptverzeichnis im Repository):
 
-`` `bash
-# die Binärdateien vorbereiten
-make && make Beispiele
-# erstes Terminal
-internal-server #öffnet einen JSON-RPC-Server auf Port 8888
-# zweites Terminal (öffentlicher Proxy)
+```
+# prepare the binaries
+make && make examples
+# first terminal
+internal-server #will open a JSON-RPC server on port 8888
+# second terminal (public proxy)
 PROXY_SETTINGS=settings/dev/roles/public-proxy-1 proxy run public
-# drittes Terminal (privater Proxy)
+# third terminal (private proxy)
 PROXY_SETTINGS=settings/dev/roles/private-proxy-1 proxy run private
-# viertes Terminal (öffentlicher Proxy-EPS-Server)
+# fourth terminal (public proxy EPS server)
 EPS_SETTINGS=settings/dev/roles/public-proxy-eps-1 eps server run
-# fünftes Terminal (privater Proxy-EPS-Server)
+# fifth terminal (private proxy EPS server)
 EPS_SETTINGS=settings/dev/roles/private-proxy-eps-1 eps server run
-`` `
+```
 
 Wenn alle Dienste laufen, sollten Sie in der Lage sein, eine Anfrage an den Proxy zu senden über
 
-`` `bash
+```bash
 curl --cacert settings/dev/certs/root.crt --resolve test.internal-server.local:4433:127.0.0.1 https://test.internal-server.local:4433/jsonrpc | jq .
 
-`` `
+```
 
 Dies sollte die folgenden JSON-Daten zurückgeben:
 
-`` `json
+```json
 {
-  "Meldung": "Erfolg"
+  "message": "success"
 }
-`` `
+```
 
 Die Anfrage, die Sie gesendet haben, erreichte den lokalen TLS-Server auf Port 8888 über die beiden Proxys, die über das EPS-Netzwerk kommunizierten, um die Verbindung zu vermitteln. Toll, nicht wahr?
 
@@ -50,8 +50,8 @@ Die Anfrage, die Sie gesendet haben, erreichte den lokalen TLS-Server auf Port 8
 Sie können den Server auch einem Stresstest mit parallelen Anfragen unterziehen, indem Sie den `parallel`
 verwenden:
 
-`` `bash
+```bash
 eq 1 2000000 | parallel -j 25 curl --cacert settings/dev/certs/root.crt --resolve test.internal-server.local:4433:127.0.0.1 https://test.internal-server.local:4433/jsonrpc --data "{}"
-`` `
+```
 
 Dadurch wird versucht, 25 Anfragen parallel an den Server zu senden.

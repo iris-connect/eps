@@ -4,6 +4,7 @@ path: /
 static-path: docs/static
 pygments:
   style: tango
+  class: codehilite
 languages:
   #these pages will be copied to all languages
   $all:
