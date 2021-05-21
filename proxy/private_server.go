@@ -299,6 +299,11 @@ type PrivateAnnounceConnectionParams struct {
 func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *PrivateAnnounceConnectionParams) *jsonrpc.Response {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+
+	if params.ClientInfo == nil {
+		return context.Error(400, "client info missing", nil)
+	}
+
 	settings := params.ClientInfo.Entry.SettingsFor("proxy", c.settings.Name)
 
 	if params.Proxy == c.settings.Name {
