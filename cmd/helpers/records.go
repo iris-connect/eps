@@ -17,6 +17,7 @@
 package helpers
 
 import (
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"github.com/iris-gateway/eps"
@@ -241,7 +242,7 @@ func sign(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
-	if ok, err := helpers.Verify(loadedSignedData, rootCertificate, settings.Name); err != nil {
+	if ok, err := helpers.Verify(loadedSignedData, []*x509.Certificate{rootCertificate}, settings.Name); err != nil {
 		eps.Log.Fatal(err)
 	} else if !ok {
 		eps.Log.Fatal("Signature is not valid!")
@@ -286,7 +287,7 @@ func verify(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
-	if ok, err := helpers.Verify(signedData, rootCertificate, name); err != nil {
+	if ok, err := helpers.Verify(signedData, []*x509.Certificate{rootCertificate}, name); err != nil {
 		eps.Log.Fatal(err)
 	} else if !ok {
 		eps.Log.Fatal("Signature is not valid!")

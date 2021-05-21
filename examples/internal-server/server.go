@@ -45,7 +45,7 @@ func main() {
 	settings := &http.HTTPServerSettings{
 		BindAddress: bindAddress,
 		TLS: &tls.TLSSettings{
-			CACertificateFile: "settings/dev/certs/root.crt",
+			CACertificateFiles: []string{"settings/dev/certs/root.crt"},
 			CertificateFile: "settings/dev/certs/internal-server.crt",
 			KeyFile: "settings/dev/certs/internal-server.key",
 			VerifyClient: false,

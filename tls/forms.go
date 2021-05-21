@@ -30,9 +30,13 @@ var TLSSettingsForm = forms.Form{
 			},
 		},
 		{
-			Name: "ca_certificate_file",
+			Name: "ca_certificate_files",
 			Validators: []forms.Validator{
-				forms.IsString{},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsString{},
+					},
+				},
 			},
 		},
 		{

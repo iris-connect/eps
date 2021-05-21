@@ -70,7 +70,7 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 
 	b.mutex.Unlock()
 
-	Log.Info("Checking request details...")
+	Log.Debug("Checking request details...")
 
 	// we always add the client information to the request (if it exists)
 	if request.Params != nil && clientInfo != nil {
@@ -95,15 +95,17 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 		return nil, err
 	}
 
-	Log.Info("Checking channels...")
+	Log.Debug("Checking channels...")
 
 	// To do: Check if a client can actually call the service method of the
 	// given operator, reject the request if that's not the case.
 
 	for i, channel := range b.channels {
+		Log.Debugf("Checking whether channel %d can deliver message...", i)
 		if !channel.CanDeliverTo(address) {
 			continue
 		}
+		Log.Debug("Trying to deliver message...")
 		if response, err := channel.DeliverRequest(request); err != nil {
 			Log.Errorf("Channel %d encountered an error delivering message", i)
 			continue
@@ -111,6 +113,9 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 			return response, nil
 		}
 	}
+
+	Log.Debug("Done checking channels...")
+
 	return nil, fmt.Errorf("no channel can deliver this request")
 }
 

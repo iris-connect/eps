@@ -293,7 +293,7 @@ type PrivateAnnounceConnectionParams struct {
 	ClientInfo *eps.ClientInfo `json:"_client"`
 	ExpiresAt  *time.Time      `json:"expires_at"`
 	Domain     string          `json:"domain"`
-	Proxy      string
+	Proxy      string          `json:"proxy"`
 }
 
 func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *PrivateAnnounceConnectionParams) *jsonrpc.Response {

@@ -7,7 +7,7 @@ public:
     endpoint: https://localhost:5544/jsonrpc
     server_name: public-proxy-1
     tls:
-      ca_certificate_file: "$DIR/../../certs/root.crt"
+      ca_certificate_files: ["$DIR/../../certs/root.crt"]
       certificate_file: "$DIR/../../certs/public-proxy-1.crt"
       key_file: "$DIR/../../certs/public-proxy-1.key"
   jsonrpc_server: # the JSON-RPC server that the EPS server uses for communication
@@ -15,7 +15,7 @@ public:
     cors:
       allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
     tls:
-      ca_certificate_file: "$DIR/../../certs/root.crt"
+      ca_certificate_files: ["$DIR/../../certs/root.crt"]
       certificate_file: "$DIR/../../certs/public-proxy-1.crt"
       key_file: "$DIR/../../certs/public-proxy-1.key"
       validate_client: false
