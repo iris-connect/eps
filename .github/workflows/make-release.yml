@@ -6,7 +6,7 @@ on:
       - v*.*.*
 
 jobs:
-  build_and_test:
+  test_and_build:
     strategy:
       matrix:
         go-version: [1.16.x]
