@@ -1,0 +1,31 @@
+name: Make a release
+
+on:
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+  build_and_test:
+    runs-on: golang:1.18
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: make Go path
+        run: |
+          mkdir go
+          export GOPATH=`readlink -f go`
+      - name: run tests
+        run: |
+          make test
+      - name: build binaries
+        run: |
+          make
+      - name: Upload binaries
+        uses: actions/upload-artifact@v2
+        with:
+          name: eps-
+          path: |
+            go/bin/proxy
+            go/bin/eps
+            go/bin/sd
