@@ -301,6 +301,10 @@ func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *Pri
 	defer c.mutex.Unlock()
 	settings := params.ClientInfo.Entry.SettingsFor("proxy", c.settings.Name)
 
+	if params.Proxy == c.settings.Name {
+		return context.Error(400, "trying to announce with private proxy name", nil)
+	}
+
 	if settings == nil {
 		return context.Error(403, "not authorized", nil)
 	} else {
