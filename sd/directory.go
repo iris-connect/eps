@@ -31,12 +31,12 @@ const (
 )
 
 type RecordDirectorySettings struct {
-	DatabaseFile      string `json:"database_file"`
-	CACertificateFile string `json:"ca_certificate_file"`
+	DatabaseFile       string   `json:"database_file"`
+	CACertificateFiles []string `json:"ca_certificate_files"`
 }
 
 type RecordDirectory struct {
-	rootCert       *x509.Certificate
+	rootCerts      []*x509.Certificate
 	dataStore      helpers.DataStore
 	settings       *RecordDirectorySettings
 	entries        map[string]*eps.DirectoryEntry
@@ -48,14 +48,22 @@ type RecordDirectory struct {
 
 func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, error) {
 
-	cert, err := helpers.LoadCertificate(settings.CACertificateFile, false)
+	rootCerts := make([]*x509.Certificate, 0)
 
-	if err != nil {
-		return nil, err
+	for _, certificateFile := range settings.CACertificateFiles {
+
+		cert, err := helpers.LoadCertificate(certificateFile, false)
+
+		if err != nil {
+			return nil, err
+		}
+
+		rootCerts = append(rootCerts, cert)
+
 	}
 
 	f := &RecordDirectory{
-		rootCert:       cert,
+		rootCerts:      rootCerts,
 		orderedRecords: make([]*eps.SignedChangeRecord, 0),
 		recordsByHash:  make(map[string]*eps.SignedChangeRecord),
 		recordChildren: make(map[string][]*eps.SignedChangeRecord),
@@ -67,7 +75,7 @@ func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, e
 		return nil, err
 	}
 
-	_, err = f.update()
+	_, err := f.update()
 
 	return f, err
 }
@@ -128,7 +136,7 @@ func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord, records []*e
 	}
 
 	// we verify the signature and hash of the record
-	if ok, err := helpers.VerifyRecord(record, records, f.rootCert); err != nil {
+	if ok, err := helpers.VerifyRecord(record, records, f.rootCerts); err != nil {
 		return false, err
 	} else if !ok {
 		return false, nil
@@ -365,7 +373,7 @@ func (f *RecordDirectory) update() ([]*eps.SignedChangeRecord, error) {
 			for j, record := range chain {
 				eps.Log.Infof("Chain %d, record %d: %s", i, j, record.Hash)
 				// we verify the signature of the record
-				if ok, err := helpers.VerifyRecord(record, chain[:j], f.rootCert); err != nil {
+				if ok, err := helpers.VerifyRecord(record, chain[:j], f.rootCerts); err != nil {
 					return nil, err
 				} else if !ok {
 					eps.Log.Warning("signature does not match, ignoring this chain...")

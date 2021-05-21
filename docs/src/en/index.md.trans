@@ -1,0 +1,81 @@
+095107091962c821:
+  de: >-
+    Das **Endpoint System (EPS)** bietet mehrere Server- und Client-Komponenten,
+    die die Kommunikation im IRIS-Ökosystem verwalten und sichern.
+    Insbesondere bietet das EPS zwei Kernkomponenten:
+  en: >-
+    The **Endpoint System (EPS)** provides several server and
+    client components that manage and secure the communication
+    in the IRIS ecosystem. Notably, the EPS provides two core
+    components:
+0b998041a417dd00:
+  de: >-
+    * Ein **Message-Broker / Mesh-Router-Dienst**, der Anfragen
+    zwischen verschiedenen Akteuren im System weiterleitet und
+    die gegenseitige Autorisierung und Authentifizierung sicherstellt.
+  en: >-
+    * A **message broker / mesh router** services that transmits
+    requests between different actors in the system and ensures
+    mutual authorization and authentication.
+1a61d779ced1e9fb:
+  de: >-
+    Zusätzlich bietet es einen **TLS-Passthrough-Proxy-Dienst,
+    der** eine direkte, Ende-zu-Ende-verschlüsselte Kommunikation
+    zwischen Client-Endpunkten und Gesundheitsämtern ermöglicht.
+  en: >-
+    In addition it provides a **TLS passthrough proxy service**
+    that enables direct, end-to-end encrypted communication between
+    client endpoints and health departments.
+23759139dcda749e:
+  de: >-
+    Das **Endpoint System (EPS)** bietet mehrere Server- und Client-Komponenten,
+    die die Kommunikation im IRIS-Ökosystem verwalten und sichern.
+    Insbesondere bietet das EPS zwei Kernkomponenten:
+  en: >-
+    The **Endpoint System (EPS)**  provides several server and
+    client components that manage and secure the communication
+    in the IRIS ecosystem. Notably, the EPS provides two core
+    components:
+38040ad7581c97df:
+  de: >-
+    Wenn Sie auf ein Problem stoßen, [öffnen Sie](https://github.com/iris-gateway/eps)
+    bitte [ein Issue auf Github](https://github.com/iris-gateway/eps),
+    wo unsere Community Ihnen helfen kann.
+  en: >-
+    If you encounter a problem please [open an issue on Github](https://github.com/iris-gateway/eps)
+    where our community can help you.
+4908d7bb9a072dc3:
+  de: '# Willkommen!'
+  en: '# Welcome!'
+c27e8e74cb8cd379:
+  de: >-
+    Für die ersten Schritte lesen Sie bitte die Anleitung " [Erste
+    Schritte"]({{'getting-started'|href}}). Danach können Sie
+    sich die [detaillierte EPS-Dokumentation]({{'eps.index'|href}})
+    ansehen. Wenn Sie den Proxy oder das Dienstverzeichnis ausführen
+    möchten, können Sie sich die jeweilige [Proxy-Dokumentation]({{'proxy.index'|href}})
+    sowie die [Dienstverzeichnis-Dokumentation]({{'sd.index'|href}})
+    ansehen.
+  en: >-
+    To get started please read the [Getting Started Guide]({{'getting-started'|href}}).
+    After that you can check out the [detailed EPS documentation]({{'eps.index'|href}}).
+    If you want to run the proxy or service directory you can
+    check out the respective [proxy documentation]({{'proxy.index'|href}})
+    as well as [service directory documentation]({{'sd.index'|href}}).
+c6144136c5fdde00:
+  de: '## Erste Schritte'
+  en: '## Getting Started'
+d4f76297b5cf6d12:
+  de: >-
+    * Ein **verteiltes Dienstverzeichnis**, das kryptografisch
+    signierte Informationen über Akteure im System speichert und
+    vom Message Broker für die Authentifizierung, die Dienstsuche
+    und den Verbindungsaufbau verwendet wird.
+  en: >-
+    * A **distributed service directory** that stores cryptographically
+    signed information about actors in the system, and is used
+    by the message broker for authentication, service discovery
+    and connection establishment.
+e3b0c44298fc1c14:
+  de: ''
+  en: ''

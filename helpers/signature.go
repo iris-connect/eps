@@ -128,7 +128,7 @@ func LoadSignedData(data []byte) (*eps.SignedData, error) {
 	return signedData, json.Unmarshal(data, &signedData)
 }
 
-func Verify(signedData *eps.SignedData, rootCert *x509.Certificate, name string) (bool, error) {
+func Verify(signedData *eps.SignedData, rootCerts []*x509.Certificate, name string) (bool, error) {
 
 	cert, err := LoadCertificateFromString(signedData.Signature.Certificate, true)
 
@@ -137,8 +137,16 @@ func Verify(signedData *eps.SignedData, rootCert *x509.Certificate, name string)
 	}
 
 	// root certificate verification can be skipped (but shouldn't be)
-	if rootCert != nil {
-		if err := VerifyCertificate(cert, rootCert, name); err != nil {
+	if rootCerts != nil {
+		found := false
+		for _, rootCert := range rootCerts {
+			if err := VerifyCertificate(cert, rootCert, name); err == nil {
+				found = true
+				break
+			}
+		}
+		// no valid root certificate found
+		if !found {
 			return false, nil
 		}
 	}

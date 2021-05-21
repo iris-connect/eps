@@ -19,6 +19,7 @@ package jsonrpc
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/iris-gateway/eps"
 	"github.com/iris-gateway/eps/tls"
 	"io/ioutil"
 	"net/http"
@@ -52,6 +53,7 @@ func (c *Client) Call(request *Request) (*Response, error) {
 	client := &http.Client{}
 
 	if c.settings.TLS != nil {
+		eps.Log.Info("Using TLS")
 		tlsConfig, err := tls.TLSClientConfig(c.settings.TLS, c.settings.ServerName)
 		if err != nil {
 			return nil, err
@@ -62,6 +64,8 @@ func (c *Client) Call(request *Request) (*Response, error) {
 			TLSClientConfig: tlsConfig,
 		}
 	}
+
+	eps.Log.Infof("Generating request to endpoint %s...", c.settings.Endpoint)
 
 	req, err := http.NewRequest("POST", c.settings.Endpoint, bytes.NewReader(data))
 
@@ -77,6 +81,8 @@ func (c *Client) Call(request *Request) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	eps.Log.Info("Done with request...")
 
 	// to do: sanity checks...
 

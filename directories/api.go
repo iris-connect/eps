@@ -52,19 +52,23 @@ var APIDirectorySettingsForm = forms.Form{
 			},
 		},
 		{
-			Name: "ca_certificate_file",
+			Name: "ca_certificate_files",
 			Validators: []forms.Validator{
-				forms.IsString{},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsString{},
+					},
+				},
 			},
 		},
 	},
 }
 
 type APIDirectorySettings struct {
-	Endpoints         []string                       `json:"endpoints"`
-	ServerNames       []string                       `json:"server_names"`
-	JSONRPCClient     *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
-	CACertificateFile string                         `json:"ca_certificate_file"`
+	Endpoints          []string                       `json:"endpoints"`
+	ServerNames        []string                       `json:"server_names"`
+	JSONRPCClient      *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
+	CACertificateFiles []string                       `json:"ca_certificate_files"`
 }
 
 type CacheEntry struct {
@@ -80,7 +84,7 @@ type APIDirectory struct {
 	eps.BaseDirectory
 	settings      APIDirectorySettings
 	jsonrpcClient *jsonrpc.Client
-	rootCert      *x509.Certificate
+	rootCerts     []*x509.Certificate
 	entries       map[string]*eps.DirectoryEntry
 	records       []*eps.SignedChangeRecord
 	mutex         sync.Mutex
@@ -101,10 +105,17 @@ func APIDirectorySettingsValidator(settings map[string]interface{}) (interface{}
 func MakeAPIDirectory(name string, settings interface{}) (eps.Directory, error) {
 	apiSettings := settings.(APIDirectorySettings)
 
-	cert, err := helpers.LoadCertificate(apiSettings.CACertificateFile, false)
+	rootCerts := make([]*x509.Certificate, 0)
 
-	if err != nil {
-		return nil, err
+	for _, certificateFile := range apiSettings.CACertificateFiles {
+		cert, err := helpers.LoadCertificate(certificateFile, false)
+
+		if err != nil {
+			return nil, err
+		}
+
+		rootCerts = append(rootCerts, cert)
+
 	}
 
 	d := &APIDirectory{
@@ -114,7 +125,7 @@ func MakeAPIDirectory(name string, settings interface{}) (eps.Directory, error) 
 		jsonrpcClient: jsonrpc.MakeClient(apiSettings.JSONRPCClient),
 		entries:       make(map[string]*eps.DirectoryEntry),
 		records:       []*eps.SignedChangeRecord{},
-		rootCert:      cert,
+		rootCerts:     rootCerts,
 		settings:      apiSettings,
 	}
 
@@ -308,7 +319,7 @@ func (f *APIDirectory) update() error {
 
 				// we verify all records before we integate them
 				for i, record := range fullRecords {
-					if ok, err := helpers.VerifyRecord(record, fullRecords[:i], f.rootCert); err != nil {
+					if ok, err := helpers.VerifyRecord(record, fullRecords[:i], f.rootCerts); err != nil {
 						return err
 					} else if !ok {
 						return fmt.Errorf("invalid record found")

@@ -1,0 +1,386 @@
+021fb596db81e6d0:
+  de: '{'
+  en: '{'
+095107091962c821:
+  de: >-
+    Das *Endpoint *System (EPS)** bietet mehrere Server- und Client-Komponenten,
+    die die Kommunikation im IRIS-Ökosystem verwalten und sichern.
+    Insbesondere bietet das EPS zwei Kernkomponenten:
+  en: >-
+    The **Endpoint System (EPS)** provides several server and
+    client components that manage and secure the communication
+    in the IRIS ecosystem. Notably, the EPS provides two core
+    components:
+0b4f7d68383fa529:
+  de: "\t\"Methode\": \"ls-1.add\","
+  en: "\t\"method\": \"ls-1.add\","
+0b998041a417dd00:
+  de: >-
+    * Ein **Message-Broker / Mesh-Router-Dienst**, der Anfragen
+    zwischen verschiedenen Akteuren im System weiterleitet und
+    die gegenseitige Autorisierung und Authentifizierung sicherstellt.
+  en: >-
+    * A **message broker / mesh router** services that transmits
+    requests between different actors in the system and ensures
+    mutual authorization and authentication.
+13002f41c1f6f779:
+  de: '# Führen Sie den Dienst "Standorte" aus'
+  en: '# run the "locations" service'
+13cb3918e00dd08e:
+  de: "curl --cacert settings/dev/certs/root.crt --resolve hd-1:5555:127.0.0.1\
+    \ https://hd-1:5555/jsonrpc --header \"Content-Type: application/json\"\
+    \ --data '{\"method\": \"ls-1.add\", \"id\": \"1\", \"params\"\
+    : {\"name\": \"Ginos\", \"id\": \"af5ca4da5caa\"}, \"jsonrpc\"\
+    : \"2.0\"}' 2&gt;/dev/null | jq "
+  en: "curl --cacert settings/dev/certs/root.crt --resolve hd-1:5555:127.0.0.1\
+    \ https://hd-1:5555/jsonrpc --header \"Content-Type: application/json\"\
+    \ --data '{\"method\": \"ls-1.add\", \"id\": \"1\", \"params\"\
+    : {\"name\": \"Ginos\", \"id\": \"af5ca4da5caa\"}, \"jsonrpc\"\
+    : \"2.0\"}' 2>/dev/null | jq "
+1a61d779ced1e9fb:
+  de: >-
+    Zusätzlich bietet es einen **TLS-Passthrough-Proxy-Dienst,
+    der** eine direkte, Ende-zu-Ende-verschlüsselte Kommunikation
+    zwischen Client-Endpunkten und Gesundheitsämtern ermöglicht.
+  en: >-
+    In addition it provides a **TLS passthrough proxy service**
+    that enables direct, end-to-end encrypted communication between
+    client endpoints and health departments.
+23759139dcda749e:
+  de: >-
+    Das **Endpoint System (EPS)** bietet mehrere Server- und Client-Komponenten,
+    die die Kommunikation im IRIS-Ökosystem verwalten und sichern.
+    Insbesondere bietet das EPS zwei Kernkomponenten:
+  en: >-
+    The **Endpoint System (EPS)**  provides several server and
+    client components that manage and secure the communication
+    in the IRIS ecosystem. Notably, the EPS provides two core
+    components:
+2584834aed9d8408:
+  de: "\t\"jsonrpc\": \"2.0\""
+  en: "\t\"jsonrpc\": \"2.0\""
+3288a136ca3e7c85:
+  de: '  },'
+  en: '  },'
+32ad6642857a71d2:
+  de: >-
+    EPS_SETTINGS=settings/dev/roles/ls-1 eps --level debug server
+    run
+  en: >-
+    EPS_SETTINGS=settings/dev/roles/ls-1 eps --level debug server
+    run
+33e6d96d6b2466a6:
+  de: '## Aufstehen und loslegen'
+  en: '## Getting Up And Running'
+4061b828bfb714db:
+  de: >-
+    * Ein `eps` Server, der einen `health department` simuliert,
+    namens `hd-1`
+  en: >-
+    * An `eps` server simulating a `health department`, named
+    `hd-1`
+4908d7bb9a072dc3:
+  de: '# Willkommen!'
+  en: '# Welcome!'
+58c0e45301d54500:
+  de: '## Testen'
+  en: '## Testing'
+62bbdbf25eb26656:
+  de: '    "Name": "Ginos"'
+  en: '    "name": "Ginos"'
+63f6546a1bc37f91:
+  de: '## Integration Beispiel'
+  en: '## Integration Example'
+680d4ddcc28b5367:
+  de: '## Asynchrone Anrufe'
+  en: '## Asynchronous Calls'
+6ea2114022955459:
+  de: '    "_": "ok"'
+  en: '    "_": "ok"'
+71c238d0d7db2f80:
+  de: Das war's!
+  en: That's it!
+71c5412ad127ba5f:
+  de: '# Erste Schritte'
+  en: '# Getting Started'
+71db010f1e7f230d:
+  de: >-
+    Die Anfrage ging zunächst an den `eps` Server des Gesundheitsamtes,
+    wurde über gRPC zunächst an den `ls-1` 's `eps` Server weitergeleitet
+    und wurde dann an die JSON-RPC API des dort laufenden lokalen
+    `eps-ls` Dienstes übergeben. Das Ergebnis wurde dann entlang
+    der gesamten Kette zurückgereicht.
+  en: >-
+    The request first went to the health department's `eps` server,
+    was first routed to `ls-1`'s `eps` server via gRPC and was
+    then passed to the JSON-RPC API of the local `eps-ls` service
+    running there. The result was then passsed back along the
+    entire chain.
+73359a980f456243:
+  de: >-
+    Die Anrufe, die wir oben gesehen haben, waren alle synchron,
+    d. h. ein Anruf führte zu einer direkten Antwort. Manchmal
+    müssen Aufrufe jedoch asynchron sein, z. B. weil die Beantwortung
+    Zeit benötigt. Wenn Sie einen asynchronen Aufruf an einen
+    anderen Dienst tätigen, erhalten Sie zunächst eine Bestätigung
+    zurück. Sobald der von Ihnen aufgerufene Dienst eine Antwort
+    bereit hat, sendet er diese über das Netzwerk `eps` an Sie
+    zurück, wobei er dieselbe `id` verwendet, die Sie angegeben
+    haben (wodurch Sie die Antwort mit Ihrer Anfrage abgleichen
+    können). Ebenso können Sie auf Aufrufe von anderen Diensten
+    asynchron reagieren, indem Sie die Antwort einfach mit dem
+    Methodennamen `respond` (ohne Dienstnamen) an Ihren lokalen
+    JSON-RPC-Server schieben. Vergessen Sie nicht, dieselbe `id`
+    anzugeben, die Sie mit der ursprünglichen Anfrage erhalten
+    haben, da diese die "Rücksendeadresse" der Anfrage enthält.
+  en: >-
+    The calls we've seen above were all synchronous, i.e. making
+    a call resulted in a direct response. Sometimes calls need
+    to be asynchronous though, e.g. because replying to them takes
+    time. If you make an asynchronous call to another service,
+    you'll get back an acknowledgment first. As soon as the service
+    you've called has a response ready, it will send it back to
+    your via the `eps` network, using the same `id` you provided
+    (which enables you to match the response to your request).
+    Likewise, you can respond to calls from other services in
+    an asynchronous way, simply pushing the response to your local
+    JSON-RPC server with a method name `respond` (without a service
+    name). Do not forget to include the same `id` that you received
+    with the original request, as this will contain the "return
+    address" of the request.
+75f068a6706fd1a5:
+  de: EPS_SETTINGS=Pfad/zu/Einstellungen eps Serverlauf
+  en: EPS_SETTINGS=path/to/settings eps server run
+76a4da331a5e6d20:
+  de: >-
+    Daher ist die Interaktion mit dem entfernten "locations"-Dienst
+    genauso wie der Aufruf eines lokalen JSON-RPC-Dienstes, außer
+    dass Sie den Namen des Operators, der den Dienst ausführt,
+    `ls-1.lookup`, angeben, anstatt einfach `lookup` aufzurufen.
+  en: >-
+    Hence, interacting with the remote "locations" service is
+    just like calling a local JSON-RPC service, except that you
+    specify the name of the operator running the service, `ls-1.lookup`,
+    instead of just calling `lookup`.
+7763ae47cecaaaf7:
+  de: >-
+    curl --cacert settings/dev/certs/root.crt --resolve hd-1:5555:127.0.0.1
+    https://hd-1:5555/jsonrpc --header "Content-Type: application/json"
+    --data '{"method": "ls-1.lookup", "id": "1", "params": {"name":
+    "Ginos"}, "jsonrpc": "2.0"}' 2&gt;/dev/null | jq .
+  en: >-
+    curl --cacert settings/dev/certs/root.crt --resolve hd-1:5555:127.0.0.1
+    https://hd-1:5555/jsonrpc --header "Content-Type: application/json"
+    --data '{"method": "ls-1.lookup", "id": "1", "params": {"name":
+    "Ginos"}, "jsonrpc": "2.0"}' 2>/dev/null | jq .
+7999426577f4ba36:
+  de: "\t\t\"Name\": \"Ginos\","
+  en: "\t\t\"name\": \"Ginos\","
+80979aa962369eb1:
+  de: '# Integration'
+  en: '# Integration'
+84aadf0737161a88:
+  de: >-
+    Die Integration mit der IRIS-Infrastruktur unter Verwendung
+    des EPS-Servers ist einfach (hoffen wir). Zunächst müssen
+    Sie den `eps` Server zusammen mit den Einstellungen und Zertifikaten,
+    die wir Ihnen zur Verfügung gestellt haben, bereitstellen.
+    Dies ist so einfach wie das Herunterladen der neuesten Version
+    von `eps` von unserem Server, das Entpacken des Einstellungsarchivs,
+    das wir Ihnen zur Verfügung gestellt haben, und das Ausführen
+    von
+  en: >-
+    Integrating with the IRIS infrastructure using the EPS server
+    is easy (we hope). First, you need to deploy the `eps` server
+    together with the settings and certificates we've provided
+    to you. This is as easy as downloading the latest `eps` version
+    from our server, unpacking the settings archive we've provided
+    you with and running
+96627637c668e59c:
+  de: >-
+    Sie können auch eine Suche nach dem Ort durchführen, den Sie
+    gerade hinzugefügt haben:
+  en: >-
+    You can also perform a lookup of the location you've just
+    added:
+9a63cc38ece60304:
+  de: >-
+    * Der tatsächliche vom Betreiber angebotene Ortungsdienst
+    `eps-ls` `ls-1`
+  en: >-
+    * The actual location service `eps-ls` offered by the operator
+    `ls-1`
+9e4de4a404f24f30:
+  de: >-
+    Die Integration in die IRIS-Infrastruktur ist einfach (hoffen
+    wir). Zuerst müssen Sie den `eps` Server zusammen mit den
+    Einstellungen und Zertifikaten, die wir Ihnen zur Verfügung
+    gestellt haben, bereitstellen. Dies ist so einfach wie das
+    Herunterladen der neuesten `eps` Version von unserem Server,
+    das Entpacken des Einstellungsarchivs, das wir Ihnen zur Verfügung
+    gestellt haben, und das Ausführen von
+  en: >-
+    Integrating with the IRIS infrastructure is easy (we hope).
+    First, you need to deploy the `eps` server together with the
+    settings and certificates we've provided to you. This is as
+    easy as downloading the latest `eps` version from our server,
+    unpacking the settings archive we've provided you with and
+    running
+9f7be4282ad2bc48:
+  de: '  "id": "1"'
+  en: '  "id": "1"'
+a56726cde84dae15:
+  de: '`` `json'
+  en: '```json'
+a8429fbe3208ed81:
+  de: "\t\t\"id\": \"af5ca4da5caa\""
+  en: "\t\t\"id\": \"af5ca4da5caa\""
+aac773e7121c848f:
+  de: die Folgendes zurückgeben sollte
+  en: which should return
+ad332335cfaa348c:
+  de: '`` `bash'
+  en: '```bash'
+bb03df39382c6d69:
+  de: >-
+    Dies sollte einen lokalen JSON-RPC-Server auf Port `5555`
+    öffnen, mit dem Sie sich über TLS verbinden können (dazu müssen
+    Sie das Root-CA-Zertifikat zu Ihrer Zertifikatskette hinzufügen).
+    Dieser Server ist Ihr Gateway zu allen IRIS-Diensten. Schauen
+    Sie einfach nach den Diensten, die ein bestimmter Betreiber
+    anbietet, und senden Sie eine Anfrage, die den Namen des Betreibers
+    und die Dienstmethode enthält, die Sie aufrufen möchten. Um
+    z. B. mit dem Dienst "locations" zu interagieren, der vom
+    Betreiber "ls-1" bereitgestellt wird, würden Sie einfach eine
+    JSON-RPC-Nachricht wie diese senden:
+  en: >-
+    This should open a local JSON-RPC server on port `5555` that
+    you can connect to via TLS (you'll need to add the root CA
+    certificate to your certificate chain for this). This server
+    is your gateway to all IRIS services. Simply look up the services
+    that a specific operator provides and send a request that
+    contains the name of the operator and the service method you
+    want to call. For example, to interact with a "locations"
+    service provided by operator "ls-1", you'd simply post a JSON
+    RPC message like this:
+bbc6744b2f3fabc4:
+  de: '  "Ergebnis": {'
+  en: '  "result": {'
+bc855a3ce7fa73ee:
+  de: >-
+    Um eine konkrete Vorstellung von der Integration mit der IRIS-Infrastruktur
+    unter Verwendung des EPS-Servers zu bekommen, haben wir ein
+    einfaches Demo-Setup erstellt, das alle Komponenten veranschaulicht.
+    Die Demo besteht aus drei Komponenten:
+  en: >-
+    To get a concrete idea of how to integrate with the IRIS infrastructure
+    using the EPS server we have created a simple demo setup that
+    illustrates all components. The demo consists of three components:
+bd00183b6db04208:
+  de: 'Dies sollte eine einfache JSON-Antwort zurückgeben:'
+  en: 'This should return a simple JSON response:'
+c17da092503e7334:
+  de: >-
+    Lesen Sie bitte zuerst in der README nach, wie Sie alle notwendigen
+    TLS-Zertifikate erstellen und die Software bauen. Starten
+    Sie dann die einzelnen Dienste auf verschiedenen Terminals:
+  en: >-
+    First, please check the README on how to create all necessary
+    TLS certificates and build the software. Then, start the individual
+    services on different terminals:
+c39b4fd1e7c3253d:
+  de: >-
+    * Eine `eps` Server-Simulation eines Betreibers, der einen
+    "Standort"-Dienst anbietet, namens `ls-1`
+  en: >-
+    * An `eps` server simulation an operator offering a "locations"
+    service, named `ls-1`
+c6144136c5fdde00:
+  de: '## Erste Schritte'
+  en: '## Getting Started'
+c689b33c60cf1f6c:
+  de: '    "id": "af5ca4da5caa",'
+  en: '    "id": "af5ca4da5caa",'
+c7b62b98689be9bd:
+  de: >-
+    Wenn Sie Anfragen von anderen Diensten im IRIS-Ökosystem akzeptieren
+    möchten, können Sie die `jsonrpc_client` verwenden. Dabei
+    geben Sie einfach einen API-Endpunkt an, an den eingehende
+    Anfragen mit der gleichen Syntax wie oben zugestellt werden
+    sollen.
+  en: >-
+    If you want to accept requests from other services in the
+    IRIS ecosystem you can use the `jsonrpc_client`, simply specifying
+    an API endpoint that incoming requests will be delivered to
+    using the same syntax as above.
+cfd61106fd63f32e:
+  de: >-
+    # führen Sie den `eps` Server des "Standorte"-Operators ls-1
+    aus
+  en: '# run the `eps` server of the "locations" operator ls-1'
+d10b36aa74a59bcf:
+  de: '}'
+  en: '}'
+d209ebd37a47e8e3:
+  de: >-
+    EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug server
+    run
+  en: >-
+    EPS_SETTINGS=settings/dev/roles/hd-1 eps --level debug server
+    run
+d4f76297b5cf6d12:
+  de: >-
+    * Ein **verteiltes Dienstverzeichnis**, das kryptografisch
+    signierte Informationen über Akteure im System speichert und
+    vom Message Broker für die Authentifizierung, die Dienstsuche
+    und den Verbindungsaufbau verwendet wird.
+  en: >-
+    * A **distributed service directory** that stores cryptographically
+    signed information about actors in the system, and is used
+    by the message broker for authentication, service discovery
+    and connection establishment.
+d63f07282871cc1b:
+  de: >-
+    Jetzt sollte Ihr System einsatzbereit sein. Der Demo-Dienst
+    "locations" bietet eine einfache, authentifizierungsfreie
+    JSON-RPC-Schnittstelle mit zwei Methoden: `add`, die einen
+    Ort zur Datenbank hinzufügt, und `lookup`, die einen Ort anhand
+    seiner `name` nachschlägt. Zum Beispiel, um dem Dienst einen
+    Ort hinzuzufügen:
+  en: >-
+    Now your system should be up and running. The demo "locations"
+    service provides a simple, authenticationless JSON-RPC interface
+    with two methods: `add`, which will add a location to the
+    database, and `lookup`, which will look up a location based
+    on its `name`. For example, to add a location to the service:
+e1f52c58de5dafdb:
+  de: eps-ls
+  en: eps-ls
+e2a434bf3cfce828:
+  de: "\t\"id\": \"1\","
+  en: "\t\"id\": \"1\","
+e3b0c44298fc1c14:
+  de: ''
+  en: ''
+ed0dbdf6e65ff948:
+  de: "\t},"
+  en: "\t},"
+f08d9c7d0becc2ef:
+  de: >-
+    Das Gateway kümmert sich darum, diese Nachricht an den richtigen
+    Dienst weiterzuleiten und eine Antwort an Sie zurückzuschicken.
+  en: >-
+    The gateway will take care of routing this message to the
+    correct service and returning a response to you.
+f1b901847390b0ed:
+  de: '`` `'
+  en: '```'
+f5c2c66ddc1e3d6f:
+  de: "\t\"Params\": {"
+  en: "\t\"params\": {"
+f69f5194f3fd2ea6:
+  de: '  "jsonrpc": "2.0",'
+  en: '  "jsonrpc": "2.0",'
+f7aef63198dec0a4:
+  de: '# Betreiben Sie den `eps` Server des Gesundheitsamtes hd-1'
+  en: '# run the `eps` server of the health department hd-1'

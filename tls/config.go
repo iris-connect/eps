@@ -25,16 +25,20 @@ import (
 
 func TLSConfig(settings *TLSSettings) (*tls.Config, error) {
 
-	bs, err := ioutil.ReadFile(settings.CACertificateFile)
-
-	if err != nil {
-		return nil, err
-	}
-
 	certPool := x509.NewCertPool()
 
-	if ok := certPool.AppendCertsFromPEM(bs); !ok {
-		return nil, fmt.Errorf("cannot import CA certificate")
+	for _, certificateFile := range settings.CACertificateFiles {
+
+		bs, err := ioutil.ReadFile(certificateFile)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if ok := certPool.AppendCertsFromPEM(bs); !ok {
+			return nil, fmt.Errorf("cannot import CA certificate")
+		}
+
 	}
 
 	certs := []tls.Certificate{}
