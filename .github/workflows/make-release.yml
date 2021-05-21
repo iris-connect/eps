@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.16.x]
-        arch: [linux-amd64, windows-amd64, darwin-amd64, darwin-arm64]
+        arch: [linux_amd64, windows_amd64, darwin_amd64, darwin_arm64]
     runs-on: ubuntu-latest
     env:
       GOPATH: /tmp/go
@@ -28,20 +28,26 @@ jobs:
       - name: run tests
         if: ${{ matrix.arch == 'linux-amd64' }} # we only run the tests on Linux
         run: |
-          export GOARCH=`echo ${{matrix.arch}} | sed 's/[a-z0-9]*-//g'`
-          export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)-[a-z0-9]*$/\1/g'`
+          export GOARCH=`echo ${{matrix.arch}} | sed 's/[a-z0-9]*_//g'`
+          export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)_[a-z0-9]*$/\1/g'`
           make certs
           make test
       - name: build binaries
         run: |
-          export GOARCH=`echo ${{matrix.arch}} | sed 's/[a-z0-9]*-//g'`
-          export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)-[a-z0-9]*$/\1/g'`
+          export GOARCH=`echo ${{matrix.arch}} | sed 's/[a-z0-9]*_//g'`
+          export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)_[a-z0-9]*$/\1/g'`
           make
-      - name: Upload binaries
+      - name: Upload binaries (Linux)
+        if: ${{ matrix.arch == 'linux-amd64' }} # we only run the tests on Linux
         uses: actions/upload-artifact@v2
         with:
           name: eps-${{matrix.arch}}
           path: |
-            /tmp/go/bin/proxy
-            /tmp/go/bin/eps
-            /tmp/go/bin/sd
+            /tmp/go/bin/*
+      - name: Upload binaries (all other)
+        if: ${{ matrix.arch != 'linux-amd64' }} # we only run the tests on Linux
+        uses: actions/upload-artifact@v2
+        with:
+          name: eps-${{matrix.arch}}
+          path: |
+            /tmp/go/bin/${{matrix.arch}}/*
