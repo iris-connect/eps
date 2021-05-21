@@ -28,13 +28,13 @@ jobs:
       - name: run tests
         run: |
           export GOARCH=`echo ${{matrix.arch}} | sed 's/[a-z0-9]*-//g'`
-          export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)-[a-z]*$/\1/g'`
+          export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)-[a-z0-9]*$/\1/g'`
           make certs
           make test
       - name: build binaries
         run: |
           export GOARCH=`echo ${{matrix.arch}} | sed 's/[a-z0-9]*-//g'`
-          export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)-[a-z]*$/\1/g'`
+          export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)-[a-z0-9]*$/\1/g'`
           make
       - name: Upload binaries
         uses: actions/upload-artifact@v2
