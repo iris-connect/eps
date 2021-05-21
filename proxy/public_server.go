@@ -93,10 +93,6 @@ func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *Publ
 
 	eps.Log.Infof("Received announcement! %v", params.ExpiresAt)
 
-	if params.ClientInfo == nil {
-		return context.Error(400, "client info missing", nil)
-	}
-
 	settings := params.ClientInfo.Entry.SettingsFor("proxy", c.settings.Name)
 
 	if settings == nil {
