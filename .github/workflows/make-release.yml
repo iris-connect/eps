@@ -10,31 +10,37 @@ jobs:
     strategy:
       matrix:
         go-version: [1.16.x]
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{matrix.os}}
+        arch: [linux-amd64, windows-amd64, darwin-amd64, darwin-arm64]
+    runs-on: ubuntu-latest
+    env:
+      GOPATH: /tmp/go
+      GOARCH: 
     steps:
+      - name: create Go path
+        run: |
+          mkdir -p /tmp/go
       - name: install Golang
         uses: actions/setup-go@v2
         with:
           go-version: ${{matrix.go-version}}
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: make Go path
-        run: |
-          mkdir go
-          export GOPATH=`readlink -f go`
       - name: run tests
         run: |
+          export GOARCH=`echo ${{matrix.arch}} | sed 's/[a-z]*-//g'`
+          export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)-[a-z]*$/\1/g'`
           make certs
           make test
       - name: build binaries
         run: |
+          export GOARCH=`echo ${{matrix.arch}} | sed 's/[a-z]*-//g'`
+          export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)-[a-z]*$/\1/g'`
           make
       - name: Upload binaries
         uses: actions/upload-artifact@v2
         with:
-          name: eps-${{matrix.os}}
+          name: eps-${{matrix.arch}}
           path: |
-            go/bin/proxy
-            go/bin/eps
-            go/bin/sd
+            /tmp/go/proxy
+            /tmp/go/bin/eps
+            /tmp/go/bin/sd
