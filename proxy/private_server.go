@@ -176,6 +176,8 @@ type IncomingConnectionParams struct {
 
 func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *IncomingConnectionParams) *jsonrpc.Response {
 
+	eps.Log.Debugf("Incoming connection for domain '%s' from '%s'", params.Domain, params.Client.Name)
+
 	found := false
 	for _, announcement := range c.announcements {
 		if announcement.Proxy == params.Client.Name && announcement.Domain == params.Domain {
@@ -189,6 +191,7 @@ func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *Inc
 	}
 
 	if !found {
+		eps.Log.Debugf("No matching announcement found, closing...")
 		return context.Error(404, "no matching connection found", nil)
 	}
 
@@ -386,7 +389,7 @@ func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *Pri
 }
 
 func (s *PrivateServer) announceConnectionRPC(announcement *PrivateAnnouncement) error {
-	eps.Log.Debugf("Sending announcement to %s (%v)", announcement.Proxy, announcement.ExpiresAt)
+	eps.Log.Debugf("Sending announcement for domain '%s' to '%s' (expires at: %v)", announcement.Domain, announcement.Proxy, announcement.ExpiresAt)
 	request := jsonrpc.MakeRequest(fmt.Sprintf("%s.announceConnection", announcement.Proxy), "", map[string]interface{}{
 		"operator":   s.settings.Name,
 		"expires_at": announcement.ExpiresAt,

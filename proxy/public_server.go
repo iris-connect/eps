@@ -91,7 +91,7 @@ func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *Publ
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	eps.Log.Infof("Received announcement! %v", params.ExpiresAt)
+	eps.Log.Debugf("Received announcement for domain '%s' from operator '%s'", params.Domain, params.ClientInfo.Name)
 
 	settings := params.ClientInfo.Entry.SettingsFor("proxy", c.settings.Name)
 
@@ -126,7 +126,6 @@ func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *Publ
 				return context.Error(400, "already taken", announcement)
 			}
 			newAnnouncement = announcement
-			eps.Log.Info(params.ExpiresAt)
 			if announcement.ExpiresAt != params.ExpiresAt || announcement.ExpiresAt != nil && params.ExpiresAt != nil && !params.ExpiresAt.Equal(*announcement.ExpiresAt) {
 				changed = true
 				// we update the expiration time
@@ -147,6 +146,8 @@ func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *Publ
 	}
 
 	if changed {
+
+		eps.Log.Debugf("An announcement was added or modified.")
 
 		id, err := helpers.RandomID(16)
 
@@ -284,6 +285,8 @@ func (s *PublicServer) update() error {
 
 func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 
+	eps.Log.Debugf("Internal connection received from '%s'", internalConnection.RemoteAddr().String())
+
 	close := func() {
 		internalConnection.Close()
 	}
@@ -302,12 +305,14 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 	}
 
 	if reqLen != 32 {
-		eps.Log.Error("cannot read token")
+		eps.Log.Error("Cannot read token, closing connection...")
 		close()
 		return
 	}
 
 	tokenStr := base64.StdEncoding.EncodeToString(tokenBuf)
+
+	eps.Log.Debugf("Received token '%s'", tokenStr)
 
 	s.mutex.Lock()
 
@@ -319,6 +324,7 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 	s.mutex.Unlock()
 
 	if !connectionOk {
+		eps.Log.Error("No connection found for token, closing...")
 		internalConnection.Close()
 		return
 	}
@@ -364,12 +370,27 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 		}
 	}
 
+	eps.Log.Debugf("Proxying connection...")
+
 	go pipe(internalConnection, tlsConnection)
 	go pipe(tlsConnection, internalConnection)
 
 }
 
+// we only return the first two bytes of the IP address
+func anonymizeIP(ip string) string {
+	values := strings.Split(ip, ".")
+	// if it's an IPv6 we don't return any information currently
+	if len(values) != 4 {
+		return ""
+	}
+	return strings.Join(values[:2], ".")
+}
+
 func (s *PublicServer) handleTlsConnection(conn net.Conn) {
+
+	eps.Log.Debugf("Received TLS connection from '%s'...", anonymizeIP(conn.RemoteAddr().String()))
+
 	// we give the client 1 second to announce itself
 	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 
@@ -407,11 +428,12 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 
 		var announcement *PublicAnnouncement
 
+		eps.Log.Debugf("Looking for announcement for domain '%s'...", hostName)
+
 		found := false
 		for _, announcement = range s.announcements {
 			if announcement.Domain == hostName {
 				// if this announcement is already expired we ignore it
-				eps.Log.Info(announcement.ExpiresAt)
 				if announcement.ExpiresAt != nil && announcement.ExpiresAt.Before(time.Now()) {
 					continue
 				}
@@ -422,6 +444,7 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 
 		// no matching announcement found...
 		if !found {
+			eps.Log.Debugf("No announcement found, closing...")
 			close()
 			return
 		}
@@ -449,12 +472,12 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 		})
 
 		if result, err := s.jsonrpcClient.Call(request); err != nil {
-			eps.Log.Error(err)
+			eps.Log.Errorf("RPC error when announcing incoming connection: %v", err)
 			close()
 			return
 		} else {
 			if result.Error != nil {
-				eps.Log.Error(result.Error.Message)
+				eps.Log.Error("Error when announcing incoming connection: %v", result.Error.Message)
 				close()
 				return
 			}

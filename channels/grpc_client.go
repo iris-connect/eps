@@ -252,9 +252,10 @@ func (c *GRPCClientChannel) openConnections() error {
 					// we won't open a channel to ourselves...
 					continue
 				}
-				eps.Log.Debugf("Opening channel to %s at %s", entry.Name, settings.Address)
+				eps.Log.Tracef("Opening channel to %s at %s", entry.Name, settings.Address)
 				if err := c.openConnection(settings.Address, entry.Name); err != nil {
-					eps.Log.Error(err)
+					// we only log this as tracing errors
+					eps.Log.Trace(err)
 				}
 			}
 		}

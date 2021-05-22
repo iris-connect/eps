@@ -53,7 +53,6 @@ type ClientInfoAuthInfo struct {
 
 func (c VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string, clientInfo *eps.ClientInfo) (bool, error) {
 	if entry, err := c.directory.EntryFor(name); err != nil {
-		eps.Log.Error("can't verify entry...")
 		return false, err
 	} else {
 		clientInfo.Entry = entry
