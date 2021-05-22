@@ -17,9 +17,9 @@
 package fixtures
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/definitions"
-	"github.com/iris-gateway/eps/helpers"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/definitions"
+	"github.com/iris-connect/eps/helpers"
 )
 
 type Settings struct {

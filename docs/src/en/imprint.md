@@ -1,6 +1,6 @@
 ## Contact us
 
-If you have questions about EPS please [contact us](mailto:iris@inoeg.de), we will be happy to support and advise you! You can also post an issue for our friendly [Github community](https://github.com/iris-gateway/eps).
+If you have questions about EPS please [contact us](mailto:iris@inoeg.de), we will be happy to support and advise you! You can also post an issue for our friendly [Github community](https://github.com/iris-connect/eps).
 
 ## Imprint
 

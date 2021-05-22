@@ -11,4 +11,4 @@ In addition it provides a **TLS passthrough proxy service** that enables direct,
 
 To get started please read the [Getting Started Guide]({{'getting-started'|href}}). After that you can check out the [detailed EPS documentation]({{'eps.index'|href}}). If you want to run the proxy or service directory you can check out the respective [proxy documentation]({{'proxy.index'|href}}) as well as [service directory documentation]({{'sd.index'|href}}).
 
-If you encounter a problem please [open an issue on Github](https://github.com/iris-gateway/eps) where our community can help you.
+If you encounter a problem please [open an issue on Github](https://github.com/iris-connect/eps) where our community can help you.

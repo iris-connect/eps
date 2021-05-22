@@ -17,8 +17,8 @@
 package cmd
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/cmd/helpers"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/cmd/helpers"
 )
 
 var Commands = eps.CommandsDefinitions{

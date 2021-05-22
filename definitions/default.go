@@ -17,10 +17,10 @@
 package definitions
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/channels"
-	"github.com/iris-gateway/eps/cmd"
-	"github.com/iris-gateway/eps/directories"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/channels"
+	"github.com/iris-connect/eps/cmd"
+	"github.com/iris-connect/eps/directories"
 )
 
 var Default = eps.Definitions{

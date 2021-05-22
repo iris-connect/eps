@@ -20,8 +20,8 @@ package main
 
 import (
 	"github.com/kiprotect/go-helpers/forms"
-	"github.com/iris-gateway/eps/jsonrpc"
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps/jsonrpc"
+	"github.com/iris-connect/eps"
 	"os"
 	"os/signal"
 	"syscall"

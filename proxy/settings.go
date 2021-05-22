@@ -17,7 +17,7 @@
 package proxy
 
 import (
-	"github.com/iris-gateway/eps/jsonrpc"
+	"github.com/iris-connect/eps/jsonrpc"
 	"time"
 )
 

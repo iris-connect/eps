@@ -21,7 +21,7 @@
 package testing
 
 import (
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps"
 )
 
 type Fixture interface {

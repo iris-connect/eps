@@ -18,8 +18,8 @@ package jsonrpc
 
 import (
 	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/http"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/http"
 	"regexp"
 	"strings"
 )

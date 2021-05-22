@@ -38,11 +38,11 @@
     components:
 38040ad7581c97df:
   de: >-
-    Wenn Sie auf ein Problem stoßen, [öffnen Sie](https://github.com/iris-gateway/eps)
-    bitte [ein Issue auf Github](https://github.com/iris-gateway/eps),
+    Wenn Sie auf ein Problem stoßen, [öffnen Sie](https://github.com/iris-connect/eps)
+    bitte [ein Issue auf Github](https://github.com/iris-connect/eps),
     wo unsere Community Ihnen helfen kann.
   en: >-
-    If you encounter a problem please [open an issue on Github](https://github.com/iris-gateway/eps)
+    If you encounter a problem please [open an issue on Github](https://github.com/iris-connect/eps)
     where our community can help you.
 4908d7bb9a072dc3:
   de: '# Willkommen!'

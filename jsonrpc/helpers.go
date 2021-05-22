@@ -20,9 +20,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/helpers"
-	"github.com/iris-gateway/eps/http"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/helpers"
+	"github.com/iris-connect/eps/http"
 	"regexp"
 	"strings"
 )

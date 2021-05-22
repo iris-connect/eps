@@ -18,7 +18,7 @@ package http
 
 import (
 	"encoding/json"
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps"
 	"net/http"
 )
 

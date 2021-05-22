@@ -17,10 +17,10 @@
 package channels_test
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/channels"
-	th "github.com/iris-gateway/eps/testing"
-	"github.com/iris-gateway/eps/testing/fixtures"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/channels"
+	th "github.com/iris-connect/eps/testing"
+	"github.com/iris-connect/eps/testing/fixtures"
 	"testing"
 )
 

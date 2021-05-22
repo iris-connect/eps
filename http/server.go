@@ -19,8 +19,8 @@ package http
 import (
 	"context"
 	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/tls"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/tls"
 	"net/http"
 	"regexp"
 	"strings"

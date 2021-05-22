@@ -17,9 +17,9 @@
 package main
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/sd"
-	"github.com/iris-gateway/eps/sd/helpers"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/sd"
+	"github.com/iris-connect/eps/sd/helpers"
 	"github.com/urfave/cli"
 	"os"
 	"os/signal"

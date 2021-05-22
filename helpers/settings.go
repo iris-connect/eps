@@ -21,8 +21,8 @@
 package helpers
 
 import (
-	"github.com/iris-gateway/eps"
-	epsForms "github.com/iris-gateway/eps/forms"
+	"github.com/iris-connect/eps"
+	epsForms "github.com/iris-connect/eps/forms"
 	"github.com/kiprotect/go-helpers/forms"
 	"github.com/kiprotect/go-helpers/settings"
 	"os"
