@@ -477,7 +477,7 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 			return
 		} else {
 			if result.Error != nil {
-				eps.Log.Error("Error when announcing incoming connection: %v", result.Error.Message)
+				eps.Log.Errorf("Error when announcing incoming connection: %v", result.Error.Message)
 				close()
 				return
 			}
