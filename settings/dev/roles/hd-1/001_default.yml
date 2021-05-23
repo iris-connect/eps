@@ -1,19 +1,19 @@
 name: hd-1
 directory:
 # to use the JSON directory, uncomment this and comment everything below...
-  type: json
-  settings:
-    path: "$DIR/../../directory"
-#  type: api
+#  type: json
 #  settings:
-#    jsonrpc_client:
-#      tls:
-#        certificate_file: "$DIR/../../certs/hd-1.crt"
-#        key_file: "$DIR/../../certs/hd-1.key"
-#        ca_certificate_files: ["$DIR/../../certs/root.crt"]
-#    ca_certificate_files: ["$DIR/../../certs/root.crt"]
-#    endpoints: ["https://localhost:3322/jsonrpc"]
-#    server_names: ["sd-1"]
+#    path: "$DIR/../../directory"
+  type: api
+  settings:
+    jsonrpc_client:
+      tls:
+        certificate_file: "$DIR/../../certs/hd-1.crt"
+        key_file: "$DIR/../../certs/hd-1.key"
+        ca_certificate_files: ["$DIR/../../certs/root.crt"]
+    ca_certificate_files: ["$DIR/../../certs/root.crt"]
+    endpoints: ["https://localhost:3322/jsonrpc"]
+    server_names: ["sd-1"]
 channels: # defines all the channels that we want to open when starting the server
   - name: main JSON-RPC client # creates outgoing JSONRPC connections to deliver and receive messages
     type: jsonrpc_client

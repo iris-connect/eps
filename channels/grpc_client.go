@@ -156,7 +156,10 @@ func MakeGRPCClientChannel(settings interface{}) (eps.Channel, error) {
 func (c *GRPCClientChannel) Open() error {
 	// we start the background task
 	go c.backgroundTask()
-	return c.openConnections()
+	if err := c.openConnections(); err != nil {
+		eps.Log.Error(err)
+	}
+	return nil
 }
 
 func (c *GRPCClientChannel) Close() error {

@@ -50,7 +50,6 @@ func MakeJSONRPCClientChannel(settings interface{}) (eps.Channel, error) {
 }
 
 func (c *JSONRPCClientChannel) Open() error {
-
 	return nil
 }
 

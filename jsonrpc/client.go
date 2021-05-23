@@ -53,7 +53,6 @@ func (c *Client) Call(request *Request) (*Response, error) {
 	client := &http.Client{}
 
 	if c.settings.TLS != nil {
-		eps.Log.Info("Using TLS")
 		tlsConfig, err := tls.TLSClientConfig(c.settings.TLS, c.settings.ServerName)
 		if err != nil {
 			return nil, err
