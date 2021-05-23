@@ -129,7 +129,12 @@ func MakeAPIDirectory(name string, settings interface{}) (eps.Directory, error) 
 		settings:      apiSettings,
 	}
 
-	return d, d.update()
+	// we still allow the services to start even if the API is not reachable...
+	if err := d.update(); err != nil {
+		eps.Log.Error(err)
+	}
+
+	return d, nil
 }
 
 var UpdateForm = forms.Form{
