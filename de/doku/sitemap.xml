@@ -9,10 +9,7 @@
     <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/service-directory</loc>
   </url>
   <url>
-    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/proxy-service/installation</loc>
-  </url>
-  <url>
-    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku</loc>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/service-directory/configuration</loc>
   </url>
   <url>
     <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/eps-service</loc>
@@ -21,15 +18,18 @@
     <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/proxy-service/configuration</loc>
   </url>
   <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/kontakt</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/proxy-service/installation</loc>
+  </url>
+  <url>
+    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku</loc>
+  </url>
+  <url>
     <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/proxy-service</loc>
   </url>
   <url>
     <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/service-directory/installation</loc>
-  </url>
-  <url>
-    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/service-directory/configuration</loc>
-  </url>
-  <url>
-    <loc>https://iris-gateway.github.io/eps/docs/eps/de/doku/kontakt</loc>
   </url>
 </urlset>
