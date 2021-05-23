@@ -20,7 +20,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/eps
           tag_with_ref: true
-          file: Eps.dockerfile
+          dockerfile: Eps.dockerfile
           path: ./docker
       - name: Build and push sd
         uses: docker/build-push-action@v1
@@ -29,7 +29,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/sd
           tag_with_ref: true
-          file: Sd.dockerfile
+          dockerfile: Sd.dockerfile
           path: ./docker
       - name: Build and push proxy
         uses: docker/build-push-action@v1
@@ -38,5 +38,5 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/proxy
           tag_with_ref: true
-          file: Proxy.dockerfile
+          dockerfile: Proxy.dockerfile
           path: ./docker
