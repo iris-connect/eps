@@ -1,7 +1,9 @@
-name: Publish EPS Docker Image
+name: Publish docker images
 
 on:
   push:
+#    tags:
+#      - v*.*.*
     branches: [feature/docker-image]
 
 jobs:
@@ -18,3 +20,4 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PW }}
           repository: inoeg/eps
           tag_with_ref: true
+          path: ./docker/Eps.dockerfile
