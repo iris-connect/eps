@@ -13,20 +13,27 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: Login to DockerHub
-        uses: docker/login-action@v1 
-        with:
-          username: ${{ secrets.DOCKER_HUB_USER }}
-          password: ${{ secrets.DOCKER_HUB_PW }}        
       - name: Build and push eps
         uses: docker/build-push-action@v1
         with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/eps
           tag_with_ref: true
           file: ./docker/Eps.dockerfile
       - name: Build and push sd
         uses: docker/build-push-action@v1
         with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/sd
           tag_with_ref: true
           file: ./docker/Sd.dockerfile
+      - name: Build and push proxy
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PW }}        
+          repository: inoeg/proxy
+          tag_with_ref: true
+          file: ./docker/Proxy.dockerfile
