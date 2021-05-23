@@ -2,9 +2,8 @@ name: Publish docker images
 
 on:
   push:
-#    tags:
-#      - v*.*.*
-    branches: [feature/docker-image]
+    tags:
+      - v*.*.*
 
 jobs:
   push_to_registry:
