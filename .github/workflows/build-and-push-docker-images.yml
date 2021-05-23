@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: Push to docker.io
+      - name: Build and push eps
         uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
@@ -21,3 +21,11 @@ jobs:
           repository: inoeg/eps
           tag_with_ref: true
           file: ./docker/Eps.dockerfile
+      - name: Build and push sd
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PW }}
+          repository: inoeg/sd
+          tag_with_ref: true
+          file: ./docker/Sd.dockerfile
