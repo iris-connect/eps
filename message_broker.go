@@ -101,7 +101,7 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 	// given operator, reject the request if that's not the case.
 
 	for i, channel := range b.channels {
-		Log.Debugf("Checking whether channel %d can deliver message...", i)
+		Log.Debugf("Checking whether channel %d can deliver message with method '%s' to '%s'...", i, address.Method, address.Operator)
 		if !channel.CanDeliverTo(address) {
 			continue
 		}

@@ -90,6 +90,8 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 
 func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 
+	eps.Log.Debugf("Trying to deliver request to connected client '%s'...", c.Info.Name)
+
 	// we need to ensure only one goroutine calls this method at once
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -107,6 +109,7 @@ func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, e
 	}
 
 	if err := c.CallServer.Send(pbRequest); err != nil {
+		eps.Log.Errorf("Cannot deliver request: %v", err)
 		return nil, err
 	}
 
@@ -158,6 +161,7 @@ func (s *Server) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 
 func (s *Server) CanDeliverTo(address *eps.Address) bool {
 	for _, connectedClient := range s.connectedClients {
+		eps.Log.Tracef("Checking client with name '%s'...", connectedClient.Info.Name)
 		if connectedClient.Info.Name == address.Operator {
 			return true
 		}
@@ -259,6 +263,8 @@ func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 		}
 		s.setClient(client)
 	}
+
+	eps.Log.Debugf("Received incoming gRPC connection from client '%s'", clientInfoAuthInfo.ClientInfo.Name)
 
 	client.CallServer = server
 
