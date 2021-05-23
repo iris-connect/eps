@@ -46,6 +46,37 @@ var RecordsForm = forms.Form{
 	},
 }
 
+func getEntries(c *cli.Context, settings *eps.Settings) error {
+
+	directory, err := helpers.InitializeDirectory(settings)
+
+	if err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	query := &eps.DirectoryQuery{}
+	name := c.String("name")
+
+	if name != "" {
+		query.Operator = name
+	}
+
+	entries, err := directory.Entries(query)
+
+	if err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	jsonData, err := json.Marshal(entries)
+
+	if err != nil {
+		eps.Log.Fatal(err)
+	}
+
+	fmt.Println(string(jsonData))
+	return nil
+}
+
 type Records struct {
 	Records []*eps.ChangeRecord `json:"records"`
 }
@@ -305,6 +336,17 @@ func RecordsCommands(settings *eps.Settings) ([]cli.Command, error) {
 			Flags:   []cli.Flag{},
 			Usage:   "Manage service-directory records.",
 			Subcommands: []cli.Command{
+				{
+					Name: "get-entries",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "name",
+							Usage: "the name of the entry to retrieve",
+						},
+					},
+					Usage:  "Get all service diectory entries and print them as JSON",
+					Action: func(c *cli.Context) error { return getEntries(c, settings) },
+				},
 				{
 					Name: "submit-records",
 					Flags: []cli.Flag{
