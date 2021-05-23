@@ -1,5 +1,3 @@
-**This software is still a work in progress and not ready for production use!**
-
 # IRIS Endpoint Server (EPS)
 
 This repository contains the code of the IRIS endpoint server (EPS), which manages the communication between different actors in the IRIS ecosystem. It provides a gRPC server & client to exchange messages between different actors, as well as a JSON-RPC API client & server for interacting with the server locally.
@@ -10,13 +8,13 @@ Please ensure your Golang version is recent enough (>=1.13) before you attempt t
 
 To build the `eps` binary, simply run
 
-```
+```bash
 make
 ```
 
 For testing and development you'll also need TLS certificates, which you can generate with
 
-```
+```bash
 make certs
 ```
 
@@ -26,7 +24,7 @@ Please see below for additional dependencies you might need to install for vario
 
 To build the example services (e.g. the "locations" services `eps-ls`) simply run
 
-```
+```bash
 make examples
 ```
 
@@ -49,21 +47,40 @@ There are also role-specific development/test settings in the `settings/dev/role
 
 **Important: The settings parser includes support for variable replacement and many other things. But with great power comes great responsibility and attack surface, so make sure you only feed trusted YAML input to it, as it is not designed to handle untrusted or potentially malicious settings.**
 
+## Running The Service Directory
+
+All EPS servers rely on the service directory (SD) to discover each other and learn about permissions, certificates and other important settings. For development, you can either use a JSON-based service directory, or run the service directory API like this:
+
+```bash
+SD_SETTINGS=settings/dev/roles/sd-1 sd --level debug run
+```
+
+To initialize the service directory you can upload the JSON-based directory:
+
+```bash
+# for development
+make sd-setup
+# for testing
+make sd-test-setup
+```
+
+This should give you a fully functional API-based service directory with certificate and service information.
+
 ## Running The Server
 
 To run the development EPS server simply run (from the main directory)
 
-```
-eps server run
+```bash
+EPS_SETTINGS=settings/dev/roles/hd-1 eps server run
 ```
 
-For this to work you need to ensure that your `GOPATH` is in your `PATH`. This will open the JSON RPC server and (depending on the settings) also a gRPC server.
+This will run the EPS server for the role `hd-1` (simulating a health department in the system). For this to work you need to ensure that your `GOPATH` is in your `PATH`. This will open the JSON RPC server and (depending on the settings) also a gRPC server.
 
 ## Testing
 
 To run the tests
 
-```
+```bash
 make test # run normal tests
 make test-races # test for race conditions
 ```
@@ -72,7 +89,7 @@ make test-races # test for race conditions
 
 To run the benchmarks
 
-```
+```bash
 make bench
 ```
 
@@ -84,7 +101,7 @@ If you're stuck debugging a problem please have a look at the [debugging guideli
 
 You can generate and update copyright headers as follows
 
-```
+```bash
 make copyright
 ```
 
@@ -98,7 +115,7 @@ Currently this code is licensed under Affero GPL 3.0.
 
 If you make modifications to the protocol buffers (`.proto` files) you need to recompile them using `protoc`. To install this on Debian/Ubuntu systems:
 
-```
+```bash
 sudo apt install protobuf-compiler
 ```
 
@@ -110,8 +127,12 @@ You can easily deploy the server as a service using `systemd` or Docke. Specific
 
 # Feedback
 
-If you have any questions [just contact us](mailto:iris@steiger-stiftung.de).
+If you have any questions [just contact us](mailto:iris@inoeg.de).
 
 # Participation
 
 We are happy about your contribution to the project! In order to ensure compliance with the licensing conditions and the future development of the project, we require a signed contributor license agreement (CLA) for all contributions in accordance with the [Harmony standard](http://selector.harmonyagreements.org). Please sign the corresponding document for [natural persons](.clas/IRIS Gateway-Individual.pdf) or for [organizations](.clas/IRIS Gateway-Entity.pdf) and send it to [us](mailto:iris@steiger-stiftung.de).
+
+## Supporting organizations
+
+- Björn Steiger Stiftung SbR - https://www.steiger-stiftung.de

@@ -7,7 +7,7 @@ vars:
 directory:
   type: json
   settings:
-    path: "$DIR/directory/services.json"
+    path: "$DIR/directory"
 channels: # defines all the channels that we want to open when starting the server
   - name: Stdout channel
     type: stdout
@@ -17,14 +17,14 @@ channels: # defines all the channels that we want to open when starting the serv
     settings:
       bind_address: "localhost:5557"
       tls:
-        ca_certificate_file: "$DIR/certs/root.crt"
+        ca_certificate_files: ["$DIR/certs/root.crt"]
         certificate_file: "$DIR/certs/$OP.crt"
         key_file: "$DIR/certs/$OP.key"
   - name: test gRPC client # creates outgoing gRPC connections to deliver and receive messages
     type: grpc_client
     settings:
       tls:
-        ca_certificate_file: "$DIR/certs/root.crt"
+        ca_certificate_files: ["$DIR/certs/root.crt"]
         certificate_file: "$DIR/certs/$OP.crt"
         key_file: "$DIR/certs/$OP.key"
   - name: main JSON-RPC server # accepts incoming JSONRPC connections to deliver and receive messages
@@ -34,7 +34,7 @@ channels: # defines all the channels that we want to open when starting the serv
       cors:
         allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
       tls:
-        ca_certificate_file: "$DIR/certs/root.crt"
+        ca_certificate_files: ["$DIR/certs/root.crt"]
         certificate_file: "$DIR/certs/$OP.crt"
         key_file: "$DIR/certs/$OP.key"
   - name: main JSON-RPC client # creates outgoing JSONRPC connections to deliver and receive messages

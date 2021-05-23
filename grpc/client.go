@@ -18,21 +18,103 @@ package grpc
 
 import (
 	"context"
+	"crypto/x509"
+	"fmt"
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/helpers"
 	"github.com/iris-gateway/eps/protobuf"
 	"github.com/iris-gateway/eps/tls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/types/known/structpb"
-	"time"
+	"io"
+	"net"
+	"sync"
 )
 
 type Client struct {
+	directory  eps.Directory
 	connection *grpc.ClientConn
+	clientInfo *eps.ClientInfo
 	settings   *GRPCClientSettings
+	mutex      sync.Mutex
+}
+
+type VerifyCredentials struct {
+	credentials.TransportCredentials
+	directory  eps.Directory
+	ClientInfo *eps.ClientInfo
+}
+
+type ClientInfoAuthInfo struct {
+	credentials.AuthInfo
+	ClientInfo *eps.ClientInfo
+}
+
+func (c VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string, clientInfo *eps.ClientInfo) (bool, error) {
+	if entry, err := c.directory.EntryFor(name); err != nil {
+		return false, err
+	} else {
+		clientInfo.Entry = entry
+		// we go through all certificates for the entry
+		for _, directoryCert := range entry.Certificates {
+			// we make sure the certificate is good for encryption
+			if directoryCert.KeyUsage != "encryption" {
+				continue
+			}
+			// we check if this is a valid certificate for this operator
+			if helpers.VerifyFingerprint(cert, directoryCert.Fingerprint) {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+}
+
+func (c VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInfo) (net.Conn, credentials.AuthInfo, error) {
+
+	tlsInfo := authInfo.(credentials.TLSInfo)
+	cert := tlsInfo.State.PeerCertificates[0]
+	name := cert.Subject.CommonName
+
+	if ok, err := c.checkFingerprint(cert, name, c.ClientInfo); err != nil {
+		return conn, authInfo, err
+	} else if !ok {
+		return conn, authInfo, fmt.Errorf("invalid certificate")
+	}
+
+	c.ClientInfo.Name = name
+	clientInfoAuthInfo := &ClientInfoAuthInfo{authInfo, c.ClientInfo}
+
+	return conn, clientInfoAuthInfo, nil
+
+}
+
+func (c VerifyCredentials) ServerHandshake(conn net.Conn) (net.Conn, credentials.AuthInfo, error) {
+	conn, authInfo, err := c.TransportCredentials.ServerHandshake(conn)
+
+	if err != nil {
+		return conn, authInfo, err
+	}
+
+	return c.handshake(conn, authInfo)
+
+}
+
+func (c VerifyCredentials) ClientHandshake(ctx context.Context, endpoint string, conn net.Conn) (net.Conn, credentials.AuthInfo, error) {
+	conn, authInfo, err := c.TransportCredentials.ClientHandshake(ctx, endpoint, conn)
+
+	if err != nil {
+		return conn, authInfo, err
+	}
+
+	return c.handshake(conn, authInfo)
 }
 
 func (c *Client) Connect(address, serverName string) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	var err error
 	var opts []grpc.DialOption
 
@@ -42,7 +124,8 @@ func (c *Client) Connect(address, serverName string) error {
 		return err
 	}
 
-	opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	vc := &VerifyCredentials{directory: c.directory, ClientInfo: &eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}
+	opts = append(opts, grpc.WithTransportCredentials(vc))
 
 	c.connection, err = grpc.Dial(address, opts...)
 
@@ -50,24 +133,124 @@ func (c *Client) Connect(address, serverName string) error {
 		return err
 	}
 
+	c.clientInfo = vc.ClientInfo
+
 	return nil
 
 }
 
 func (c *Client) Close() error {
-	return c.connection.Close()
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	err := c.connection.Close()
+	c.connection = nil
+	c.clientInfo = nil
+	return err
+}
+
+func (c *Client) ServerCall(handler Handler, stop chan bool) error {
+
+	client := protobuf.NewEPSClient(c.connection)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	stream, err := client.ServerCall(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	for {
+
+		done := make(chan bool, 1)
+
+		var pbRequest *protobuf.Request
+		var err error
+
+		go func() {
+			pbRequest, err = stream.Recv()
+			done <- true
+		}()
+
+		select {
+		case <-stop:
+			// we were asked to stop
+			stop <- true
+			return nil
+		case <-done:
+		}
+
+		if err == io.EOF {
+			continue
+		}
+
+		if err != nil {
+			return err
+		}
+
+		request := &eps.Request{
+			ID:     pbRequest.Id,
+			Params: pbRequest.Params.AsMap(),
+			Method: pbRequest.Method,
+		}
+
+		response, err := handler.HandleRequest(request, c.clientInfo)
+
+		pbResponse := &protobuf.Response{
+			Id: pbRequest.Id,
+		}
+
+		if err != nil {
+			pbResponse.Error = &protobuf.Error{
+				Code:    -100,
+				Message: err.Error(),
+			}
+		} else {
+			if response.Result != nil {
+				resultStruct, err := structpb.NewStruct(response.Result)
+				if err != nil {
+					eps.Log.Error(err)
+				}
+				pbResponse.Result = resultStruct
+			}
+			if response.Error != nil {
+				pbResponse.Error = &protobuf.Error{
+					Code:    int32(response.Error.Code),
+					Message: response.Error.Message,
+				}
+
+				if response.Error.Data != nil {
+					errorStruct, err := structpb.NewStruct(response.Error.Data)
+					if err != nil {
+						eps.Log.Error(err)
+					}
+					pbResponse.Error.Data = errorStruct
+				}
+			}
+		}
+
+		if err := stream.Send(pbResponse); err != nil {
+			eps.Log.Error(err)
+		}
+
+	}
+
 }
 
 func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 
 	client := protobuf.NewEPSClient(c.connection)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	paramsStruct, err := structpb.NewStruct(request.Params)
 
 	if err != nil {
+		eps.Log.Error(err)
 		return nil, err
 	}
 
@@ -80,6 +263,7 @@ func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 	pbResponse, err := client.Call(ctx, pbRequest)
 
 	if err != nil {
+		eps.Log.Error(err)
 		return nil, err
 	}
 
@@ -103,10 +287,11 @@ func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 
 }
 
-func MakeClient(settings *GRPCClientSettings) (*Client, error) {
+func MakeClient(settings *GRPCClientSettings, directory eps.Directory) (*Client, error) {
 
 	return &Client{
-		settings: settings,
+		settings:  settings,
+		directory: directory,
 	}, nil
 
 }

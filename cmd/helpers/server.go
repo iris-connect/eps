@@ -71,7 +71,7 @@ func Server(settings *eps.Settings) ([]cli.Command, error) {
 							eps.Log.Fatal(err)
 						}
 
-						broker, err := helpers.InitializeMessageBroker(settings)
+						broker, err := helpers.InitializeMessageBroker(settings, directory)
 
 						if err != nil {
 							eps.Log.Fatal(err)

@@ -20,6 +20,6 @@ import (
 	"github.com/iris-gateway/eps"
 )
 
-func InitializeMessageBroker(settings *eps.Settings) (eps.MessageBroker, error) {
-	return eps.MakeBasicMessageBroker()
+func InitializeMessageBroker(settings *eps.Settings, directory eps.Directory) (eps.MessageBroker, error) {
+	return eps.MakeBasicMessageBroker(directory)
 }

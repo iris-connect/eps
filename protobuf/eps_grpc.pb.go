@@ -32,12 +32,10 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EPSClient interface {
-	// synchronous method calls
+	// client sends a request to the server and receives a response
 	Call(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
-	// async RPCs
-	AsyncUpstream(ctx context.Context, opts ...grpc.CallOption) (EPS_AsyncUpstreamClient, error)
-	// async reverse RPCs
-	AsyncDownstream(ctx context.Context, opts ...grpc.CallOption) (EPS_AsyncDownstreamClient, error)
+	// client sends a response to the server and receives an acknowledgment
+	ServerCall(ctx context.Context, opts ...grpc.CallOption) (EPS_ServerCallClient, error)
 }
 
 type ePSClient struct {
@@ -57,61 +55,30 @@ func (c *ePSClient) Call(ctx context.Context, in *Request, opts ...grpc.CallOpti
 	return out, nil
 }
 
-func (c *ePSClient) AsyncUpstream(ctx context.Context, opts ...grpc.CallOption) (EPS_AsyncUpstreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &EPS_ServiceDesc.Streams[0], "/EPS/AsyncUpstream", opts...)
+func (c *ePSClient) ServerCall(ctx context.Context, opts ...grpc.CallOption) (EPS_ServerCallClient, error) {
+	stream, err := c.cc.NewStream(ctx, &EPS_ServiceDesc.Streams[0], "/EPS/ServerCall", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &ePSAsyncUpstreamClient{stream}
+	x := &ePSServerCallClient{stream}
 	return x, nil
 }
 
-type EPS_AsyncUpstreamClient interface {
-	Send(*Request) error
-	Recv() (*Response, error)
-	grpc.ClientStream
-}
-
-type ePSAsyncUpstreamClient struct {
-	grpc.ClientStream
-}
-
-func (x *ePSAsyncUpstreamClient) Send(m *Request) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *ePSAsyncUpstreamClient) Recv() (*Response, error) {
-	m := new(Response)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *ePSClient) AsyncDownstream(ctx context.Context, opts ...grpc.CallOption) (EPS_AsyncDownstreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &EPS_ServiceDesc.Streams[1], "/EPS/AsyncDownstream", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &ePSAsyncDownstreamClient{stream}
-	return x, nil
-}
-
-type EPS_AsyncDownstreamClient interface {
+type EPS_ServerCallClient interface {
 	Send(*Response) error
 	Recv() (*Request, error)
 	grpc.ClientStream
 }
 
-type ePSAsyncDownstreamClient struct {
+type ePSServerCallClient struct {
 	grpc.ClientStream
 }
 
-func (x *ePSAsyncDownstreamClient) Send(m *Response) error {
+func (x *ePSServerCallClient) Send(m *Response) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *ePSAsyncDownstreamClient) Recv() (*Request, error) {
+func (x *ePSServerCallClient) Recv() (*Request, error) {
 	m := new(Request)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -123,12 +90,10 @@ func (x *ePSAsyncDownstreamClient) Recv() (*Request, error) {
 // All implementations must embed UnimplementedEPSServer
 // for forward compatibility
 type EPSServer interface {
-	// synchronous method calls
+	// client sends a request to the server and receives a response
 	Call(context.Context, *Request) (*Response, error)
-	// async RPCs
-	AsyncUpstream(EPS_AsyncUpstreamServer) error
-	// async reverse RPCs
-	AsyncDownstream(EPS_AsyncDownstreamServer) error
+	// client sends a response to the server and receives an acknowledgment
+	ServerCall(EPS_ServerCallServer) error
 	mustEmbedUnimplementedEPSServer()
 }
 
@@ -139,11 +104,8 @@ type UnimplementedEPSServer struct {
 func (UnimplementedEPSServer) Call(context.Context, *Request) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Call not implemented")
 }
-func (UnimplementedEPSServer) AsyncUpstream(EPS_AsyncUpstreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method AsyncUpstream not implemented")
-}
-func (UnimplementedEPSServer) AsyncDownstream(EPS_AsyncDownstreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method AsyncDownstream not implemented")
+func (UnimplementedEPSServer) ServerCall(EPS_ServerCallServer) error {
+	return status.Errorf(codes.Unimplemented, "method ServerCall not implemented")
 }
 func (UnimplementedEPSServer) mustEmbedUnimplementedEPSServer() {}
 
@@ -176,51 +138,25 @@ func _EPS_Call_Handler(srv interface{}, ctx context.Context, dec func(interface{
 	return interceptor(ctx, in, info, handler)
 }
 
-func _EPS_AsyncUpstream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(EPSServer).AsyncUpstream(&ePSAsyncUpstreamServer{stream})
+func _EPS_ServerCall_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(EPSServer).ServerCall(&ePSServerCallServer{stream})
 }
 
-type EPS_AsyncUpstreamServer interface {
-	Send(*Response) error
-	Recv() (*Request, error)
-	grpc.ServerStream
-}
-
-type ePSAsyncUpstreamServer struct {
-	grpc.ServerStream
-}
-
-func (x *ePSAsyncUpstreamServer) Send(m *Response) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *ePSAsyncUpstreamServer) Recv() (*Request, error) {
-	m := new(Request)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func _EPS_AsyncDownstream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(EPSServer).AsyncDownstream(&ePSAsyncDownstreamServer{stream})
-}
-
-type EPS_AsyncDownstreamServer interface {
+type EPS_ServerCallServer interface {
 	Send(*Request) error
 	Recv() (*Response, error)
 	grpc.ServerStream
 }
 
-type ePSAsyncDownstreamServer struct {
+type ePSServerCallServer struct {
 	grpc.ServerStream
 }
 
-func (x *ePSAsyncDownstreamServer) Send(m *Request) error {
+func (x *ePSServerCallServer) Send(m *Request) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *ePSAsyncDownstreamServer) Recv() (*Response, error) {
+func (x *ePSServerCallServer) Recv() (*Response, error) {
 	m := new(Response)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -242,14 +178,8 @@ var EPS_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "AsyncUpstream",
-			Handler:       _EPS_AsyncUpstream_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "AsyncDownstream",
-			Handler:       _EPS_AsyncDownstream_Handler,
+			StreamName:    "ServerCall",
+			Handler:       _EPS_ServerCall_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

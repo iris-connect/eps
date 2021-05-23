@@ -1,0 +1,23 @@
+name: eps-docs
+url: http://localhost:8111
+path: /
+static-path: docs/static
+pygments:
+  style: tango
+  class: codehilite
+languages:
+  #these pages will be copied to all languages
+  $all:
+    pages:
+      - src: common/404.html
+        hidden: true
+        footer: false
+        attrs:
+          sitemap: false
+        title: 404
+        slug: '404'
+        name: '404'
+translations:
+  $include: translations/index.yml
+context:
+  env: development

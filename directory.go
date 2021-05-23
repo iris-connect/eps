@@ -16,7 +16,9 @@
 
 package eps
 
-import ()
+import (
+	"time"
+)
 
 type DirectoryDefinition struct {
 	Name              string            `json:"name"`
@@ -25,14 +27,131 @@ type DirectoryDefinition struct {
 	SettingsValidator SettingsValidator `json:"-"`
 }
 
+func MakeDirectoryEntry() *DirectoryEntry {
+	return &DirectoryEntry{
+		Groups:       []string{},
+		Channels:     []*OperatorChannel{},
+		Services:     []*OperatorService{},
+		Certificates: []*OperatorCertificate{},
+		Settings:     []*OperatorSettings{},
+		Records:      []*SignedChangeRecord{},
+	}
+}
+
 type DirectoryEntry struct {
-	Name     string             `json:"name"`
-	Channels []*OperatorChannel `json:"channels"`
+	Name         string                 `json:"name"`
+	Groups       []string               `json:"groups"`
+	Channels     []*OperatorChannel     `json:"channels"`
+	Services     []*OperatorService     `json:"services"`
+	Certificates []*OperatorCertificate `json:"certificates"`
+	Settings     []*OperatorSettings    `json:"settings"`
+	Preferences  []*OperatorPreferences `json:"preferences"`
+	Records      []*SignedChangeRecord  `json:"records"`
+}
+
+// preferences may be set by the corresponding operator itself
+type OperatorPreferences struct {
+	Operator    string                 `json:"operator"`
+	Service     string                 `json:"service"`
+	Environment string                 `json:"environment"`
+	Preferences map[string]interface{} `json:"preferences"`
+}
+
+// settings may only be set by a directory admin
+type OperatorSettings struct {
+	Operator    string                 `json:"operator"`
+	Service     string                 `json:"service"`
+	Environment string                 `json:"environment"`
+	Settings    map[string]interface{} `json:"settings"`
 }
 
 type OperatorChannel struct {
 	Type     string                 `json:"type"`
-	Settings map[string]interface{} `json:"settings,omitempty"`
+	Settings map[string]interface{} `json:"settings"`
+}
+
+type OperatorCertificate struct {
+	Fingerprint string `json:"fingerprint"`
+	KeyUsage    string `json:"key_usage"`
+}
+
+type OperatorService struct {
+	Name        string           `json:"name"`
+	Permissions []*Permission    `json:"permissions"`
+	Methods     []*ServiceMethod `json:"methods"`
+}
+
+type ServiceMethod struct {
+	Name        string              `json:"name"`
+	Permissions []*Permission       `json:"permissions"`
+	Parameters  []*ServiceParameter `json:"parameters"`
+}
+
+type Permission struct {
+	Group  string   `json:"group"`
+	Rights []string `json:"rights"`
+}
+
+type ServiceParameter struct {
+	Name       string              `json:"name"`
+	Validators []*ServiceValidator `json:"validators"`
+}
+
+type ServiceValidator struct {
+	Type       string                 `json:"type"`
+	Parameters map[string]interface{} `json:"parameters"`
+}
+
+type SignedChangeRecord struct {
+	ParentHash string        `json:"parent_hash"`
+	Hash       string        `json:"hash"`
+	Signature  *Signature    `json:"signature"`
+	Record     *ChangeRecord `json:"record"`
+}
+
+type Signature struct {
+	R           string `json:"r"`
+	S           string `json:"s"`
+	Certificate string `json:"c"`
+}
+
+type SignedData struct {
+	Signature *Signature  `json:"signature"`
+	Data      interface{} `json:"data"`
+}
+
+// describes a change in a specific section of the service directory
+type ChangeRecord struct {
+	Name      string       `json:"name"`
+	Section   string       `json:"section"`
+	Data      interface{}  `json:"data"`
+	CreatedAt HashableTime `json:"created_at"`
+}
+
+type HashableTime struct {
+	time.Time
+}
+
+func (h HashableTime) HashValue() interface{} {
+	return h.Time.Format(time.RFC3339)
+}
+
+func (d *DirectoryEntry) Channel(channelType string) *OperatorChannel {
+	for _, channel := range d.Channels {
+		if channel.Type == channelType {
+			return channel
+		}
+	}
+	return nil
+}
+
+func (d *DirectoryEntry) SettingsFor(service, operator string) *OperatorSettings {
+	for _, settings := range d.Settings {
+		if (settings.Service == service || settings.Service == "") && (settings.Operator == operator || settings.Operator == "") {
+			return settings
+		}
+	}
+	return nil
 }
 
 type DirectoryQuery struct {
@@ -47,8 +166,16 @@ type DirectoryMaker func(name string, settings interface{}) (Directory, error)
 // A directory can deliver and accept message
 type Directory interface {
 	Entries(*DirectoryQuery) ([]*DirectoryEntry, error)
+	EntryFor(string) (*DirectoryEntry, error)
 	OwnEntry() (*DirectoryEntry, error)
 	Name() string
+}
+
+type WritableDirectory interface {
+	Directory
+	// required for submitting change records
+	Tip() (*SignedChangeRecord, error)
+	Submit([]*SignedChangeRecord) error
 }
 
 type BaseDirectory struct {
@@ -82,6 +209,8 @@ func FilterDirectoryEntriesByQuery(entries []*DirectoryEntry, query *DirectoryQu
 					break
 				}
 			}
+		} else {
+			found = true
 		}
 		if !found {
 			continue

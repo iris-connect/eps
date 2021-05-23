@@ -1,0 +1,12 @@
+jsonrpc_server: # the JSON-RPC server that the EPS server uses for communication
+  bind_address: "localhost:3322"
+  cors:
+    allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
+  tls:
+    ca_certificate_files: ["$DIR/../../certs/root.crt"]
+    certificate_file: "$DIR/../../certs/sd-1.crt"
+    key_file: "$DIR/../../certs/sd-1.key"
+directory:
+  database_file: /tmp/service-directory.records
+  ca_certificate_files: ["$DIR/../../certs/root.crt"]
+  

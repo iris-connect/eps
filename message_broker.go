@@ -18,51 +18,28 @@ package eps
 
 import (
 	"fmt"
+	"sync"
 )
 
-/*
-Message flow through the system:
-
-- We initialize a message broker and a message store
-- Messages are passed through channels
-- A message can e.g. come into the broker via the `Deliver` method.
-- Depending on the message type (synchronous, asynchronous) the `Deliver` call
-  will directly return a message response or just put the message into the system.
-- When receiving a message, the broker goes through all the channels and asks them
-  if they can handle the message. If a channel replies with yes, it asks it
-  whether it can deliver the message now. If yes, it calls the `Deliver` function
-  of the channel. Otherwise, if the message is synchronous it returns an error.
-  If the message is asynchronous, it stores it in the MessageStore and schedules
-  it for redelivery later.
-*/
-
 type MessageBroker interface {
-	MessageStore() MessageStore
-	SetMessageStore(MessageStore) error
 	AddChannel(Channel) error
 	Channels() []Channel
-	DeliverRequest(*Request) (*Response, error)
-	DeliverResponse(*Response) error
+	DeliverRequest(*Request, *ClientInfo) (*Response, error)
 }
 
 type BasicMessageBroker struct {
-	messageStore MessageStore
-	channels     []Channel
+	channels          []Channel
+	directory         Directory
+	mutex             sync.Mutex
+	requestsInTransit map[string]bool
 }
 
-func MakeBasicMessageBroker() (*BasicMessageBroker, error) {
+func MakeBasicMessageBroker(directory Directory) (*BasicMessageBroker, error) {
 	return &BasicMessageBroker{
-		channels: make([]Channel, 0),
+		channels:          make([]Channel, 0),
+		requestsInTransit: make(map[string]bool),
+		directory:         directory,
 	}, nil
-}
-
-func (b *BasicMessageBroker) MessageStore() MessageStore {
-	return b.messageStore
-}
-
-func (b *BasicMessageBroker) SetMessageStore(messageStore MessageStore) error {
-	b.messageStore = messageStore
-	return nil
 }
 
 func (b *BasicMessageBroker) AddChannel(channel Channel) error {
@@ -75,7 +52,42 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 	return nil
 }
 
-func (b *BasicMessageBroker) DeliverRequest(request *Request) (*Response, error) {
+func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *ClientInfo) (*Response, error) {
+
+	b.mutex.Lock()
+
+	if inTransit, ok := b.requestsInTransit[request.ID]; ok && inTransit {
+		b.mutex.Unlock()
+		return nil, fmt.Errorf("request %s is already being processed (maybe a delivery loop)", request.ID)
+	} else {
+		b.requestsInTransit[request.ID] = true
+		defer func() {
+			b.mutex.Lock()
+			delete(b.requestsInTransit, request.ID)
+			b.mutex.Unlock()
+		}()
+	}
+
+	b.mutex.Unlock()
+
+	Log.Debug("Checking request details...")
+
+	// we always add the client information to the request (if it exists)
+	if request.Params != nil && clientInfo != nil {
+
+		// we always update the directory entry of the client info struct
+		if entry, err := b.directory.EntryFor(clientInfo.Name); err != nil {
+			return nil, err
+		} else {
+			clientInfo.Entry = entry
+		}
+
+		if clientInfoStruct, err := clientInfo.AsStruct(); err != nil {
+			return nil, err
+		} else {
+			request.Params["_client"] = clientInfoStruct
+		}
+	}
 
 	address, err := GetAddress(request.ID)
 
@@ -83,17 +95,28 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request) (*Response, error)
 		return nil, err
 	}
 
-	for _, channel := range b.channels {
+	Log.Debug("Checking channels...")
+
+	// To do: Check if a client can actually call the service method of the
+	// given operator, reject the request if that's not the case.
+
+	for i, channel := range b.channels {
+		Log.Debugf("Checking whether channel %d can deliver message with method '%s' to '%s'...", i, address.Method, address.Operator)
 		if !channel.CanDeliverTo(address) {
 			continue
 		}
-		return channel.DeliverRequest(request)
+		Log.Debug("Trying to deliver message...")
+		if response, err := channel.DeliverRequest(request); err != nil {
+			Log.Errorf("Channel %d encountered an error delivering message", i)
+			continue
+		} else {
+			return response, nil
+		}
 	}
-	return nil, fmt.Errorf("no channel can deliver this request")
-}
 
-func (b *BasicMessageBroker) DeliverResponse(*Response) error {
-	return nil
+	Log.Debug("Done checking channels...")
+
+	return nil, fmt.Errorf("no channel can deliver this request")
 }
 
 func (b *BasicMessageBroker) Channels() []Channel {

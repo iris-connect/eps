@@ -26,4 +26,8 @@ var Commands = eps.CommandsDefinitions{
 		Name:  "server",
 		Maker: helpers.Server,
 	},
+	eps.CommandsDefinition{
+		Name:  "records",
+		Maker: helpers.RecordsCommands,
+	},
 }

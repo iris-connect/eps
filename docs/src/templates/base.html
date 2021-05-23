@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html {%if lang %}lang="{{lang}}"{%endif%}>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  {%if author %}<meta name="author" content="{{author}}">{% endif %}
+  {%if keywords %}<meta name="keywords" content="{{keywords|join(',')}}">{% endif %}
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{'hp.site-title'|translate}}{% if title is defined %} | {{title}}{%endif%}</title>
+  <link rel="stylesheet" type="text/css" href="{{'css/main.css'|file}}">
+  <script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    },
+    svg: {
+      fontCache: 'global'
+    }
+  };
+  </script>
+  <script src="{{'js/mathjax/tex-chtml.js'|file}}" id="MathJax-script" async></script>
+  {%filter highlight_styles%}{%endfilter%}
+  {% block head %}{% endblock head %}
+</head>
+<body>
+
+  {% include "_translation_notice.html" %}
+
+  <nav class="navbar is-dark">
+    <div class="navbar-brand">
+      {#
+      <a class="navbar-item" href="{{''|href}}">
+        <img style="max-height: 20px" src="{{'images/logos/logo.png'|file}}" />
+      </a>
+      #}
+      <span class="navbar-burger burger" data-target="side-menu" data-toggle="collapse">
+        <span>&nbsp;</span>
+        <span>&nbsp;</span>
+        <span>&nbsp;</span>
+      </span>
+    </div>
+
+  </nav>
+
+  <div class="main">
+    {% block mobile_side_menu %}    
+    <div class="side-menu" id="side-menu" data-toggle-class="is-active">
+      <aside class="menu">
+        <p class="menu-label" style="text-align:center">
+            <a href="{{''|href}}">
+              {{'hp.site-title'|translate}}
+              {#
+              <img style="max-height: 120px" src="{{'images/logos/logo.png'|file}}" />
+              #}
+            </a>
+        </p>
+        {% block extra_nav %}{% endblock %}
+        {% include "_side_menu.html" %}
+      </aside>
+    </div>
+    {% endblock %}
+    {% block main %}
+      <section class="section first {%block section_class%}{%endblock%}">
+        {% block content %}{% endblock %}
+      </section>
+    {% endblock %}
+  </div>
+  <script defer type="text/javascript" src="{{'js/bulma.js'|file}}"></script>
+</body>
+</html>

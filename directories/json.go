@@ -14,15 +14,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// The JSON directory loads the service directory from a single JSON file.
+// This is just for testing, for production use please use the "file" directory
+// which provides support for signed service directory records.
+
 package directories
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/iris-gateway/eps"
+	epsForms "github.com/iris-gateway/eps/forms"
+	"github.com/iris-gateway/eps/helpers"
 	"github.com/kiprotect/go-helpers/forms"
 	"io/ioutil"
 	"os"
+	"path"
+	"regexp"
+	"sync"
 )
 
 var JSONDirectorySettingsForm = forms.Form{
@@ -36,59 +45,15 @@ var JSONDirectorySettingsForm = forms.Form{
 	},
 }
 
-var JSONOperatorChannelForm = forms.Form{
+var JSONRecordsForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "type",
-			Validators: []forms.Validator{
-				forms.IsString{},
-				// we do not validate the channel type because it can contain
-				// channel types that are not implemented by the local server
-				// which does not mean that they can't exist though...
-			},
-		},
-		{
-			Name: "settings",
-			Validators: []forms.Validator{
-				forms.IsOptional{},
-				forms.IsStringMap{},
-			},
-		},
-	},
-}
-
-var JSONDirectoryEntryForm = forms.Form{
-	Fields: []forms.Field{
-		{
-			Name: "name",
-			Validators: []forms.Validator{
-				forms.IsString{},
-			},
-		},
-		{
-			Name: "channels",
+			Name: "records",
 			Validators: []forms.Validator{
 				forms.IsList{
 					Validators: []forms.Validator{
 						forms.IsStringMap{
-							Form: &JSONOperatorChannelForm,
-						},
-					},
-				},
-			},
-		},
-	},
-}
-
-var JSONDirectoryForm = forms.Form{
-	Fields: []forms.Field{
-		{
-			Name: "entries",
-			Validators: []forms.Validator{
-				forms.IsList{
-					Validators: []forms.Validator{
-						forms.IsStringMap{
-							Form: &JSONDirectoryEntryForm,
+							Form: &epsForms.ChangeRecordForm,
 						},
 					},
 				},
@@ -101,10 +66,16 @@ type JSONDirectorySettings struct {
 	Path string `json:"path"`
 }
 
+type Records struct {
+	Records []*eps.ChangeRecord `json:"records"`
+}
+
 type JSONDirectory struct {
 	eps.BaseDirectory
-	Settings  JSONDirectorySettings
-	Directory *Directory
+	mutex    sync.Mutex
+	settings JSONDirectorySettings
+	records  []*eps.ChangeRecord
+	entries  map[string]*eps.DirectoryEntry
 }
 
 func JSONDirectorySettingsValidator(settings map[string]interface{}) (interface{}, error) {
@@ -112,7 +83,7 @@ func JSONDirectorySettingsValidator(settings map[string]interface{}) (interface{
 		return nil, err
 	} else {
 		validatedSettings := &JSONDirectorySettings{}
-		if err := JSONDirectoryForm.Coerce(validatedSettings, params); err != nil {
+		if err := JSONDirectorySettingsForm.Coerce(validatedSettings, params); err != nil {
 			return nil, err
 		}
 		return validatedSettings, nil
@@ -124,28 +95,57 @@ func MakeJSONDirectory(name string, settings interface{}) (eps.Directory, error)
 		BaseDirectory: eps.BaseDirectory{
 			Name_: name,
 		},
-		Settings: settings.(JSONDirectorySettings),
+		settings: settings.(JSONDirectorySettings),
 	}
 
 	return d, d.load()
 }
 
 func (f *JSONDirectory) load() error {
-	if directory, err := LoadJSONDirectory(f.Settings.Path); err != nil {
+	if records, err := loadRecords(f.settings.Path); err != nil {
 		return err
 	} else {
-		eps.Log.Debugf("Loaded %d directory entries...", len(directory.Entries))
-		f.Directory = directory
+		entries := make(map[string]*eps.DirectoryEntry)
+
+		for _, record := range records {
+			entry, ok := entries[record.Name]
+			if !ok {
+				entry = eps.MakeDirectoryEntry()
+				entry.Name = record.Name
+			}
+			if err := helpers.IntegrateChangeRecord(&eps.SignedChangeRecord{Record: record}, entry); err != nil {
+				return err
+			}
+			entries[record.Name] = entry
+		}
+
+		f.entries = entries
+		f.records = records
+
+		eps.Log.Debugf("Loaded %d directory entries from %d records...", len(f.entries), len(f.records))
 		return nil
 	}
 }
 
 func (f *JSONDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntry, error) {
-	return eps.FilterDirectoryEntriesByQuery(f.Directory.Entries, query), nil
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if err := f.load(); err != nil {
+		return nil, err
+	}
+
+	entries := make([]*eps.DirectoryEntry, 0)
+
+	for _, entry := range f.entries {
+		entries = append(entries, entry)
+	}
+
+	return eps.FilterDirectoryEntriesByQuery(entries, query), nil
 }
 
-func (f *JSONDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
-	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: f.Name()}); err != nil {
+func (f *JSONDirectory) EntryFor(name string) (*eps.DirectoryEntry, error) {
+	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: name}); err != nil {
 		return nil, err
 	} else if len(entries) == 0 {
 		return nil, fmt.Errorf("no entry for myself")
@@ -154,32 +154,68 @@ func (f *JSONDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
 	}
 }
 
-type Directory struct {
-	Entries eps.DirectoryEntries `json:"entries"`
+func (f *JSONDirectory) OwnEntry() (*eps.DirectoryEntry, error) {
+	return f.EntryFor(f.Name())
 }
 
-func LoadJSONDirectory(path string) (*Directory, error) {
-	if file, err := os.Open(path); err != nil {
+func getRecordsFiles(recordsPath string) []string {
+	paths := make([]string, 0)
+	files, err := ioutil.ReadDir(recordsPath)
+	if err != nil {
+		return paths
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		r, err := regexp.MatchString(".json", file.Name())
+		if err == nil && r {
+			paths = append(paths, path.Join(recordsPath, file.Name()))
+		}
+	}
+	return paths
+}
+
+func loadRecords(recordsPath string) ([]*eps.ChangeRecord, error) {
+
+	fi, err := os.Stat(recordsPath)
+	if err != nil {
 		return nil, err
+	}
+	var recordsFiles []string
+	if fi.Mode().IsDir() {
+		recordsFiles = getRecordsFiles(recordsPath)
 	} else {
-		defer file.Close()
-		if data, err := ioutil.ReadAll(file); err != nil {
+		recordsFiles = []string{recordsPath}
+	}
+
+	allRecords := make([]*eps.ChangeRecord, 0)
+
+	for _, recordsFile := range recordsFiles {
+		eps.Log.Debugf("Adding records from %v...", recordsFile)
+		if file, err := os.Open(recordsFile); err != nil {
 			return nil, err
 		} else {
-			rawDirectory := map[string]interface{}{}
-			if err := json.Unmarshal(data, &rawDirectory); err != nil {
-				return nil, err
-			} else if params, err := JSONDirectoryForm.Validate(rawDirectory); err != nil {
+			defer file.Close()
+			if data, err := ioutil.ReadAll(file); err != nil {
 				return nil, err
 			} else {
-				directory := &Directory{}
-				if err := forms.Coerce(directory, params); err != nil {
-					// this should not happen if the forms are correct...
+				rawRecords := map[string]interface{}{}
+				if err := json.Unmarshal(data, &rawRecords); err != nil {
 					return nil, err
+				} else if params, err := JSONRecordsForm.Validate(rawRecords); err != nil {
+					return nil, err
+				} else {
+					records := &Records{}
+					if err := forms.Coerce(records, params); err != nil {
+						// this should not happen if the forms are correct...
+						return nil, err
+					}
+					// records are valid
+					allRecords = append(allRecords, records.Records...)
 				}
-				// directory is validate
-				return directory, nil
 			}
 		}
 	}
+	return allRecords, nil
 }

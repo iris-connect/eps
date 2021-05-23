@@ -1,0 +1,18 @@
+private:
+  name: private-proxy-1
+  database_file: /tmp/private-proxy-announcements.db
+  jsonrpc_client:
+    endpoint: https://localhost:7766/jsonrpc
+    server_name: private-proxy-1
+    tls:
+      ca_certificate_files: ["$DIR/../../certs/root.crt"]
+      certificate_file: "$DIR/../../certs/private-proxy-1.crt"
+      key_file: "$DIR/../../certs/private-proxy-1.key"
+  jsonrpc_server: # the JSON-RPC server that the EPS server uses for communication
+    bind_address: "localhost:8877"
+    cors:
+      allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
+    #tls:
+    #  ca_certificate_files: ["$DIR/../../certs/root.crt"]
+    #  certificate_file: "$DIR/../../certs/private-proxy-1.crt"
+    #  key_file: "$DIR/../../certs/private-proxy-1.key"

@@ -28,7 +28,15 @@ type DirectorySettings struct {
 	Settings interface{} `json:"settings"`
 }
 
+type SigningSettings struct {
+	Name              string `json:"name"`
+	CACertificateFile string `json:"ca_certificate_file"`
+	CertificateFile   string `json:"certificate_file"`
+	KeyFile           string `json:"key_file"`
+}
+
 type Settings struct {
+	Signing     *SigningSettings   `json:"signing"`
 	Definitions *Definitions       `json:"definitions"`
 	Channels    []*ChannelSettings `json:"channels"`
 	Directory   *DirectorySettings `json:"directory"`

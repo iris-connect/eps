@@ -1,0 +1,9 @@
+{
+	"name": "sd-1",
+	"section": "channels",
+	"data": [
+		{
+			"type": "grpc_client"
+		}
+	]
+}

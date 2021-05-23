@@ -19,18 +19,28 @@ package jsonrpc
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/tls"
 	"io/ioutil"
 	"net/http"
 )
 
 type Client struct {
-	endpoint string
+	settings *JSONRPCClientSettings
 }
 
-func MakeClient(endpoint string) *Client {
+func MakeClient(settings *JSONRPCClientSettings) *Client {
 	return &Client{
-		endpoint: endpoint,
+		settings: settings,
 	}
+}
+
+func (c *Client) SetServerName(serverName string) {
+	c.settings.ServerName = serverName
+}
+
+func (c *Client) SetEndpoint(endpoint string) {
+	c.settings.Endpoint = endpoint
 }
 
 func (c *Client) Call(request *Request) (*Response, error) {
@@ -42,7 +52,21 @@ func (c *Client) Call(request *Request) (*Response, error) {
 
 	client := &http.Client{}
 
-	req, err := http.NewRequest("POST", c.endpoint, bytes.NewReader(data))
+	if c.settings.TLS != nil {
+		tlsConfig, err := tls.TLSClientConfig(c.settings.TLS, c.settings.ServerName)
+		if err != nil {
+			return nil, err
+		}
+		client.Transport = &http.Transport{
+			DisableKeepAlives: true, // removing this will cause connections to pile up
+			//MaxIdleConnsPerHost: 100,
+			TLSClientConfig: tlsConfig,
+		}
+	}
+
+	eps.Log.Infof("Generating request to endpoint %s...", c.settings.Endpoint)
+
+	req, err := http.NewRequest("POST", c.settings.Endpoint, bytes.NewReader(data))
 
 	if err != nil {
 		return nil, err
@@ -57,9 +81,12 @@ func (c *Client) Call(request *Request) (*Response, error) {
 		return nil, err
 	}
 
+	eps.Log.Info("Done with request...")
+
 	// to do: sanity checks...
 
 	body, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
 
 	if err != nil {
 		return nil, err

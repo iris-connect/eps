@@ -33,7 +33,13 @@ func (c MessageBroker) Setup(fixtures map[string]interface{}) (interface{}, erro
 		return nil, fmt.Errorf("settings missing")
 	}
 
-	return helpers.InitializeMessageBroker(settings)
+	directory, ok := fixtures["directory"].(eps.Directory)
+
+	if !ok {
+		return nil, fmt.Errorf("directory missing")
+	}
+
+	return helpers.InitializeMessageBroker(settings, directory)
 }
 
 func (c MessageBroker) Teardown(fixture interface{}) error {

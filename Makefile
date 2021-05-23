@@ -46,6 +46,12 @@ certs:
 	(cd settings/dev/certs; ../../../.scripts/make_certs.sh)
 	(cd settings/test/certs; ../../../.scripts/make_certs.sh)
 
+sd-setup:
+	.scripts/sd_setup.sh settings/dev/directory
+
+sd-test-setup:
+	.scripts/sd_setup.sh settings/test/directory
+
 examples:
 	@go build $(GOFLAGS) -tags examples ./...
 	@go install $(GOFLAGS) -tags examples ./...

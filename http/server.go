@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/iris-gateway/eps"
+	"github.com/iris-gateway/eps/tls"
 	"net/http"
 	"regexp"
 	"strings"
@@ -116,6 +117,9 @@ func handleRouteGroup(context *Context, group *RouteGroup, handlers []Handler) {
 				}
 			}
 		}
+		if context.Aborted {
+			break
+		}
 	}
 
 	for _, subgroup := range group.Subgroups {
@@ -130,7 +134,6 @@ func (s *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request
 	for _, routeGroup := range s.routeGroups {
 		handleRouteGroup(context, routeGroup, []Handler{})
 	}
-
 }
 
 func (s *HTTPServer) Start() error {
@@ -138,6 +141,15 @@ func (s *HTTPServer) Start() error {
 	var listener func() error
 
 	if s.settings.TLS != nil {
+
+		tlsConfig, err := tls.TLSServerConfig(s.settings.TLS)
+
+		if err != nil {
+			return err
+		}
+
+		s.server.TLSConfig = tlsConfig
+
 		listener = func() error {
 			return s.server.ListenAndServeTLS(s.settings.TLS.CertificateFile, s.settings.TLS.KeyFile)
 		}

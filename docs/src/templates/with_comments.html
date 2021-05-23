@@ -1,0 +1,11 @@
+{% extends("base.html") %}
+{% block main %}
+<div class="with-comments">
+    <div class="comments"></div>
+    <section class="section first">
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+    </section>
+</div>
+{% endblock %}

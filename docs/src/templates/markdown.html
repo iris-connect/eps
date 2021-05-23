@@ -1,0 +1,7 @@
+{% extends "with_comments.html" %}
+{% block windowtitle %}{{page.title}}{%endblock%}
+{% block content %}
+    <div class="content markdown">
+        {% block article %}{% endblock %}
+    </div>
+{% endblock %}

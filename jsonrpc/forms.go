@@ -134,6 +134,7 @@ var JSONRPCServerSettingsForm = forms.Form{
 		{
 			Name: "tls",
 			Validators: []forms.Validator{
+				forms.IsOptional{},
 				forms.IsStringMap{
 					Form: &tls.TLSSettingsForm,
 				},
@@ -147,6 +148,14 @@ var JSONRPCClientSettingsForm = forms.Form{
 		{
 			Name: "endpoint",
 			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsString{}, // to do: add URL validation
+			},
+		},
+		{
+			Name: "server_name",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
 				forms.IsString{}, // to do: add URL validation
 			},
 		},
