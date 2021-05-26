@@ -242,10 +242,16 @@ func (c *GRPCClientChannel) openConnections() error {
 		Channels: []string{"grpc_server"},
 	}); err != nil {
 		return err
+	} else if ownEntry, err := c.Directory().OwnEntry(); err != nil {
+		return err
 	} else {
+		// we only connect to entries that can actually call services on this
+		// endpoint (incoming requests only, as outgoing ones go through the
+		// regular client channel and do not require an open connection)
+		peerEntries := eps.GetPeers(ownEntry, entries, true)
 		// we mark all connections as stale
 		c.markConnectionsStale()
-		for _, entry := range entries {
+		for _, entry := range peerEntries {
 			if channel := entry.Channel("grpc_server"); channel == nil {
 				return fmt.Errorf("this should not happen: no grpc_server channel found")
 			} else if settings, err := getEntrySettings(channel.Settings); err != nil {

@@ -70,6 +70,7 @@ func (c *JSONRPCServerChannel) handler(context *jsonrpc.Context) *jsonrpc.Respon
 	}
 
 	if entry, err := c.Directory().OwnEntry(); err != nil {
+		eps.Log.Errorf("Error retrieving own directory entry: %v", err)
 		return context.InternalError()
 	} else {
 		clientInfo.Entry = entry

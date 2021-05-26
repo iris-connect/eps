@@ -186,6 +186,67 @@ func (b *BaseDirectory) Name() string {
 	return b.Name_
 }
 
+// get all groups that may call service methods of this entry
+func GetPeerGroups(entry *DirectoryEntry) []string {
+	groups := map[string]bool{}
+	for _, service := range entry.Services {
+		for _, servicePermission := range service.Permissions {
+			groups[servicePermission.Group] = true
+		}
+		for _, method := range service.Methods {
+			for _, methodPermission := range method.Permissions {
+				groups[methodPermission.Group] = true
+			}
+		}
+	}
+	groupValues := make([]string, 0)
+	for name, _ := range groups {
+		groupValues = append(groupValues, name)
+	}
+	return groupValues
+}
+
+func intersects(a, b []string) bool {
+	am := map[string]bool{}
+	for _, ai := range a {
+		am[ai] = true
+	}
+	for _, bi := range b {
+		if _, ok := am[bi]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// Return all entries that are relevant for the given base entry (i.e. that
+// can call a service on the base entrys' endpoint or can be called by the
+// base entrys' endpoint, respectively)
+func GetPeers(baseEntry *DirectoryEntry, entries []*DirectoryEntry, incomingOnly bool) []*DirectoryEntry {
+	peerEntries := make([]*DirectoryEntry, 0)
+	basePeerGroups := GetPeerGroups(baseEntry)
+	for _, entry := range entries {
+		if entry.Name == baseEntry.Name {
+			continue // this is the same entry
+		}
+		// the peer groups contain all groups that can call services on this entrys' endpoint
+		peerGroups := GetPeerGroups(entry)
+		found := false
+		if !incomingOnly {
+			if intersects(baseEntry.Groups, peerGroups) {
+				// the base entrys' endpoint can call a service on the entrys' endpoint
+				peerEntries = append(peerEntries, entry)
+				found = true
+			}
+		}
+		if !found && intersects(entry.Groups, basePeerGroups) {
+			// the entrys' endpoint can call a service on the base entrys' endpoint
+			peerEntries = append(peerEntries, entry)
+		}
+	}
+	return peerEntries
+}
+
 // helper function that can be used by directory implementations that
 // have a list of local directory entries
 func FilterDirectoryEntriesByQuery(entries []*DirectoryEntry, query *DirectoryQuery) []*DirectoryEntry {
