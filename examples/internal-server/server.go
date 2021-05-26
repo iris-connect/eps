@@ -19,9 +19,9 @@
 package main
 
 import (
-	"github.com/iris-gateway/eps/http"
-	"github.com/iris-gateway/eps/tls"
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps/http"
+	"github.com/iris-connect/eps/tls"
+	"github.com/iris-connect/eps"
 	"os"
 	"os/signal"
 	"syscall"

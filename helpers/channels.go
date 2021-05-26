@@ -18,7 +18,7 @@ package helpers
 
 import (
 	"fmt"
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps"
 )
 
 func GetChannelSettingsAndDefinition(settings *eps.Settings, name string) (*eps.ChannelSettings, *eps.ChannelDefinition, error) {

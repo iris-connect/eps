@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/iris-gateway/eps.git"
+    "url": "git+ssh://git@github.com/iris-connect/eps.git"
   },
   "author": "",
   "license": "Creative Commons Attribution-ShareAlike 2.0 Generic (CC BY-SA 2.0)",
   "bugs": {
-    "url": "https://github.com/iris-gateway/eps/issues"
+    "url": "https://github.com/iris-connect/eps/issues"
   },
-  "homepage": "https://github.com/iris-gateway/eps#README",
+  "homepage": "https://github.com/iris-connect/eps#README",
   "devDependencies": {
     "babel-cli": "^6.18.0",
     "babel-preset-es2015": "^6.24.1",

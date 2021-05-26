@@ -17,7 +17,7 @@
 package jsonrpc
 
 import (
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps"
 )
 
 // we always convert incoming IDs to strings

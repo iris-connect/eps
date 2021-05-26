@@ -17,7 +17,7 @@
 package helpers
 
 import (
-	"github.com/iris-gateway/eps/proxy"
+	"github.com/iris-connect/eps/proxy"
 	"github.com/kiprotect/go-helpers/settings"
 	"os"
 	"strings"

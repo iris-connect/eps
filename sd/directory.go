@@ -20,8 +20,8 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/helpers"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/helpers"
 	"sync"
 	"time"
 )

@@ -17,7 +17,7 @@
 package helpers
 
 import (
-	"github.com/iris-gateway/eps/sd"
+	"github.com/iris-connect/eps/sd"
 	"github.com/kiprotect/go-helpers/settings"
 	"os"
 	"strings"

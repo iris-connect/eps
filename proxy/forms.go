@@ -18,7 +18,7 @@ package proxy
 
 import (
 	"fmt"
-	"github.com/iris-gateway/eps/jsonrpc"
+	"github.com/iris-connect/eps/jsonrpc"
 	"github.com/kiprotect/go-helpers/forms"
 	"time"
 )

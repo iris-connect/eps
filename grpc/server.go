@@ -19,9 +19,9 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/protobuf"
-	"github.com/iris-gateway/eps/tls"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/protobuf"
+	"github.com/iris-connect/eps/tls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"

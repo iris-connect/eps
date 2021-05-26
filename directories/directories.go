@@ -17,7 +17,7 @@
 package directories
 
 import (
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps"
 )
 
 var Directories = eps.DirectoryDefinitions{

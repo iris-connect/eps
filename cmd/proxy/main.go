@@ -17,9 +17,9 @@
 package main
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/proxy"
-	"github.com/iris-gateway/eps/proxy/helpers"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/proxy"
+	"github.com/iris-connect/eps/proxy/helpers"
 	"github.com/urfave/cli"
 	"os"
 	"os/signal"

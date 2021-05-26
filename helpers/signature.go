@@ -26,7 +26,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps"
 	"io/ioutil"
 	"math/big"
 	"net/url"

@@ -17,8 +17,8 @@
 package channels
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/grpc"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/grpc"
 )
 
 type GRPCServerChannel struct {

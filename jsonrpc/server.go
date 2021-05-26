@@ -17,7 +17,7 @@
 package jsonrpc
 
 import (
-	"github.com/iris-gateway/eps/http"
+	"github.com/iris-connect/eps/http"
 )
 
 type Handler func(*Context) *Response
