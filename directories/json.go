@@ -23,9 +23,9 @@ package directories
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/iris-gateway/eps"
-	epsForms "github.com/iris-gateway/eps/forms"
-	"github.com/iris-gateway/eps/helpers"
+	"github.com/iris-connect/eps"
+	epsForms "github.com/iris-connect/eps/forms"
+	"github.com/iris-connect/eps/helpers"
 	"github.com/kiprotect/go-helpers/forms"
 	"io/ioutil"
 	"os"

@@ -39,7 +39,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps"
 	"io"
 	"os"
 	"path/filepath"

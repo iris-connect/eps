@@ -18,8 +18,8 @@ package channels
 
 import (
 	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/jsonrpc"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/jsonrpc"
 )
 
 type JSONRPCServerChannel struct {

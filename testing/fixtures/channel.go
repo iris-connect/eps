@@ -18,8 +18,8 @@ package fixtures
 
 import (
 	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/helpers"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/helpers"
 )
 
 type Channel struct {

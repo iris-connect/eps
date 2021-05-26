@@ -17,7 +17,7 @@
 package helpers
 
 import (
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps"
 )
 
 func InitializeMessageBroker(settings *eps.Settings, directory eps.Directory) (eps.MessageBroker, error) {

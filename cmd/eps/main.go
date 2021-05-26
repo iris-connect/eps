@@ -17,9 +17,9 @@
 package main
 
 import (
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/cmd/helpers"
-	"github.com/iris-gateway/eps/definitions"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/cmd/helpers"
+	"github.com/iris-connect/eps/definitions"
 )
 
 func main() {

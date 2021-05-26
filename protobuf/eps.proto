@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/struct.proto";
-option go_package = "github.com/iris-gateway/eps/protobuf";
+option go_package = "github.com/iris-connect/eps/protobuf";
 
 // A JSON-RPC style request
 message Request {

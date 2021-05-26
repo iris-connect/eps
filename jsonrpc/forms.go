@@ -17,7 +17,7 @@
 package jsonrpc
 
 import (
-	"github.com/iris-gateway/eps/tls"
+	"github.com/iris-connect/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
 )
 

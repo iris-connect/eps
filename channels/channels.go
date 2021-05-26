@@ -17,7 +17,7 @@
 package channels
 
 import (
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps"
 )
 
 var Channels = eps.ChannelDefinitions{

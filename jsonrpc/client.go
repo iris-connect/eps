@@ -19,8 +19,8 @@ package jsonrpc
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/tls"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/tls"
 	"io/ioutil"
 	"net/http"
 )

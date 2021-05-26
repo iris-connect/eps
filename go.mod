@@ -1,4 +1,4 @@
-module github.com/iris-gateway/eps
+module github.com/iris-connect/eps
 
 go 1.16
 

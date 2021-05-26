@@ -18,8 +18,8 @@ package channels
 
 import (
 	"fmt"
-	"github.com/iris-gateway/eps"
-	"github.com/iris-gateway/eps/grpc"
+	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/grpc"
 	"github.com/kiprotect/go-helpers/forms"
 	"sync"
 	"time"

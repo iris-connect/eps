@@ -20,7 +20,7 @@
 package channels
 
 import (
-	"github.com/iris-gateway/eps"
+	"github.com/iris-connect/eps"
 	"github.com/kiprotect/go-helpers/forms"
 )
 
