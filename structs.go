@@ -78,3 +78,14 @@ type Error struct {
 	Message string                 `json:"message"`
 	Data    map[string]interface{} `json:"data,omitempty"`
 }
+
+func PermissionDenied(id *string, data map[string]interface{}) *Response {
+	return &Response{
+		ID: id,
+		Error: &Error{
+			Code:    403,
+			Message: "permission denied",
+			Data:    data,
+		},
+	}
+}

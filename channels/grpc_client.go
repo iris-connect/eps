@@ -252,6 +252,15 @@ func (c *GRPCClientChannel) openConnections() error {
 		// we mark all connections as stale
 		c.markConnectionsStale()
 		for _, entry := range peerEntries {
+
+			// we skip this connection if the other endpoint has a gRPC client of its own and the current
+			// endpoint has a gRPC server, as the other endpoint can then just connect to this gRPC
+			// server via its own client...
+			if ownEntry.Channel("grpc_server") != nil && entry.Channel("grpc_client") != nil {
+				eps.Log.Debugf("Skipping gRPC client connection from '%s' to '%s' as the latter has a gRPC client and the former a gRPC server", ownEntry.Name, entry.Name)
+				continue
+			}
+
 			if channel := entry.Channel("grpc_server"); channel == nil {
 				return fmt.Errorf("this should not happen: no grpc_server channel found")
 			} else if settings, err := getEntrySettings(channel.Settings); err != nil {

@@ -70,17 +70,28 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 
 	b.mutex.Unlock()
 
+	if clientInfo == nil {
+		return nil, fmt.Errorf("client info missing")
+	}
+
 	Log.Debug("Checking request details...")
 
-	// we always add the client information to the request (if it exists)
-	if request.Params != nil && clientInfo != nil {
+	var ownEntry, remoteEntry *DirectoryEntry
+	var err error
 
-		// we always update the directory entry of the client info struct
-		if entry, err := b.directory.EntryFor(clientInfo.Name); err != nil {
-			return nil, err
-		} else {
-			clientInfo.Entry = entry
-		}
+	// we always update the directory entry of the client info struct
+	if remoteEntry, err = b.directory.EntryFor(clientInfo.Name); err != nil {
+		return nil, err
+	} else {
+		clientInfo.Entry = remoteEntry
+	}
+
+	if ownEntry, err = b.directory.OwnEntry(); err != nil {
+		return nil, err
+	}
+
+	// we always add the client information to the request
+	if request.Params != nil {
 
 		if clientInfoStruct, err := clientInfo.AsStruct(); err != nil {
 			return nil, err
@@ -93,6 +104,16 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 
 	if err != nil {
 		return nil, err
+	}
+
+	// if the remote entry isn't identical to the local one we check if the
+	// remote endpoint actually has the right to call the given service on
+	// this endpoint
+	if ownEntry.Name != remoteEntry.Name {
+		if !CanCall(remoteEntry, ownEntry, address.Method) {
+			Log.Warningf("Permission denied for method '%s' and client '%s'", address.Method, clientInfo.Name)
+			return PermissionDenied(&request.ID, nil), nil
+		}
 	}
 
 	Log.Debug("Checking channels...")

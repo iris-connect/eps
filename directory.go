@@ -186,6 +186,54 @@ func (b *BaseDirectory) Name() string {
 	return b.Name_
 }
 
+func ServiceFor(entry *DirectoryEntry, method string) *OperatorService {
+	for _, service := range entry.Services {
+		for _, serviceMethod := range service.Methods {
+			if serviceMethod.Name == method {
+				return service
+			}
+		}
+	}
+	return nil
+}
+
+func CanCall(caller, callee *DirectoryEntry, method string) bool {
+	service := ServiceFor(callee, method)
+	if service == nil {
+		// can't find this service
+		return false
+	}
+	callerGroups := map[string]bool{}
+	for _, group := range caller.Groups {
+		callerGroups[group] = true
+	}
+	// we look at the permissions of the overall service and at the permissions
+	// of the matching method (if such a method exists)
+	permissions := [][]*Permission{service.Permissions}
+	for _, serviceMethod := range service.Methods {
+		if serviceMethod.Name == method {
+			permissions = append(permissions, serviceMethod.Permissions)
+			break
+		}
+	}
+	for _, pms := range permissions {
+		// we go through all permissions
+		for _, permission := range pms {
+			// we check if the caller has a matching group entry
+			if _, ok := callerGroups[permission.Group]; ok {
+				// we go through all permission rights
+				for _, right := range permission.Rights {
+					// we check if the caller has the 'call' right
+					if right == "call" {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
 // get all groups that may call service methods of this entry
 func GetPeerGroups(entry *DirectoryEntry) []string {
 	groups := map[string]bool{}
