@@ -18,6 +18,7 @@ package proxy
 
 import (
 	"github.com/iris-connect/eps/jsonrpc"
+	"github.com/iris-connect/eps/tls"
 	"time"
 )
 
@@ -63,11 +64,17 @@ type PrivateAnnouncement struct {
 	Domain string `json:"domain"`
 }
 
+type InternalEndpointSettings struct {
+	Address           string           `json:"internal_endpoint"`
+	TLS               *tls.TLSSettings `json:"tls"`
+	VerifyServiceCall bool             `json:"verify_service_call"`
+}
+
 type PrivateServerSettings struct {
 	DatabaseFile     string                         `json:"database_file"`
 	Name             string                         `json:"name"`
 	Announcements    []*PrivateAnnouncement         `json:"announcements"`
-	InternalEndpoint string                         `json:"internal_endpoint"`
+	InternalEndpoint *InternalEndpointSettings      `json:"endpoint"`
 	JSONRPCClient    *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
 	JSONRPCServer    *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
 }

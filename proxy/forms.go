@@ -19,6 +19,7 @@ package proxy
 import (
 	"fmt"
 	"github.com/iris-connect/eps/jsonrpc"
+	"github.com/iris-connect/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
 	"time"
 )
@@ -75,6 +76,34 @@ func (i IsValidExpiresAtTime) Validate(value interface{}, values map[string]inte
 	return timeValue, nil
 }
 
+var InternalEndpointForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "address",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: "localhost:8888"},
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "tls",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsStringMap{
+					Form: &tls.TLSSettingsForm,
+				},
+			},
+		},
+		{
+			Name: "verify_service_calls",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: false},
+				forms.IsBoolean{},
+			},
+		},
+	},
+}
+
 var PrivateSettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
@@ -92,8 +121,9 @@ var PrivateSettingsForm = forms.Form{
 		{
 			Name: "internal_endpoint",
 			Validators: []forms.Validator{
-				forms.IsOptional{Default: "localhost:8888"},
-				forms.IsString{},
+				forms.IsStringMap{
+					Form: &InternalEndpointForm,
+				},
 			},
 		},
 		{

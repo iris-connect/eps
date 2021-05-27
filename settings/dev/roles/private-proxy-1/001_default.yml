@@ -1,4 +1,6 @@
 private:
+  internal_endpoint:
+    address: localhost:8888
   name: private-proxy-1
   database_file: /tmp/private-proxy-announcements.db
   jsonrpc_client:

@@ -195,7 +195,7 @@ func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *Inc
 		return context.Error(404, "no matching connection found", nil)
 	}
 
-	connection := MakeProxyConnection(params.Endpoint, c.settings.InternalEndpoint, params.Token)
+	connection := MakeProxyConnection(params.Endpoint, c.settings.InternalEndpoint.Address, params.Token)
 
 	go func() {
 		if err := connection.Run(); err != nil {
