@@ -23,17 +23,41 @@ import (
 	"github.com/iris-connect/eps/tls"
 	"github.com/iris-connect/eps"
 	"os"
+	"io/ioutil"
+	"encoding/json"
 	"os/signal"
 	"syscall"
 )
 
 func handler(context *http.Context) {
+
+	ise := func(){
+		context.JSON(500, map[string]interface{}{"message": "internal server error"})
+	}
+
+	if context.Request.Method == "POST" {
+
+		body, err := ioutil.ReadAll(context.Request.Body)
+
+		if err != nil {
+			ise()
+			return
+		}
+
+		var jsonData map[string]interface{}
+		if err := json.Unmarshal(body, &jsonData); err != nil {
+			ise()
+			return
+		}
+		context.JSON(200, jsonData)
+	}
 	context.JSON(200, map[string]interface{}{"message" : "success"})
 }
 
 func main() {
 
 	bindAddress := os.Getenv("IS_BIND_ADDRESS")
+	useTls := os.Getenv("USE_TLS")
 
 	if bindAddress == "" {
 		// this is just a test server so we bind it to 0.0.0.0 by default to
@@ -42,14 +66,21 @@ func main() {
 		bindAddress = "0.0.0.0:8888"
 	}
 
-	settings := &http.HTTPServerSettings{
-		BindAddress: bindAddress,
-		TLS: &tls.TLSSettings{
+	var tlsSettings *tls.TLSSettings
+
+	if useTls != "" {
+		tlsSettings = &tls.TLSSettings{
 			CACertificateFiles: []string{"settings/dev/certs/root.crt"},
 			CertificateFile: "settings/dev/certs/internal-server.crt",
 			KeyFile: "settings/dev/certs/internal-server.key",
 			VerifyClient: false,
-		},
+		}
+
+	}
+
+	settings := &http.HTTPServerSettings{
+		BindAddress: bindAddress,
+		TLS: tlsSettings,
 	}
 
 	routeGroups := []*http.RouteGroup{

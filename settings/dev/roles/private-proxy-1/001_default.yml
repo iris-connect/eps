@@ -1,12 +1,21 @@
 private:
   internal_endpoint:
     address: localhost:8888
+    jsonrpc_client:
+      endpoint: https://localhost:8888/jsonrpc
+    tls:
+      verify_client: false
+      server_name: internal-server
+      ca_certificate_files: ["$DIR/../../certs/root.crt"]
+      certificate_file: "$DIR/../../certs/internal-server.crt"
+      key_file: "$DIR/../../certs/internal-server.key"
+    #verify_service_call: true
   name: private-proxy-1
   database_file: /tmp/private-proxy-announcements.db
   jsonrpc_client:
     endpoint: https://localhost:7766/jsonrpc
-    server_name: private-proxy-1
     tls:
+      server_name: private-proxy-1
       ca_certificate_files: ["$DIR/../../certs/root.crt"]
       certificate_file: "$DIR/../../certs/private-proxy-1.crt"
       key_file: "$DIR/../../certs/private-proxy-1.key"

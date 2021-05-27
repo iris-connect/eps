@@ -41,7 +41,7 @@ func Cors(settings *CorsSettings, defaultRoute bool) http.Handler {
 
 	if settings == nil {
 		return func(c *http.Context) {
-
+			// we do nothing...
 		}
 	}
 

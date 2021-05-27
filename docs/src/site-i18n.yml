@@ -7,10 +7,10 @@ languages:
     prefix: "docs"
     language_title: English
     $include: site-en.yml
-  de:
-    prefix: "de/doku"
-    language_title: Deutsch
-    $include: site-de.yml
+#  de:
+#    prefix: "de/doku"
+#    language_title: Deutsch
+#    $include: site-de.yml
 #  it:
 #    language_title: Italiano
 #    $include: site-it.yml

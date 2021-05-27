@@ -34,7 +34,8 @@ func JSONRPC(handler Handler) http.Handler {
 		request := c.Get("request").(*Request)
 
 		context := &Context{
-			Request: request,
+			Request:     request,
+			HTTPContext: c,
 		}
 
 		response := handler(context)
@@ -102,6 +103,10 @@ func MakeJSONRPCServer(settings *JSONRPCServerSettings, handler Handler) (*JSONR
 			server:   httpServer,
 		}, nil
 	}
+}
+
+func (s *JSONRPCServer) HTTPServer() *http.HTTPServer {
+	return s.server
 }
 
 func (s *JSONRPCServer) Start() error {

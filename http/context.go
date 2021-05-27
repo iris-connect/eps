@@ -19,6 +19,7 @@ package http
 import (
 	"encoding/json"
 	"github.com/iris-connect/eps"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -56,11 +57,46 @@ func (c *Context) Abort() {
 }
 
 func (c *Context) AbortWithStatus(status int) {
+	if c.Aborted {
+		return
+	}
 	c.Writer.WriteHeader(status)
 	c.Abort()
 }
 
+func (c *Context) AbortWithResponse(response *http.Response) {
+
+	if c.Aborted {
+		return
+	}
+
+	bytes, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	header := c.Writer.Header()
+	for k, sv := range response.Header {
+		for _, v := range sv {
+			header.Add(k, v)
+		}
+	}
+
+	c.Writer.WriteHeader(response.StatusCode)
+	if _, err := c.Writer.Write(bytes); err != nil {
+		eps.Log.Error(err)
+	}
+
+	c.Abort()
+}
+
 func (c *Context) JSON(status int, data interface{}) {
+
+	if c.Aborted {
+		return
+	}
 
 	if c.HeaderWritten {
 		// the header was already written, we ignore this...

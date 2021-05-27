@@ -21,6 +21,8 @@ pages:
   navtitle: EPS Service
   slug: eps-service
   title: EPS Service
+- name: foo
+  title: foo
 - children:
   - name: index
     src: en/proxy/index.md

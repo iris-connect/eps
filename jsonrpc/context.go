@@ -19,6 +19,7 @@ package jsonrpc
 import (
 	"fmt"
 	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,7 +29,8 @@ var idRegexp = regexp.MustCompile(`^n:(-?\d{1,32})$`)
 var idNRegexp = regexp.MustCompile(`^(n+):(-?\d{1,32})$`)
 
 type Context struct {
-	Request *Request
+	Request     *Request
+	HTTPContext *http.Context
 }
 
 func convertID(id interface{}) interface{} {

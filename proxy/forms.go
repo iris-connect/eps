@@ -95,10 +95,12 @@ var InternalEndpointForm = forms.Form{
 			},
 		},
 		{
-			Name: "verify_service_calls",
+			Name: "jsonrpc_client",
 			Validators: []forms.Validator{
-				forms.IsOptional{Default: false},
-				forms.IsBoolean{},
+				forms.IsOptional{},
+				forms.IsStringMap{
+					Form: &jsonrpc.JSONRPCClientSettingsForm,
+				},
 			},
 		},
 	},

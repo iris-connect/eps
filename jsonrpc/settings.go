@@ -22,11 +22,9 @@ import (
 
 // Settings for the JSON-RPC server
 type JSONRPCClientSettings struct {
-	TLS *tls.TLSSettings `json:"tls"`
-	// only relevant for TLS
-	ServerName string `json:"server_name"`
-	Endpoint   string `json:"endpoint"`
-	Local      bool   `json:"local"`
+	TLS      *tls.TLSSettings `json:"tls"`
+	Endpoint string           `json:"endpoint"`
+	Local    bool             `json:"local"`
 }
 
 type CorsSettings struct {

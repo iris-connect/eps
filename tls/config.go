@@ -64,17 +64,17 @@ func TLSConfig(settings *TLSSettings) (*tls.Config, error) {
 		Certificates:             certs,
 		ClientCAs:                certPool,
 		RootCAs:                  certPool,
+		ServerName:               settings.ServerName,
 	}
 
 	return tlsConfig, nil
 }
 
-func TLSClientConfig(settings *TLSSettings, serverName string) (*tls.Config, error) {
+func TLSClientConfig(settings *TLSSettings) (*tls.Config, error) {
 
 	if config, err := TLSConfig(settings); err != nil {
 		return nil, err
 	} else {
-		config.ServerName = serverName
 		return config, nil
 	}
 }

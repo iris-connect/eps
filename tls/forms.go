@@ -47,6 +47,13 @@ var TLSSettingsForm = forms.Form{
 			},
 		},
 		{
+			Name: "server_name",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsString{}, // to do: add URL validation
+			},
+		},
+		{
 			Name: "key_file",
 			Validators: []forms.Validator{
 				forms.IsOptional{},

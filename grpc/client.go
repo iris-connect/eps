@@ -118,7 +118,8 @@ func (c *Client) Connect(address, serverName string) error {
 	var err error
 	var opts []grpc.DialOption
 
-	tlsConfig, err := tls.TLSClientConfig(c.settings.TLS, serverName)
+	tlsConfig, err := tls.TLSClientConfig(c.settings.TLS)
+	tlsConfig.ServerName = serverName
 
 	if err != nil {
 		return err

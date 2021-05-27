@@ -65,16 +65,16 @@ type PrivateAnnouncement struct {
 }
 
 type InternalEndpointSettings struct {
-	Address           string           `json:"internal_endpoint"`
-	TLS               *tls.TLSSettings `json:"tls"`
-	VerifyServiceCall bool             `json:"verify_service_call"`
+	Address       string                         `json:"address"`
+	TLS           *tls.TLSSettings               `json:"tls"`
+	JSONRPCClient *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
 }
 
 type PrivateServerSettings struct {
 	DatabaseFile     string                         `json:"database_file"`
 	Name             string                         `json:"name"`
 	Announcements    []*PrivateAnnouncement         `json:"announcements"`
-	InternalEndpoint *InternalEndpointSettings      `json:"endpoint"`
+	InternalEndpoint *InternalEndpointSettings      `json:"internal_endpoint"`
 	JSONRPCClient    *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
 	JSONRPCServer    *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
 }

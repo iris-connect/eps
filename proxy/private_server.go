@@ -22,14 +22,20 @@ server and forwards them to an internal endpoint.
 package proxy
 
 import (
+	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/iris-connect/eps"
 	epsForms "github.com/iris-connect/eps/forms"
 	"github.com/iris-connect/eps/helpers"
+	"github.com/iris-connect/eps/http"
 	"github.com/iris-connect/eps/jsonrpc"
+	epsTls "github.com/iris-connect/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
+	"io/ioutil"
 	"net"
+	goHttp "net/http"
 	"strings"
 	"sync"
 	"time"
@@ -41,23 +47,31 @@ type PrivateServer struct {
 	announcements []*PrivateAnnouncement
 	jsonrpcServer *jsonrpc.JSONRPCServer
 	jsonrpcClient *jsonrpc.Client
+	tlsConfig     *tls.Config
 	stop          chan bool
 	l             net.Listener
 	mutex         sync.Mutex
 }
 
 type ProxyConnection struct {
-	proxyEndpoint    string
-	internalEndpoint string
-	token            []byte
+	settings      *InternalEndpointSettings
+	tlsConfig     *tls.Config
+	jsonrpcClient *jsonrpc.Client
+	proxyEndpoint string
+	token         []byte
 }
 
-func MakeProxyConnection(proxyEndpoint, internalEndpoint string, token []byte) *ProxyConnection {
-	return &ProxyConnection{
-		proxyEndpoint:    proxyEndpoint,
-		internalEndpoint: internalEndpoint,
-		token:            token,
+func MakeProxyConnection(proxyEndpoint string, token []byte, settings *InternalEndpointSettings, tlsConfig *tls.Config) *ProxyConnection {
+	p := &ProxyConnection{
+		settings:      settings,
+		tlsConfig:     tlsConfig,
+		proxyEndpoint: proxyEndpoint,
+		token:         token,
 	}
+	if settings.JSONRPCClient != nil {
+		p.jsonrpcClient = jsonrpc.MakeClient(settings.JSONRPCClient)
+	}
+	return p
 }
 
 func (p *ProxyConnection) Run() error {
@@ -76,7 +90,195 @@ func (p *ProxyConnection) Run() error {
 		return fmt.Errorf("could not write token")
 	}
 
-	internalConnection, err := net.Dial("tcp", p.internalEndpoint)
+	if p.settings.TLS != nil {
+		return p.TerminateTLS(proxyConnection)
+	} else {
+		return p.ForwardTLS(proxyConnection)
+	}
+}
+
+type ProxyListener struct {
+	connection net.Conn
+	close      chan bool
+}
+
+func (p *ProxyListener) Accept() (net.Conn, error) {
+	if p.connection != nil {
+		defer func() { p.connection = nil }()
+		return p.connection, nil
+	} else {
+		// we block indefinitely
+		p.close <- true
+		return nil, fmt.Errorf("no more connections")
+	}
+}
+
+func (p *ProxyListener) Close() error {
+	p.connection = nil
+	// if the connection was already requested we resolve the block
+	select {
+	case <-p.close:
+	}
+	return nil
+}
+
+// we don't implement Addr
+func (p *ProxyListener) Addr() net.Addr {
+	return nil
+}
+
+type Server interface {
+	Start() error
+	Stop() error
+}
+
+func (p *ProxyConnection) jsonrpcHandler(done chan bool) func(request *jsonrpc.Context) *jsonrpc.Response {
+	return func(c *jsonrpc.Context) *jsonrpc.Response {
+		jsonData, err := json.Marshal(c.Request)
+
+		if err != nil {
+			eps.Log.Error(err)
+			c.HTTPContext.AbortWithStatus(goHttp.StatusInternalServerError)
+			return nil
+		}
+
+		proxyRequest, err := goHttp.NewRequest("POST", fmt.Sprintf("http://%s", p.settings.Address), bytes.NewReader(jsonData))
+
+		if err != nil {
+			eps.Log.Error(err)
+			c.HTTPContext.AbortWithStatus(goHttp.StatusInternalServerError)
+			return nil
+		}
+
+		proxyRequest.Header = make(goHttp.Header)
+		for k, v := range c.HTTPContext.Request.Header {
+			proxyRequest.Header[k] = v
+		}
+
+		httpClient := goHttp.Client{}
+
+		if resp, err := httpClient.Do(proxyRequest); err != nil {
+			c.HTTPContext.AbortWithStatus(goHttp.StatusBadGateway)
+		} else {
+			c.HTTPContext.AbortWithResponse(resp)
+		}
+
+		return nil
+	}
+}
+
+func (p *ProxyConnection) httpHandler(done chan bool) func(c *http.Context) {
+
+	return func(c *http.Context) {
+		// we need to buffer the body if we want to read it here and send it
+		// in the request.
+		body, err := ioutil.ReadAll(c.Request.Body)
+		if err != nil {
+			c.AbortWithStatus(goHttp.StatusInternalServerError)
+			return
+		}
+		proxyRequest, err := goHttp.NewRequest(c.Request.Method, fmt.Sprintf("http://%s", p.settings.Address), bytes.NewReader(body))
+		if err != nil {
+			eps.Log.Error(err)
+			c.AbortWithStatus(goHttp.StatusInternalServerError)
+			return
+		}
+		proxyRequest.Header = make(goHttp.Header)
+		for k, v := range c.Request.Header {
+			proxyRequest.Header[k] = v
+		}
+
+		httpClient := goHttp.Client{}
+
+		if resp, err := httpClient.Do(proxyRequest); err != nil {
+			c.AbortWithStatus(goHttp.StatusBadGateway)
+		} else {
+			c.AbortWithResponse(resp)
+		}
+
+	}
+}
+
+func (p *ProxyConnection) TerminateTLS(proxyConnection net.Conn) error {
+
+	proxyListener := &ProxyListener{
+		connection: proxyConnection,
+		close:      make(chan bool),
+	}
+
+	var server Server
+	var httpServer *http.HTTPServer
+
+	done := make(chan bool, 1)
+	if p.settings.JSONRPCClient != nil {
+		if jsonrpcServer, err := jsonrpc.MakeJSONRPCServer(&jsonrpc.JSONRPCServerSettings{
+			Cors:        nil,
+			TLS:         nil,
+			BindAddress: "",
+		}, p.jsonrpcHandler(done)); err != nil {
+			return err
+		} else {
+			server = jsonrpcServer
+			httpServer = jsonrpcServer.HTTPServer()
+		}
+	} else {
+		var err error
+
+		routeGroups := []*http.RouteGroup{
+			{
+				// these handlers will be executed for all routes in the group
+				Handlers: []http.Handler{},
+				Routes: []*http.Route{
+					{
+						Pattern: "^.*$",
+						Handlers: []http.Handler{
+							p.httpHandler(done),
+						},
+					},
+				},
+			},
+		}
+
+		if httpServer, err = http.MakeHTTPServer(&http.HTTPServerSettings{
+			TLS:         nil,
+			BindAddress: "",
+		}, routeGroups); err != nil {
+			return err
+		} else {
+			server = httpServer
+		}
+	}
+
+	httpServer.SetListener(proxyListener)
+	httpServer.SetTLSConfig(p.tlsConfig)
+	httpServer.SetHooks(&http.Hooks{
+		Finished: func(c *http.Context) {
+			done <- true
+		},
+	})
+
+	if err := server.Start(); err != nil {
+		eps.Log.Errorf("Error: %v", err)
+		return err
+	} else {
+		defer server.Stop()
+		select {
+		case <-done:
+		case <-time.After(1 * time.Second):
+			return fmt.Errorf("timeout handling request")
+		}
+		// we need to wait...
+		return nil
+	}
+
+	return nil
+}
+
+func (p *ProxyConnection) ForwardTLS(proxyConnection net.Conn) error {
+
+	eps.Log.Debugf("Forwarding TLS connection to '%s'", p.settings.Address)
+
+	internalConnection, err := net.Dial("tcp", p.settings.Address)
 
 	if err != nil {
 		proxyConnection.Close()
@@ -195,7 +397,7 @@ func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *Inc
 		return context.Error(404, "no matching connection found", nil)
 	}
 
-	connection := MakeProxyConnection(params.Endpoint, c.settings.InternalEndpoint.Address, params.Token)
+	connection := MakeProxyConnection(params.Endpoint, params.Token, c.settings.InternalEndpoint, c.tlsConfig)
 
 	go func() {
 		if err := connection.Run(); err != nil {
@@ -213,6 +415,14 @@ func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) 
 		settings:      settings,
 		dataStore:     helpers.MakeFileDataStore(settings.DatabaseFile),
 		jsonrpcClient: jsonrpc.MakeClient(settings.JSONRPCClient),
+	}
+
+	if settings.InternalEndpoint.TLS != nil {
+		if tlsConfig, err := epsTls.TLSServerConfig(settings.InternalEndpoint.TLS); err != nil {
+			return nil, err
+		} else {
+			server.tlsConfig = tlsConfig
+		}
 	}
 
 	methods := map[string]*jsonrpc.Method{

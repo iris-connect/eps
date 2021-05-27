@@ -5,8 +5,8 @@ public:
   internal_bind_address: localhost:9999
   jsonrpc_client:
     endpoint: https://localhost:5544/jsonrpc
-    server_name: public-proxy-1
     tls:
+      server_name: public-proxy-1
       ca_certificate_files: ["$DIR/../../certs/root.crt"]
       certificate_file: "$DIR/../../certs/public-proxy-1.crt"
       key_file: "$DIR/../../certs/public-proxy-1.key"

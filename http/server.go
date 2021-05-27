@@ -18,9 +18,11 @@ package http
 
 import (
 	"context"
+	cryptoTls "crypto/tls"
 	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/tls"
+	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -45,10 +47,17 @@ type Route struct {
 
 type H map[string]interface{}
 
+type Hooks struct {
+	Finished Handler
+}
+
 type HTTPServer struct {
 	settings    *HTTPServerSettings
+	tlsConfig   *cryptoTls.Config
+	listener    net.Listener
 	mutex       sync.Mutex
 	running     bool
+	hooks       *Hooks
 	err         error
 	server      *http.Server
 	routeGroups []*RouteGroup
@@ -88,6 +97,7 @@ func MakeHTTPServer(settings *HTTPServerSettings, routeGroups []*RouteGroup) (*H
 		settings:    settings,
 		routeGroups: routeGroups,
 		mutex:       sync.Mutex{},
+		hooks:       &Hooks{},
 		server: &http.Server{
 			Addr: settings.BindAddress,
 		},
@@ -97,6 +107,18 @@ func MakeHTTPServer(settings *HTTPServerSettings, routeGroups []*RouteGroup) (*H
 	s.server.Handler = s
 
 	return s, nil
+}
+
+func (h *HTTPServer) SetHooks(hooks *Hooks) {
+	h.hooks = hooks
+}
+
+func (h *HTTPServer) SetListener(listener net.Listener) {
+	h.listener = listener
+}
+
+func (h *HTTPServer) SetTLSConfig(config *cryptoTls.Config) {
+	h.tlsConfig = config
 }
 
 func handleRouteGroup(context *Context, group *RouteGroup, handlers []Handler) {
@@ -134,27 +156,44 @@ func (s *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request
 	for _, routeGroup := range s.routeGroups {
 		handleRouteGroup(context, routeGroup, []Handler{})
 	}
+
+	if s.hooks.Finished != nil {
+		s.hooks.Finished(context)
+	}
 }
 
 func (s *HTTPServer) Start() error {
 
 	var listener func() error
 
-	if s.settings.TLS != nil {
+	useTLS := false
+	if s.settings.TLS != nil && s.tlsConfig == nil {
 
-		tlsConfig, err := tls.TLSServerConfig(s.settings.TLS)
+		var err error
+		s.tlsConfig, err = tls.TLSServerConfig(s.settings.TLS)
 
 		if err != nil {
 			return err
 		}
+	}
 
-		s.server.TLSConfig = tlsConfig
+	if s.tlsConfig != nil {
+		useTLS = true
+		s.server.TLSConfig = s.tlsConfig
+	}
 
+	if s.listener != nil {
 		listener = func() error {
-			return s.server.ListenAndServeTLS(s.settings.TLS.CertificateFile, s.settings.TLS.KeyFile)
+			if useTLS {
+				return s.server.ServeTLS(s.listener, "", "")
+			}
+			return s.server.Serve(s.listener)
 		}
 	} else {
 		listener = func() error {
+			if useTLS {
+				return s.server.ListenAndServeTLS("", "")
+			}
 			return s.server.ListenAndServe()
 		}
 	}

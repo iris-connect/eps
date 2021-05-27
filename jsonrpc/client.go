@@ -36,7 +36,7 @@ func MakeClient(settings *JSONRPCClientSettings) *Client {
 }
 
 func (c *Client) SetServerName(serverName string) {
-	c.settings.ServerName = serverName
+	c.settings.TLS.ServerName = serverName
 }
 
 func (c *Client) SetEndpoint(endpoint string) {
@@ -53,7 +53,7 @@ func (c *Client) Call(request *Request) (*Response, error) {
 	client := &http.Client{}
 
 	if c.settings.TLS != nil {
-		tlsConfig, err := tls.TLSClientConfig(c.settings.TLS, c.settings.ServerName)
+		tlsConfig, err := tls.TLSClientConfig(c.settings.TLS)
 		if err != nil {
 			return nil, err
 		}
@@ -64,7 +64,7 @@ func (c *Client) Call(request *Request) (*Response, error) {
 		}
 	}
 
-	eps.Log.Infof("Generating request to endpoint %s...", c.settings.Endpoint)
+	eps.Log.Debugf("Generating request to endpoint %s...", c.settings.Endpoint)
 
 	req, err := http.NewRequest("POST", c.settings.Endpoint, bytes.NewReader(data))
 
@@ -80,8 +80,6 @@ func (c *Client) Call(request *Request) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	eps.Log.Info("Done with request...")
 
 	// to do: sanity checks...
 

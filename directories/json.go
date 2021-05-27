@@ -196,10 +196,10 @@ func loadRecords(recordsPath string) ([]*eps.ChangeRecord, error) {
 		if file, err := os.Open(recordsFile); err != nil {
 			return nil, err
 		} else {
-			defer file.Close()
 			if data, err := ioutil.ReadAll(file); err != nil {
 				return nil, err
 			} else {
+				file.Close()
 				rawRecords := map[string]interface{}{}
 				if err := json.Unmarshal(data, &rawRecords); err != nil {
 					return nil, err
