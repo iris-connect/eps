@@ -1,8 +1,8 @@
 private:
   internal_endpoint:
     address: localhost:8888
-    jsonrpc_client:
-      endpoint: https://localhost:8888/jsonrpc
+    #jsonrpc_client:
+    #  endpoint: https://localhost:8888/jsonrpc
     tls:
       verify_client: false
       server_name: internal-server

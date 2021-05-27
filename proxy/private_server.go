@@ -177,7 +177,14 @@ func (p *ProxyConnection) httpHandler(done chan bool) func(c *http.Context) {
 			c.AbortWithStatus(goHttp.StatusInternalServerError)
 			return
 		}
-		proxyRequest, err := goHttp.NewRequest(c.Request.Method, fmt.Sprintf("http://%s", p.settings.Address), bytes.NewReader(body))
+
+		pathAndQuery := c.Request.URL.Path
+
+		if c.Request.URL.RawQuery != "" {
+			pathAndQuery += fmt.Sprintf("?%s", c.Request.URL.RawQuery)
+		}
+
+		proxyRequest, err := goHttp.NewRequest(c.Request.Method, fmt.Sprintf("http://%s%s", p.settings.Address, pathAndQuery), bytes.NewReader(body))
 		if err != nil {
 			eps.Log.Error(err)
 			c.AbortWithStatus(goHttp.StatusInternalServerError)
