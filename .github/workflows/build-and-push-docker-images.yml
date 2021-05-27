@@ -12,21 +12,18 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v3
-        with:
-          images:
-            - inoeg/eps
-          tags: |
-            type=match,pattern=v(\d.\d.\d)
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      - run: echo ${{ steps.get_version.outputs.major }}
+      - run: echo ${{ steps.get_version.outputs.minor }}
       - name: Build and push eps
         uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/eps
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.get_version.outputs.VERSION }}
           dockerfile: ./docker/Eps.dockerfile
       - name: Build and push sd
         uses: docker/build-push-action@v1
