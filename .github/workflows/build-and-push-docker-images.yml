@@ -16,6 +16,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
+          images:
+            - inoeg/eps
           tags: |
             type=match,pattern=v(\d.\d.\d)
       - name: Build and push eps
