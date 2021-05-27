@@ -12,13 +12,19 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          tags: |
+            type=match,pattern=v(\d.\d.\d)
       - name: Build and push eps
         uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/eps
-          tag_with_ref: true
+          tags: ${{ steps.meta.outputs.tags }}
           dockerfile: ./docker/Eps.dockerfile
       - name: Build and push sd
         uses: docker/build-push-action@v1
