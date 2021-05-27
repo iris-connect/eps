@@ -15,15 +15,16 @@ jobs:
       - name: Get the version
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-      - run: echo ${{ steps.get_version.outputs.major }}
-      - run: echo ${{ steps.get_version.outputs.minor }}
+      - run: "echo ${{ steps.get_version.outputs.major }}"
+      - run: "echo ${{ steps.get_version.outputs.minor }}"
+      - run: "echo ${{ steps.get_version.outputs.patch }}"
       - name: Build and push eps
         uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/eps
-          tags: ${{ steps.get_version.outputs.VERSION }}
+          tags: ${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }}.${{ steps.get_version.outputs.patch }}
           dockerfile: ./docker/Eps.dockerfile
       - name: Build and push sd
         uses: docker/build-push-action@v1
