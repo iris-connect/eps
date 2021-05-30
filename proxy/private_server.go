@@ -142,14 +142,17 @@ func (p *ProxyConnection) jsonrpcHandler(done chan bool) func(request *jsonrpc.C
 			return nil
 		}
 
-		proxyRequest, err := goHttp.NewRequest("POST", fmt.Sprintf("http://%s", p.settings.JSONRPCClient.Endpoint), bytes.NewReader(jsonData))
+		jsonrpcEndpoint := fmt.Sprintf("%s", p.settings.JSONRPCClient.Endpoint)
+
+		eps.Log.Debugf("Forwarding JSON-RPC request to '%s'", jsonrpcEndpoint)
+
+		proxyRequest, err := goHttp.NewRequest("POST", jsonrpcEndpoint, bytes.NewReader(jsonData))
 
 		if err != nil {
-			eps.Log.Error(err)
+			eps.Log.Errorf("Cannot form JSON-RPC request: %v", err)
 			c.HTTPContext.AbortWithStatus(goHttp.StatusInternalServerError)
 			return nil
 		}
-
 		proxyRequest.Header = make(goHttp.Header)
 		for k, v := range c.HTTPContext.Request.Header {
 			proxyRequest.Header[k] = v
@@ -158,8 +161,11 @@ func (p *ProxyConnection) jsonrpcHandler(done chan bool) func(request *jsonrpc.C
 		httpClient := goHttp.Client{}
 
 		if resp, err := httpClient.Do(proxyRequest); err != nil {
+			eps.Log.Errorf("An error occurred when forwarding the JSON-RPC request: %v", err)
 			c.HTTPContext.AbortWithStatus(goHttp.StatusBadGateway)
+			return nil
 		} else {
+			eps.Log.Debugf("Request successfully proxied, returning response...")
 			c.HTTPContext.AbortWithResponse(resp)
 		}
 
