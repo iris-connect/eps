@@ -132,6 +132,13 @@ var JSONRPCServerSettingsForm = forms.Form{
 			},
 		},
 		{
+			Name: "path",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: "/jsonrpc"},
+				forms.IsString{}, // to do: add URL validation
+			},
+		},
+		{
 			Name: "tls",
 			Validators: []forms.Validator{
 				forms.IsOptional{},

@@ -142,7 +142,7 @@ func (p *ProxyConnection) jsonrpcHandler(done chan bool) func(request *jsonrpc.C
 			return nil
 		}
 
-		proxyRequest, err := goHttp.NewRequest("POST", fmt.Sprintf("http://%s", p.settings.Address), bytes.NewReader(jsonData))
+		proxyRequest, err := goHttp.NewRequest("POST", fmt.Sprintf("http://%s", p.settings.JSONRPCClient.Endpoint), bytes.NewReader(jsonData))
 
 		if err != nil {
 			eps.Log.Error(err)
@@ -221,6 +221,7 @@ func (p *ProxyConnection) TerminateTLS(proxyConnection net.Conn) error {
 		if jsonrpcServer, err := jsonrpc.MakeJSONRPCServer(&jsonrpc.JSONRPCServerSettings{
 			Cors:        nil,
 			TLS:         nil,
+			Path:        p.settings.JSONRPCPath,
 			BindAddress: "",
 		}, p.jsonrpcHandler(done)); err != nil {
 			return err

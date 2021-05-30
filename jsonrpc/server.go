@@ -17,6 +17,7 @@
 package jsonrpc
 
 import (
+	"fmt"
 	"github.com/iris-connect/eps/http"
 )
 
@@ -74,7 +75,7 @@ func MakeJSONRPCServer(settings *JSONRPCServerSettings, handler Handler) (*JSONR
 			},
 			Routes: []*http.Route{
 				{
-					Pattern: "^/jsonrpc$",
+					Pattern: fmt.Sprintf("^%s$", settings.Path),
 					Handlers: []http.Handler{
 						ExtractJSONRequest,
 						JSONRPC(handler),

@@ -103,6 +103,13 @@ var InternalEndpointForm = forms.Form{
 				},
 			},
 		},
+		{
+			Name: "jsonrpc_path",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: "/jsonrpc"},
+				forms.IsString{},
+			},
+		},
 	},
 }
 

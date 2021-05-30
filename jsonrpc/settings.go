@@ -38,4 +38,5 @@ type JSONRPCServerSettings struct {
 	Cors        *CorsSettings    `json:"cors"`
 	TLS         *tls.TLSSettings `json:"tls"`
 	BindAddress string           `json:"bind_address"`
+	Path        string           `json:"path"`
 }

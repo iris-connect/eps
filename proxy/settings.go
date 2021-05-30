@@ -68,6 +68,7 @@ type InternalEndpointSettings struct {
 	Address       string                         `json:"address"`
 	TLS           *tls.TLSSettings               `json:"tls"`
 	JSONRPCClient *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
+	JSONRPCPath   string                         `json:"jsonrpc_path"`
 }
 
 type PrivateServerSettings struct {
