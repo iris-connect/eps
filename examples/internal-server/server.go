@@ -35,7 +35,7 @@ func handler(context *http.Context) {
 		context.JSON(500, map[string]interface{}{"message": "internal server error"})
 	}
 
-	eps.Log.Infof("Received request with path '%s' and query' %s'", context.Request.URL.Path, context.Request.URL.RawQuery)
+	eps.Log.Debugf("Received request with path '%s' and query' %s'", context.Request.URL.Path, context.Request.URL.RawQuery)
 
 	if context.Request.Method == "POST" {
 

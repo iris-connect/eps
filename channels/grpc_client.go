@@ -55,10 +55,13 @@ func (c *GRPCServerConnection) Open() error {
 			// we're already connected and nothing changed
 			return nil
 		}
+		eps.Log.Debug("Connection details changed!")
 		// some connection details changed, we reestablish the connection
 		if err := c.Close(); err != nil {
 			return err
 		}
+	} else {
+		eps.Log.Debug("Opening a new connection")
 	}
 	if client, err := grpc.MakeClient(&c.channel.Settings, c.channel.Directory()); err != nil {
 		return err
@@ -270,7 +273,7 @@ func (c *GRPCClientChannel) openConnections() error {
 					// we won't open a channel to ourselves...
 					continue
 				}
-				eps.Log.Tracef("Opening channel to %s at %s", entry.Name, settings.Address)
+				eps.Log.Debugf("Opening channel to %s at %s", entry.Name, settings.Address)
 				if err := c.openConnection(settings.Address, entry.Name); err != nil {
 					// we only log this as tracing errors
 					eps.Log.Trace(err)
@@ -339,7 +342,17 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 	} else if err := client.Connect(settings.Address, entry.Name); err != nil {
 		return nil, err
 	} else {
-		return client.SendRequest(request)
+		response, err := client.SendRequest(request)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := client.Close(); err != nil {
+			eps.Log.Error(err)
+		}
+
+		return response, nil
+
 	}
 }
 

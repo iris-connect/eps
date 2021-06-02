@@ -122,7 +122,7 @@ func (f *JSONDirectory) load() error {
 		f.entries = entries
 		f.records = records
 
-		eps.Log.Debugf("Loaded %d directory entries from %d records...", len(f.entries), len(f.records))
+		eps.Log.Tracef("Loaded %d directory entries from %d records...", len(f.entries), len(f.records))
 		return nil
 	}
 }
@@ -192,7 +192,7 @@ func loadRecords(recordsPath string) ([]*eps.ChangeRecord, error) {
 	allRecords := make([]*eps.ChangeRecord, 0)
 
 	for _, recordsFile := range recordsFiles {
-		eps.Log.Debugf("Adding records from %v...", recordsFile)
+		eps.Log.Tracef("Adding records from %v...", recordsFile)
 		if file, err := os.Open(recordsFile); err != nil {
 			return nil, err
 		} else {
