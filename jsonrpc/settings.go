@@ -24,6 +24,7 @@ import (
 type JSONRPCClientSettings struct {
 	TLS      *tls.TLSSettings `json:"tls"`
 	Endpoint string           `json:"endpoint"`
+	ProxyUrl string           `json:"proxy_url"`
 	Local    bool             `json:"local"`
 }
 

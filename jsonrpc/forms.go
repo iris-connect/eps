@@ -160,6 +160,13 @@ var JSONRPCClientSettingsForm = forms.Form{
 			},
 		},
 		{
+			Name: "proxy_url",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsString{}, // to do: add URL validation
+			},
+		},
+		{
 			Name: "local",
 			Validators: []forms.Validator{
 				forms.IsOptional{Default: true},

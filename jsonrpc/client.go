@@ -23,6 +23,7 @@ import (
 	"github.com/iris-connect/eps/tls"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 type Client struct {
@@ -51,17 +52,26 @@ func (c *Client) Call(request *Request) (*Response, error) {
 	}
 
 	client := &http.Client{}
+	transport := &http.Transport{
+		DisableKeepAlives: true, // removing this will cause connections to pile up
+	}
+
+	if c.settings.ProxyUrl != "" {
+		if proxyUrl, err := url.Parse(c.settings.ProxyUrl); err != nil {
+			return nil, err
+		} else {
+			transport.Proxy = http.ProxyURL(proxyUrl)
+		}
+	}
+
+	client.Transport = transport
 
 	if c.settings.TLS != nil {
 		tlsConfig, err := tls.TLSClientConfig(c.settings.TLS)
 		if err != nil {
 			return nil, err
 		}
-		client.Transport = &http.Transport{
-			DisableKeepAlives: true, // removing this will cause connections to pile up
-			//MaxIdleConnsPerHost: 100,
-			TLSClientConfig: tlsConfig,
-		}
+		transport.TLSClientConfig = tlsConfig
 	}
 
 	eps.Log.Debugf("Generating request to endpoint %s...", c.settings.Endpoint)
