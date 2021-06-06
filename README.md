@@ -1,6 +1,6 @@
-# IRIS Endpoint Server (EPS)
+# Endpoint Server (EPS)
 
-This repository contains the code of the IRIS endpoint server (EPS), which manages the communication between different actors in the IRIS ecosystem. It provides a gRPC server & client to exchange messages between different actors, as well as a JSON-RPC API client & server for interacting with the server locally.
+This repository contains the code of the IRIS connect endpoint server (EPS), which manages the communication between different actors in the IRIS connect ecosystem. It provides a gRPC server & client to exchange messages between different actors, as well as a JSON-RPC API client & server for interacting with the server locally.
 
 ## Getting Started
 
