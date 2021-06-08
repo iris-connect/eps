@@ -44,6 +44,18 @@ var APIDirectorySettingsForm = forms.Form{
 			},
 		},
 		{
+			Name: "cache_entries_for",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: 60},
+				forms.IsInteger{
+					HasMin: true,
+					Min:    0,
+					HasMax: true,
+					Max:    3600,
+				},
+			},
+		},
+		{
 			Name: "jsonrpc_client",
 			Validators: []forms.Validator{
 				forms.IsStringMap{
@@ -69,6 +81,7 @@ type APIDirectorySettings struct {
 	ServerNames        []string                       `json:"server_names"`
 	JSONRPCClient      *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
 	CACertificateFiles []string                       `json:"ca_certificate_files"`
+	CacheEntriesFor    int64                          `json:"cache_entries_for"`
 }
 
 type CacheEntry struct {
@@ -82,6 +95,7 @@ type DirectoryCache struct {
 
 type APIDirectory struct {
 	eps.BaseDirectory
+	lastUpdate    time.Time
 	settings      APIDirectorySettings
 	jsonrpcClient *jsonrpc.Client
 	rootCerts     []*x509.Certificate
@@ -161,11 +175,26 @@ type UpdateRecords struct {
 func (f *APIDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntry, error) {
 
 	f.mutex.Lock()
+	lastUpdate := f.lastUpdate
+	f.mutex.Unlock()
+
+	if time.Now().Add(-time.Duration(2*f.settings.CacheEntriesFor) * time.Second).After(lastUpdate) {
+		// last update was more than 2 minutes ago, we update synchronously
+		if err := f.update(); err != nil {
+			return nil, err
+		}
+	} else if time.Now().Add(-time.Duration(f.settings.CacheEntriesFor) * time.Second).After(lastUpdate) {
+		// last update was more than 1 minute ago, we update in the background
+		go func() {
+			if err := f.update(); err != nil {
+				eps.Log.Error(err)
+			}
+		}()
+	}
+
+	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
-	if err := f.update(); err != nil {
-		return nil, err
-	}
 	entries := make([]*eps.DirectoryEntry, len(f.entries))
 	i := 0
 	for _, entry := range f.entries {
@@ -264,6 +293,18 @@ func (f *APIDirectory) integrate(records []*eps.SignedChangeRecord) error {
 
 // Updates the service directory with change records from the remote API
 func (f *APIDirectory) update() error {
+
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if time.Now().Add(-time.Duration(f.settings.CacheEntriesFor) * time.Second).Before(f.lastUpdate) {
+		// last update was less than a minute ago...
+		return nil
+	}
+
+	eps.Log.Tracef("Updating service directory...")
+	f.lastUpdate = time.Now()
+
 	// to do: ensure there's always one server name and endpoint
 	f.jsonrpcClient.SetServerName(f.settings.ServerNames[0])
 	f.jsonrpcClient.SetEndpoint(f.settings.Endpoints[0])

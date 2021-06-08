@@ -615,7 +615,6 @@ func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *Pri
 
 	}
 
-
 	return context.Acknowledge()
 }
 
