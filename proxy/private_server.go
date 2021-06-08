@@ -608,7 +608,13 @@ func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *Pri
 			return context.InternalError()
 		}
 
+		if err := c.announceConnectionsRPC([]*PrivateAnnouncement{newAnnouncement}); err != nil {
+			eps.Log.Error(err)
+			return context.InternalError()
+		}
+
 	}
+
 
 	return context.Acknowledge()
 }
@@ -629,11 +635,17 @@ func (s *PrivateServer) announceConnectionsRPC(announcements []*PrivateAnnouncem
 		"connections": announcements,
 	})
 	result, err := s.jsonrpcClient.Call(request)
+
+	if err != nil {
+		return err
+	}
+
 	if result.Error != nil {
 		eps.Log.Error(result.Error)
 		return fmt.Errorf(result.Error.Message)
 	}
-	return err
+
+	return nil
 
 }
 
@@ -663,7 +675,7 @@ func (s *PrivateServer) announceConnections() {
 
 		select {
 		// in case of an error we try to reconnect after 1 second
-		case <-time.After(10 * time.Second):
+		case <-time.After(10 * time.Minute):
 		case <-s.stop:
 			s.stop <- true
 			break
