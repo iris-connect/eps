@@ -51,7 +51,32 @@ type PublicServer struct {
 	mutex            sync.Mutex
 }
 
-var PublicAnnounceConnectionForm = forms.Form{
+var PublicAnnounceConnectionsForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "_client",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &epsForms.ClientInfoForm,
+				},
+			},
+		},
+		{
+			Name: "connections",
+			Validators: []forms.Validator{
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsStringMap{
+							Form: &PublicConnectionForm,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var PublicConnectionForm = forms.Form{
 	Fields: []forms.Field{
 		{
 			Name: "expires_at",
@@ -70,113 +95,123 @@ var PublicAnnounceConnectionForm = forms.Form{
 				forms.IsString{},
 			},
 		},
-		{
-			Name: "_client",
-			Validators: []forms.Validator{
-				forms.IsStringMap{
-					Form: &epsForms.ClientInfoForm,
-				},
-			},
-		},
 	},
 }
 
-type PublicAnnounceConnectionParams struct {
-	Domain     string          `json:"domain"`
-	ExpiresAt  *time.Time      `json:"expires_at"`
-	ClientInfo *eps.ClientInfo `json:"_client"`
+type PublicAnnounceConnectionsParams struct {
+	Connections []*PublicProxyConnection
+	ClientInfo  *eps.ClientInfo `json:"_client"`
 }
 
-func (c *PublicServer) announceConnection(context *jsonrpc.Context, params *PublicAnnounceConnectionParams) *jsonrpc.Response {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+type PublicProxyConnection struct {
+	Domain    string     `json:"domain"`
+	ExpiresAt *time.Time `json:"expires_at"`
+}
 
-	eps.Log.Debugf("Received announcement for domain '%s' from operator '%s'", params.Domain, params.ClientInfo.Name)
+func (c *PublicServer) announceConnections(context *jsonrpc.Context, params *PublicAnnounceConnectionsParams) *jsonrpc.Response {
+
+	results := []interface{}{}
 
 	settings := params.ClientInfo.Entry.SettingsFor("proxy", c.settings.Name)
 
 	if settings == nil {
 		return context.Error(403, "not authorized", nil)
-	} else {
-		directorySettings := &DirectorySettings{}
+	}
 
-		if directoryParams, err := DirectorySettingsForm.Validate(settings.Settings); err != nil {
-			return context.Error(500, "invalid directory settings", nil)
-		} else if err := DirectorySettingsForm.Coerce(directorySettings, directoryParams); err != nil {
-			return context.InternalError()
-		} else {
-			found := false
-			for _, allowedDomain := range directorySettings.AllowedDomains {
-				if strings.HasSuffix(params.Domain, allowedDomain) {
-					found = true
-					break
+	directorySettings := &DirectorySettings{}
+
+	if directoryParams, err := DirectorySettingsForm.Validate(settings.Settings); err != nil {
+		return context.Error(500, "invalid directory settings", nil)
+	} else if err := DirectorySettingsForm.Coerce(directorySettings, directoryParams); err != nil {
+		return context.InternalError()
+	}
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+connections:
+	for _, connection := range params.Connections {
+		eps.Log.Debugf("Received announcement for domain '%s' from operator '%s'", connection.Domain, params.ClientInfo.Name)
+
+		found := false
+		for _, allowedDomain := range directorySettings.AllowedDomains {
+			if strings.HasSuffix(connection.Domain, allowedDomain) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			results = append(results, jsonrpc.MakeError(403, "not allowed", nil))
+			continue connections
+		}
+
+		var newAnnouncement *PublicAnnouncement
+		changed := false
+		for _, announcement := range c.announcements {
+			if announcement.Domain == connection.Domain {
+				if announcement.Operator != params.ClientInfo.Name {
+					results = append(results, jsonrpc.MakeError(409, "already taken", nil))
+					continue connections
 				}
+				newAnnouncement = announcement
+				if (announcement.ExpiresAt != nil && connection.ExpiresAt != nil && !connection.ExpiresAt.Equal(*announcement.ExpiresAt)) || (announcement.ExpiresAt == nil && connection.ExpiresAt != nil) {
+					changed = true
+					// we update the expiration time
+					announcement.ExpiresAt = connection.ExpiresAt
+				} else if connection.ExpiresAt == nil && announcement.ExpiresAt != nil {
+					// we remove the expiration time
+					changed = true
+					announcement.ExpiresAt = nil
+				}
+				break
 			}
-			if !found {
-				return context.Error(403, "not allowed to forward this domain", directorySettings)
+		}
+
+		if newAnnouncement == nil {
+			newAnnouncement = &PublicAnnouncement{
+				Domain:    connection.Domain,
+				ExpiresAt: connection.ExpiresAt,
+				Operator:  params.ClientInfo.Name,
 			}
+			c.announcements = append(c.announcements, newAnnouncement)
+			changed = true
 		}
-	}
 
-	var newAnnouncement *PublicAnnouncement
-	changed := false
-	for _, announcement := range c.announcements {
-		if announcement.Domain == params.Domain {
-			if announcement.Operator != params.ClientInfo.Name {
-				return context.Error(400, "already taken", announcement)
+		if changed {
+
+			eps.Log.Debugf("An announcement was added or modified.")
+
+			id, err := helpers.RandomID(16)
+
+			if err != nil {
+				eps.Log.Error(err)
+				return context.InternalError()
 			}
-			newAnnouncement = announcement
-			if announcement.ExpiresAt != params.ExpiresAt || announcement.ExpiresAt != nil && params.ExpiresAt != nil && !params.ExpiresAt.Equal(*announcement.ExpiresAt) {
-				changed = true
-				// we update the expiration time
-				announcement.ExpiresAt = params.ExpiresAt
+
+			rawData, err := json.Marshal(newAnnouncement)
+
+			if err != nil {
+				eps.Log.Error(err)
+				return context.InternalError()
 			}
-			break
-		}
-	}
 
-	if newAnnouncement == nil {
-		newAnnouncement = &PublicAnnouncement{
-			Domain:    params.Domain,
-			ExpiresAt: params.ExpiresAt,
-			Operator:  params.ClientInfo.Name,
-		}
-		c.announcements = append(c.announcements, newAnnouncement)
-		changed = true
-	}
+			dataEntry := &helpers.DataEntry{
+				Type: PublicAnnouncementType,
+				ID:   id,
+				Data: rawData,
+			}
 
-	if changed {
+			if err := c.dataStore.Write(dataEntry); err != nil {
+				eps.Log.Error(err)
+				return context.InternalError()
+			}
 
-		eps.Log.Debugf("An announcement was added or modified.")
-
-		id, err := helpers.RandomID(16)
-
-		if err != nil {
-			eps.Log.Error(err)
-			return context.InternalError()
 		}
 
-		rawData, err := json.Marshal(newAnnouncement)
-
-		if err != nil {
-			eps.Log.Error(err)
-			return context.InternalError()
-		}
-
-		dataEntry := &helpers.DataEntry{
-			Type: PublicAnnouncementType,
-			ID:   id,
-			Data: rawData,
-		}
-
-		if err := c.dataStore.Write(dataEntry); err != nil {
-			eps.Log.Error(err)
-			return context.InternalError()
-		}
+		results = append(results, nil)
 
 	}
-
-	return context.Acknowledge()
+	return context.Result(results)
 }
 
 var GetPublicAnnouncementsForm = forms.Form{
@@ -207,9 +242,9 @@ func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
 	}
 
 	methods := map[string]*jsonrpc.Method{
-		"announceConnection": {
-			Form:    &PublicAnnounceConnectionForm,
-			Handler: server.announceConnection,
+		"announceConnections": {
+			Form:    &PublicAnnounceConnectionsForm,
+			Handler: server.announceConnections,
 		},
 		"getAnnouncements": {
 			Form:    &GetPublicAnnouncementsForm,
@@ -250,6 +285,7 @@ func (s *PublicServer) update() error {
 		for _, entry := range entries {
 			switch entry.Type {
 			case PublicAnnouncementType:
+				eps.Log.Info(string(entry.Data))
 				announcement := &PublicAnnouncement{}
 				if err := json.Unmarshal(entry.Data, &announcement); err != nil {
 					return fmt.Errorf("invalid record format!")

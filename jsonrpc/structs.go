@@ -51,6 +51,14 @@ type Response struct {
 	ID      interface{} `json:"id"`
 }
 
+func MakeError(code int64, message string, data interface{}) *Error {
+	return &Error{
+		Code:    code,
+		Message: message,
+		Data:    data,
+	}
+}
+
 func fromEPSStruct(value map[string]interface{}) interface{} {
 	if len(value) == 1 {
 		var key string
@@ -79,7 +87,7 @@ func FromEPSResponse(response *eps.Response) *Response {
 
 	if response.Error != nil {
 		error = &Error{
-			Code:    response.Error.Code,
+			Code:    int64(response.Error.Code),
 			Message: response.Error.Message,
 			Data:    fromEPSStruct(response.Error.Data),
 		}
@@ -111,7 +119,7 @@ func (r *Response) ToEPSResponse() *eps.Response {
 
 	if r.Error != nil {
 		error := &eps.Error{
-			Code:    r.Error.Code,
+			Code:    int(r.Error.Code),
 			Message: r.Error.Message,
 		}
 		if r.Error.Data != nil {
@@ -123,7 +131,7 @@ func (r *Response) ToEPSResponse() *eps.Response {
 }
 
 type Error struct {
-	Code    int         `json:"code"`
+	Code    int64       `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }

@@ -183,7 +183,7 @@
           ],
           "methods": [
             {
-              "name": "announceConnection"
+              "name": "announceConnections"
             },
             {
               "name": "getAnnouncements"

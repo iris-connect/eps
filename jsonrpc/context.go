@@ -63,7 +63,7 @@ func (c *Context) Result(data interface{}) *Response {
 	}
 }
 
-func (c *Context) Error(code int, message string, data interface{}) *Response {
+func (c *Context) Error(code int64, message string, data interface{}) *Response {
 	return &Response{
 		Error: &Error{
 			Code:    code,

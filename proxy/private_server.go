@@ -524,8 +524,6 @@ type PrivateAnnounceConnectionParams struct {
 }
 
 func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *PrivateAnnounceConnectionParams) *jsonrpc.Response {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
 
 	settings := params.ClientInfo.Entry.SettingsFor("proxy", c.settings.Name)
 
@@ -555,6 +553,9 @@ func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *Pri
 			}
 		}
 	}
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	var newAnnouncement *PrivateAnnouncement
 	changed := false
@@ -612,14 +613,26 @@ func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *Pri
 	return context.Acknowledge()
 }
 
-func (s *PrivateServer) announceConnectionRPC(announcement *PrivateAnnouncement) error {
-	eps.Log.Debugf("Sending announcement for domain '%s' to '%s' (expires at: %v)", announcement.Domain, announcement.Proxy, announcement.ExpiresAt)
-	request := jsonrpc.MakeRequest(fmt.Sprintf("%s.announceConnection", announcement.Proxy), "", map[string]interface{}{
-		"operator":   s.settings.Name,
-		"expires_at": announcement.ExpiresAt,
-		"domain":     announcement.Domain,
+// this method requires that *all* announcements are for the same proxy!
+func (s *PrivateServer) announceConnectionsRPC(announcements []*PrivateAnnouncement) error {
+	if len(announcements) == 0 {
+		return fmt.Errorf("expected at least one announcement")
+	}
+	proxy := announcements[0].Proxy
+	for _, announcement := range announcements[1:] {
+		if announcement.Proxy != proxy {
+			return fmt.Errorf("expected all announcements for the same proxy")
+		}
+	}
+	eps.Log.Debugf("Sending %d announcements for proxy '%s'", len(announcements), proxy)
+	request := jsonrpc.MakeRequest(fmt.Sprintf("%s.announceConnections", proxy), "", map[string]interface{}{
+		"connections": announcements,
 	})
-	_, err := s.jsonrpcClient.Call(request)
+	result, err := s.jsonrpcClient.Call(request)
+	if result.Error != nil {
+		eps.Log.Error(result.Error)
+		return fmt.Errorf(result.Error.Message)
+	}
 	return err
 
 }
@@ -627,15 +640,26 @@ func (s *PrivateServer) announceConnectionRPC(announcement *PrivateAnnouncement)
 func (s *PrivateServer) announceConnections() {
 	for {
 
-		s.mutex.Lock()
+		groupedAnnouncements := map[string][]*PrivateAnnouncement{}
 
+		s.mutex.Lock()
 		for _, announcement := range s.announcements {
-			if err := s.announceConnectionRPC(announcement); err != nil {
+			var announcements []*PrivateAnnouncement
+			var ok bool
+			if announcements, ok = groupedAnnouncements[announcement.Proxy]; !ok {
+				announcements = []*PrivateAnnouncement{}
+			}
+			announcements = append(announcements, announcement)
+			groupedAnnouncements[announcement.Proxy] = announcements
+
+		}
+		s.mutex.Unlock()
+
+		for _, announcements := range groupedAnnouncements {
+			if err := s.announceConnectionsRPC(announcements); err != nil {
 				eps.Log.Error(err)
 			}
 		}
-
-		s.mutex.Unlock()
 
 		select {
 		// in case of an error we try to reconnect after 1 second
@@ -672,6 +696,7 @@ func (s *PrivateServer) update() error {
 		for _, entry := range entries {
 			switch entry.Type {
 			case PrivateAnnouncementType:
+				eps.Log.Info(string(entry.Data))
 				announcement := &PrivateAnnouncement{}
 				if err := json.Unmarshal(entry.Data, &announcement); err != nil {
 					return fmt.Errorf("invalid record format!")
