@@ -51,17 +51,17 @@ func (c *GRPCServerConnection) Open() error {
 	defer c.mutex.Unlock()
 	if c.connected {
 		if c.establishedAddress == c.Address && c.establishedName == c.Name {
-			eps.Log.Debug("Connection still good, doing nothing...")
+			eps.Log.Tracef("Connection still good, doing nothing...")
 			// we're already connected and nothing changed
 			return nil
 		}
-		eps.Log.Debug("Connection details changed!")
+		eps.Log.Tracef("Connection details changed!")
 		// some connection details changed, we reestablish the connection
 		if err := c.Close(); err != nil {
 			return err
 		}
 	} else {
-		eps.Log.Debug("Opening a new connection")
+		eps.Log.Tracef("Opening a new gRPC client connection")
 	}
 	if client, err := grpc.MakeClient(&c.channel.Settings, c.channel.Directory()); err != nil {
 		return err
@@ -74,21 +74,33 @@ func (c *GRPCServerConnection) Open() error {
 		c.establishedAddress = c.Address
 		// we open the server call in another goroutine
 		go func() {
+			stopping := false
+		loop:
 			for {
-				if err := client.ServerCall(c.channel, c.stop); err != nil {
-					eps.Log.Error(err)
-				} else {
-					// the call stopped because it was requested to
-					break
+				if !stopping {
+					if err := client.ServerCall(c.channel, c.stop); err != nil {
+						eps.Log.Errorf("Server call failed: %v", err)
+						stopping = true
+						// there was a connection error, we stop the loop
+						go func() {
+							if err := c.Close(); err != nil {
+								eps.Log.Error(err)
+							}
+						}()
+					} else {
+						// the call stopped because it was requested to
+						break loop
+					}
 				}
 				select {
 				// in case of an error we try to reconnect after 1 second
 				case <-time.After(1 * time.Second):
 				case <-c.stop:
 					c.stop <- true
-					break
+					break loop
 				}
 			}
+
 		}()
 		return nil
 	}
@@ -98,6 +110,9 @@ func (c *GRPCServerConnection) Open() error {
 func (c *GRPCServerConnection) Close() error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+	if !c.connected {
+		return nil
+	}
 	c.stop <- true
 	select {
 	case <-c.stop:

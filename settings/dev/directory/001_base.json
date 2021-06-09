@@ -42,12 +42,6 @@
       "data" : [
         {
           "type" : "grpc_client"
-        },
-        {
-          "type" : "grpc_server",
-          "settings" : {
-            "address" : "localhost:7778"
-          }
         }
       ]
     },
@@ -64,12 +58,6 @@
       "data" : [
         {
           "type" : "grpc_client"
-        },
-        {
-          "type" : "grpc_server",
-          "settings" : {
-            "address" : "localhost:7776"
-          }
         }
       ]
     },
