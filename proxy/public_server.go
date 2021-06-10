@@ -221,6 +221,8 @@ var GetPublicAnnouncementsForm = forms.Form{
 type GetPublicAnnouncementsParams struct{}
 
 func (c *PublicServer) getAnnouncements(context *jsonrpc.Context, params *GetPublicAnnouncementsParams) *jsonrpc.Response {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	relevantAnnouncements := make([]*PublicAnnouncement, 0)
 	for _, announcement := range c.announcements {
 		if announcement.ExpiresAt != nil && announcement.ExpiresAt.Before(time.Now()) {
@@ -278,6 +280,8 @@ func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
 }
 
 func (s *PublicServer) update() error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	if entries, err := s.dataStore.Read(); err != nil {
 		return err
 	} else {
@@ -467,6 +471,7 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 		eps.Log.Debugf("Looking for announcement for domain '%s'...", hostName)
 
 		found := false
+		s.mutex.Lock()
 		for _, announcement = range s.announcements {
 			if announcement.Domain == hostName {
 				// if this announcement is already expired we ignore it
@@ -477,6 +482,7 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 				break
 			}
 		}
+		s.mutex.Unlock()
 
 		// no matching announcement found...
 		if !found {

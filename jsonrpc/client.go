@@ -57,6 +57,7 @@ func (c *Client) Call(request *Request) (*Response, error) {
 	}
 
 	if c.settings.ProxyUrl != "" {
+		eps.Log.Debugf("Using proxy URL %s", c.settings.ProxyUrl)
 		if proxyUrl, err := url.Parse(c.settings.ProxyUrl); err != nil {
 			return nil, err
 		} else {
