@@ -18,6 +18,7 @@ package main
 
 import (
 	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/metrics"
 	"github.com/iris-connect/eps/proxy"
 	"github.com/iris-connect/eps/proxy/helpers"
 	"github.com/urfave/cli"
@@ -171,6 +172,7 @@ func main() {
 		eps.Log.Error(err)
 		return
 	} else {
+		metrics.OpenPrometheusEndpoint()
 		CLI(settings)
 	}
 }

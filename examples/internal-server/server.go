@@ -19,12 +19,12 @@
 package main
 
 import (
+	"encoding/json"
+	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/http"
 	"github.com/iris-connect/eps/tls"
-	"github.com/iris-connect/eps"
-	"os"
 	"io/ioutil"
-	"encoding/json"
+	"os"
 	"os/signal"
 	"syscall"
 )
@@ -103,6 +103,7 @@ func main() {
 	if server, err := http.MakeHTTPServer(settings, routeGroups); err != nil {
 		eps.Log.Fatal(err)
 	} else {
+		metrics.OpenPrometheusEndpoint()
 		server.Start()
 
 		// we wait for CTRL-C / Interrupt

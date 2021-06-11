@@ -20,6 +20,7 @@ import (
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/cmd/helpers"
 	"github.com/iris-connect/eps/definitions"
+	"github.com/iris-connect/eps/metrics"
 )
 
 func main() {
@@ -27,6 +28,7 @@ func main() {
 		eps.Log.Error(err)
 		return
 	} else {
+		metrics.OpenPrometheusEndpoint()
 		helpers.CLI(settings)
 	}
 }

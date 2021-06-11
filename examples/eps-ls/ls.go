@@ -19,9 +19,9 @@
 package main
 
 import (
-	"github.com/kiprotect/go-helpers/forms"
-	"github.com/iris-connect/eps/jsonrpc"
 	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/jsonrpc"
+	"github.com/kiprotect/go-helpers/forms"
 	"os"
 	"os/signal"
 	"syscall"
@@ -101,6 +101,7 @@ func main() {
 	if server, err := jsonrpc.MakeJSONRPCServer(settings, handler); err != nil {
 		eps.Log.Fatal(err)
 	} else {
+		metrics.OpenPrometheusEndpoint()
 		server.Start()
 
 		// we wait for CTRL-C / Interrupt
