@@ -42,6 +42,7 @@ type GRPCServerConnection struct {
 	client             *grpc.Client
 	channel            *GRPCClientChannel
 	connected          bool
+	connecting         bool
 	mutex              sync.Mutex
 	stop               chan bool
 }
@@ -60,9 +61,13 @@ func (c *GRPCServerConnection) Open() error {
 		if err := c.Close(); err != nil {
 			return err
 		}
+	} else if c.connecting {
+		return nil
 	} else {
 		eps.Log.Tracef("Opening a new gRPC client connection")
 	}
+	c.connecting = true
+	defer func() { c.connecting = false }()
 	if client, err := grpc.MakeClient(&c.channel.Settings, c.channel.Directory()); err != nil {
 		return err
 	} else if err := client.Connect(c.Address, c.Name); err != nil {
@@ -288,7 +293,7 @@ func (c *GRPCClientChannel) openConnections() error {
 					// we won't open a channel to ourselves...
 					continue
 				}
-				eps.Log.Debugf("Opening channel to %s at %s", entry.Name, settings.Address)
+				eps.Log.Tracef("Maintaining connection to %s at %s", entry.Name, settings.Address)
 				if err := c.openConnection(settings.Address, entry.Name); err != nil {
 					// we only log this as tracing errors
 					eps.Log.Trace(err)

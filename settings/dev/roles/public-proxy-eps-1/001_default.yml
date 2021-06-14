@@ -6,6 +6,7 @@ directory:
   type: api
   settings:
     jsonrpc_client:
+      #proxy_url: http://localhost:8083/jsonrpc
       tls:
         certificate_file: "$DIR/../../certs/hd-1.crt"
         key_file: "$DIR/../../certs/hd-1.key"

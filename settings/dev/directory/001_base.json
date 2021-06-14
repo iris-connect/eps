@@ -58,6 +58,12 @@
       "data" : [
         {
           "type" : "grpc_client"
+        },
+        {
+          "type" : "grpc_server",
+          "settings" : {
+            "address" : "localhost:7776"
+          }
         }
       ]
     },
@@ -72,6 +78,23 @@
       "section": "services",
       "name": "private-proxy-1",
       "data" : [
+        {
+          "name": "internals",
+          "permissions": [
+            {
+              "group" : "*",
+              "rights" : ["call"]
+            }
+          ],
+          "methods" : [
+            {
+              "name": "_ping"
+            },
+            {
+              "name": "_channels"
+            }
+          ]
+        },
         {
           "name": "private-proxy",
           "methods": [

@@ -35,7 +35,7 @@ import (
 type Client struct {
 	directory  eps.Directory
 	connection *grpc.ClientConn
-	clientInfo *eps.ClientInfo
+	clientInfo eps.ClientInfo
 	settings   *GRPCClientSettings
 	mutex      sync.Mutex
 }
@@ -43,19 +43,19 @@ type Client struct {
 type VerifyCredentials struct {
 	credentials.TransportCredentials
 	directory  eps.Directory
-	ClientInfo *eps.ClientInfo
+	ClientInfo eps.ClientInfo
 }
 
 type ClientInfoAuthInfo struct {
 	credentials.AuthInfo
-	ClientInfo *eps.ClientInfo
+	ClientInfo eps.ClientInfo
 }
 
-func (c VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string, clientInfo *eps.ClientInfo) (bool, error) {
+func (c VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string) (bool, error) {
 	if entry, err := c.directory.EntryFor(name); err != nil {
 		return false, err
 	} else {
-		clientInfo.Entry = entry
+		c.ClientInfo.Entry = entry
 		// we go through all certificates for the entry
 		for _, directoryCert := range entry.Certificates {
 			// we make sure the certificate is good for encryption
@@ -77,7 +77,7 @@ func (c VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInf
 	cert := tlsInfo.State.PeerCertificates[0]
 	name := cert.Subject.CommonName
 
-	if ok, err := c.checkFingerprint(cert, name, c.ClientInfo); err != nil {
+	if ok, err := c.checkFingerprint(cert, name); err != nil {
 		return conn, authInfo, err
 	} else if !ok {
 		return conn, authInfo, fmt.Errorf("invalid certificate")
@@ -125,7 +125,7 @@ func (c *Client) Connect(address, serverName string) error {
 		return err
 	}
 
-	vc := &VerifyCredentials{directory: c.directory, ClientInfo: &eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}
+	vc := &VerifyCredentials{directory: c.directory, ClientInfo: eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}
 	opts = append(opts, grpc.WithTransportCredentials(vc))
 
 	c.connection, err = grpc.Dial(address, opts...)
@@ -147,7 +147,7 @@ func (c *Client) Close() error {
 
 	err := c.connection.Close()
 	c.connection = nil
-	c.clientInfo = nil
+	c.clientInfo = eps.ClientInfo{}
 	return err
 }
 
@@ -198,7 +198,7 @@ func (c *Client) ServerCall(handler Handler, stop chan bool) error {
 			Method: pbRequest.Method,
 		}
 
-		response, err := handler.HandleRequest(request, c.clientInfo)
+		response, err := handler.HandleRequest(request, &c.clientInfo)
 
 		pbResponse := &protobuf.Response{
 			Id: pbRequest.Id,

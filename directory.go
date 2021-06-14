@@ -220,7 +220,7 @@ func CanCall(caller, callee *DirectoryEntry, method string) bool {
 		// we go through all permissions
 		for _, permission := range pms {
 			// we check if the caller has a matching group entry
-			if _, ok := callerGroups[permission.Group]; ok {
+			if _, ok := callerGroups[permission.Group]; ok || permission.Group == "*" {
 				// we go through all permission rights
 				for _, right := range permission.Rights {
 					// we check if the caller has the 'call' right

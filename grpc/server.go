@@ -72,7 +72,7 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
 		return nil, err
 	} else {
-		opts = append(opts, grpc.Creds(VerifyCredentials{directory: directory, ClientInfo: &eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}))
+		opts = append(opts, grpc.Creds(VerifyCredentials{directory: directory, ClientInfo: eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}))
 	}
 
 	server := &Server{
@@ -99,6 +99,7 @@ func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, e
 	paramsStruct, err := structpb.NewStruct(request.Params)
 
 	if err != nil {
+		c.Stop <- true
 		return nil, err
 	}
 
@@ -110,10 +111,14 @@ func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, e
 
 	if err := c.CallServer.Send(pbRequest); err != nil {
 		eps.Log.Errorf("Cannot deliver request: %v", err)
+		c.Stop <- true
 		return nil, err
 	}
 
 	if pbResponse, err := c.CallServer.Recv(); err != nil {
+		eps.Log.Errorf("Cannot receive response: %v", err)
+		// we close the connection
+		c.Stop <- true
 		return nil, err
 	} else {
 
@@ -189,7 +194,7 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 		Method: pbRequest.Method,
 	}
 
-	if response, err := s.handler.HandleRequest(request, clientInfoAuthInfo.ClientInfo); err != nil {
+	if response, err := s.handler.HandleRequest(request, &clientInfoAuthInfo.ClientInfo); err != nil {
 		return nil, err
 	} else {
 
@@ -238,6 +243,12 @@ func (s *Server) setClient(client *ConnectedClient) {
 	s.connectedClients[client.Info.Name] = client
 }
 
+func (s *Server) deleteClient(client *ConnectedClient) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	delete(s.connectedClients, client.Info.Name)
+}
+
 func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 
 	// this is a bidirectional message stream
@@ -258,7 +269,7 @@ func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 
 	if client == nil {
 		client = &ConnectedClient{
-			Info: clientInfoAuthInfo.ClientInfo,
+			Info: &clientInfoAuthInfo.ClientInfo,
 			Stop: make(chan bool),
 		}
 		s.setClient(client)
@@ -270,6 +281,8 @@ func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 
 	// we wait for the client to stop...
 	<-client.Stop
+
+	s.deleteClient(client)
 
 	return nil
 
