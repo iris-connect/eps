@@ -51,7 +51,7 @@ type ClientInfoAuthInfo struct {
 	ClientInfo eps.ClientInfo
 }
 
-func (c VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string) (bool, error) {
+func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string) (bool, error) {
 	if entry, err := c.directory.EntryFor(name); err != nil {
 		return false, err
 	} else {
@@ -71,7 +71,7 @@ func (c VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string)
 	}
 }
 
-func (c VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInfo) (net.Conn, credentials.AuthInfo, error) {
+func (c *VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInfo) (net.Conn, credentials.AuthInfo, error) {
 
 	tlsInfo := authInfo.(credentials.TLSInfo)
 	cert := tlsInfo.State.PeerCertificates[0]
