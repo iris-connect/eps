@@ -51,11 +51,11 @@ type ClientInfoAuthInfo struct {
 	ClientInfo *eps.ClientInfo
 }
 
-func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string) (bool, error) {
+func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string, clientInfo *eps.ClientInfo) (bool, error) {
 	if entry, err := c.directory.EntryFor(name); err != nil {
 		return false, err
 	} else {
-		c.ClientInfo.Entry = entry
+		clientInfo.Entry = entry
 		// we go through all certificates for the entry
 		for _, directoryCert := range entry.Certificates {
 			// we make sure the certificate is good for encryption
@@ -71,22 +71,24 @@ func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string
 	}
 }
 
-func (c *VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInfo) (net.Conn, credentials.AuthInfo, error) {
+func (c *VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInfo, clientInfo *eps.ClientInfo) (net.Conn, credentials.AuthInfo, error) {
 
 	tlsInfo := authInfo.(credentials.TLSInfo)
 	cert := tlsInfo.State.PeerCertificates[0]
 	name := cert.Subject.CommonName
 
-	// we always create a new client info object
-	c.ClientInfo = &eps.ClientInfo{}
+	if clientInfo == nil {
+		// we create a new client info object
+		clientInfo = &eps.ClientInfo{}
+	}
 
-	if ok, err := c.checkFingerprint(cert, name); err != nil {
+	if ok, err := c.checkFingerprint(cert, name, clientInfo); err != nil {
 		return conn, authInfo, err
 	} else if !ok {
 		return conn, authInfo, fmt.Errorf("invalid certificate")
 	}
-	c.ClientInfo.Name = name
-	clientInfoAuthInfo := &ClientInfoAuthInfo{authInfo, c.ClientInfo}
+	clientInfo.Name = name
+	clientInfoAuthInfo := &ClientInfoAuthInfo{authInfo, clientInfo}
 
 	return conn, clientInfoAuthInfo, nil
 
@@ -98,8 +100,9 @@ func (c VerifyCredentials) ServerHandshake(conn net.Conn) (net.Conn, credentials
 	if err != nil {
 		return conn, authInfo, err
 	}
-
-	return c.handshake(conn, authInfo)
+	// for the server we do not pass a client info object but create a new
+	// one for every handshake, as the client info will change...
+	return c.handshake(conn, authInfo, nil)
 
 }
 
@@ -109,8 +112,9 @@ func (c VerifyCredentials) ClientHandshake(ctx context.Context, endpoint string,
 	if err != nil {
 		return conn, authInfo, err
 	}
-
-	return c.handshake(conn, authInfo)
+	// for the client we pass the existing client info object as it will be
+	// used only once...
+	return c.handshake(conn, authInfo, c.ClientInfo)
 }
 
 func (c *Client) Connect(address, serverName string) error {
@@ -127,18 +131,14 @@ func (c *Client) Connect(address, serverName string) error {
 		return err
 	}
 
-	vc := &VerifyCredentials{directory: c.directory, TransportCredentials: credentials.NewTLS(tlsConfig)}
+	c.clientInfo = &eps.ClientInfo{}
+
+	vc := &VerifyCredentials{directory: c.directory, ClientInfo: c.clientInfo, TransportCredentials: credentials.NewTLS(tlsConfig)}
 	opts = append(opts, grpc.WithTransportCredentials(vc))
 
 	c.connection, err = grpc.Dial(address, opts...)
 
-	if err != nil {
-		return err
-	}
-
-	c.clientInfo = vc.ClientInfo
-
-	return nil
+	return err
 
 }
 
