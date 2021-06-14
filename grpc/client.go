@@ -35,7 +35,7 @@ import (
 type Client struct {
 	directory  eps.Directory
 	connection *grpc.ClientConn
-	clientInfo eps.ClientInfo
+	clientInfo *eps.ClientInfo
 	settings   *GRPCClientSettings
 	mutex      sync.Mutex
 }
@@ -43,12 +43,12 @@ type Client struct {
 type VerifyCredentials struct {
 	credentials.TransportCredentials
 	directory  eps.Directory
-	ClientInfo eps.ClientInfo
+	ClientInfo *eps.ClientInfo
 }
 
 type ClientInfoAuthInfo struct {
 	credentials.AuthInfo
-	ClientInfo eps.ClientInfo
+	ClientInfo *eps.ClientInfo
 }
 
 func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string) (bool, error) {
@@ -77,12 +77,14 @@ func (c *VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthIn
 	cert := tlsInfo.State.PeerCertificates[0]
 	name := cert.Subject.CommonName
 
+	// we always create a new client info object
+	c.ClientInfo = &eps.ClientInfo{}
+
 	if ok, err := c.checkFingerprint(cert, name); err != nil {
 		return conn, authInfo, err
 	} else if !ok {
 		return conn, authInfo, fmt.Errorf("invalid certificate")
 	}
-
 	c.ClientInfo.Name = name
 	clientInfoAuthInfo := &ClientInfoAuthInfo{authInfo, c.ClientInfo}
 
@@ -125,7 +127,7 @@ func (c *Client) Connect(address, serverName string) error {
 		return err
 	}
 
-	vc := &VerifyCredentials{directory: c.directory, ClientInfo: eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}
+	vc := &VerifyCredentials{directory: c.directory, TransportCredentials: credentials.NewTLS(tlsConfig)}
 	opts = append(opts, grpc.WithTransportCredentials(vc))
 
 	c.connection, err = grpc.Dial(address, opts...)
@@ -147,7 +149,7 @@ func (c *Client) Close() error {
 
 	err := c.connection.Close()
 	c.connection = nil
-	c.clientInfo = eps.ClientInfo{}
+	c.clientInfo = nil
 	return err
 }
 
@@ -198,7 +200,7 @@ func (c *Client) ServerCall(handler Handler, stop chan bool) error {
 			Method: pbRequest.Method,
 		}
 
-		response, err := handler.HandleRequest(request, &c.clientInfo)
+		response, err := handler.HandleRequest(request, c.clientInfo)
 
 		pbResponse := &protobuf.Response{
 			Id: pbRequest.Id,

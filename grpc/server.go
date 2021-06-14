@@ -72,7 +72,7 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
 		return nil, err
 	} else {
-		opts = append(opts, grpc.Creds(VerifyCredentials{directory: directory, ClientInfo: eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}))
+		opts = append(opts, grpc.Creds(VerifyCredentials{directory: directory, TransportCredentials: credentials.NewTLS(tlsConfig)}))
 	}
 
 	server := &Server{
@@ -194,7 +194,7 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 		Method: pbRequest.Method,
 	}
 
-	if response, err := s.handler.HandleRequest(request, &clientInfoAuthInfo.ClientInfo); err != nil {
+	if response, err := s.handler.HandleRequest(request, clientInfoAuthInfo.ClientInfo); err != nil {
 		return nil, err
 	} else {
 
@@ -269,7 +269,7 @@ func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 
 	if client == nil {
 		client = &ConnectedClient{
-			Info: &clientInfoAuthInfo.ClientInfo,
+			Info: clientInfoAuthInfo.ClientInfo,
 			Stop: make(chan bool),
 		}
 		s.setClient(client)
