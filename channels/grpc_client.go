@@ -251,7 +251,7 @@ func (c *GRPCClientChannel) backgroundTask() {
 			eps.Log.Debug("Stopping gRPC client background task")
 			c.stop <- true
 			return
-		case <-time.After(5 * time.Second):
+		case <-time.After(60 * time.Second):
 			if err := c.openConnections(); err != nil {
 				eps.Log.Error(err)
 			}
