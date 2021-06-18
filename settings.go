@@ -29,10 +29,11 @@ type DirectorySettings struct {
 }
 
 type SigningSettings struct {
-	Name              string `json:"name"`
-	CACertificateFile string `json:"ca_certificate_file"`
-	CertificateFile   string `json:"certificate_file"`
-	KeyFile           string `json:"key_file"`
+	Name                           string   `json:"name"`
+	CACertificateFile              string   `json:"ca_certificate_file"`
+	CAIntermediateCertificateFiles []string `json:"ca_intermediate_certificate_files"`
+	CertificateFile                string   `json:"certificate_file"`
+	KeyFile                        string   `json:"key_file"`
 }
 
 type Settings struct {

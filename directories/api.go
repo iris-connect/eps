@@ -73,15 +73,27 @@ var APIDirectorySettingsForm = forms.Form{
 				},
 			},
 		},
+		{
+			Name: "ca_intermediate_certificate_files",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsString{},
+					},
+				},
+			},
+		},
 	},
 }
 
 type APIDirectorySettings struct {
-	Endpoints          []string                       `json:"endpoints"`
-	ServerNames        []string                       `json:"server_names"`
-	JSONRPCClient      *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
-	CACertificateFiles []string                       `json:"ca_certificate_files"`
-	CacheEntriesFor    int64                          `json:"cache_entries_for"`
+	Endpoints                      []string                       `json:"endpoints"`
+	ServerNames                    []string                       `json:"server_names"`
+	JSONRPCClient                  *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
+	CACertificateFiles             []string                       `json:"ca_certificate_files"`
+	CAIntermediateCertificateFiles []string                       `json:"ca_intermediate_certificate_files"`
+	CacheEntriesFor                int64                          `json:"cache_entries_for"`
 }
 
 type CacheEntry struct {
@@ -95,13 +107,14 @@ type DirectoryCache struct {
 
 type APIDirectory struct {
 	eps.BaseDirectory
-	lastUpdate    time.Time
-	settings      APIDirectorySettings
-	jsonrpcClient *jsonrpc.Client
-	rootCerts     []*x509.Certificate
-	entries       map[string]*eps.DirectoryEntry
-	records       []*eps.SignedChangeRecord
-	mutex         sync.Mutex
+	lastUpdate        time.Time
+	settings          APIDirectorySettings
+	jsonrpcClient     *jsonrpc.Client
+	rootCerts         []*x509.Certificate
+	intermediateCerts []*x509.Certificate
+	entries           map[string]*eps.DirectoryEntry
+	records           []*eps.SignedChangeRecord
+	mutex             sync.Mutex
 }
 
 func APIDirectorySettingsValidator(settings map[string]interface{}) (interface{}, error) {
@@ -132,15 +145,29 @@ func MakeAPIDirectory(name string, settings interface{}) (eps.Directory, error) 
 
 	}
 
+	intermediateCerts := make([]*x509.Certificate, 0)
+
+	for _, certificateFile := range apiSettings.CAIntermediateCertificateFiles {
+		cert, err := helpers.LoadCertificate(certificateFile, false)
+
+		if err != nil {
+			return nil, err
+		}
+
+		intermediateCerts = append(intermediateCerts, cert)
+
+	}
+
 	d := &APIDirectory{
 		BaseDirectory: eps.BaseDirectory{
 			Name_: name,
 		},
-		jsonrpcClient: jsonrpc.MakeClient(apiSettings.JSONRPCClient),
-		entries:       make(map[string]*eps.DirectoryEntry),
-		records:       []*eps.SignedChangeRecord{},
-		rootCerts:     rootCerts,
-		settings:      apiSettings,
+		jsonrpcClient:     jsonrpc.MakeClient(apiSettings.JSONRPCClient),
+		entries:           make(map[string]*eps.DirectoryEntry),
+		records:           []*eps.SignedChangeRecord{},
+		rootCerts:         rootCerts,
+		intermediateCerts: intermediateCerts,
+		settings:          apiSettings,
 	}
 
 	// we still allow the services to start even if the API is not reachable...
@@ -365,7 +392,7 @@ func (f *APIDirectory) update() error {
 
 				// we verify all records before we integate them
 				for i, record := range fullRecords {
-					if ok, err := helpers.VerifyRecord(record, fullRecords[:i], f.rootCerts); err != nil {
+					if ok, err := helpers.VerifyRecord(record, fullRecords[:i], f.rootCerts, f.intermediateCerts); err != nil {
 						return err
 					} else if !ok {
 						return fmt.Errorf("invalid record found")
