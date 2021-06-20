@@ -12,6 +12,7 @@ directory:
         key_file: "$DIR/../../certs/hd-1.key"
         ca_certificate_files: ["$DIR/../../certs/root.crt"]
     ca_certificate_files: ["$DIR/../../certs/root.crt"]
+    ca_intermediate_certificate_files: ["$DIR/../../certs/intermediate.crt"]
     endpoints: ["https://localhost:3322/jsonrpc"]
     server_names: ["sd-1"]
 channels: # defines all the channels that we want to open when starting the server
@@ -40,3 +41,4 @@ signing:
   certificate_file: "$DIR/../../certs/hd-1-sign.crt"
   key_file: "$DIR/../../certs/hd-1-sign.key"
   ca_certificate_file: "$DIR/../../certs/root.crt"
+  ca_intermediate_certificate_files: ["$DIR/../../certs/intermediate.crt"]

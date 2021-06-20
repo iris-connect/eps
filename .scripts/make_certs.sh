@@ -24,8 +24,21 @@ LEN="2048"
 
 DIRECTORY_FILE=../directory/002_certificates.json
 
+touch index.txt
+echo 1000 > serial 
+
 openssl genrsa -out root.key ${LEN}
 openssl req -x509 -new -nodes -key root.key -sha256 -days 1024 -out root.crt -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${CN}"
+
+openssl genrsa -out intermediate.key ${LEN}
+openssl rsa -in "intermediate.key" -pubout -out "intermediate.pub";
+openssl req -new -sha256 -key "intermediate.key" -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=intermediate" -out "intermediate.csr";
+# openssl x509 -req -in "intermediate.csr" -CA root.crt -CAkey root.key -CAcreateserial -out "intermediate.crt" -extensions SAN -days 500 -sha256;
+openssl ca -extensions v3_intermediate_ca \
+	-days 300 -batch -notext -md sha256 \
+	-in intermediate.csr \
+	-config ../../../.scripts/root.conf \
+	-out intermediate.crt
 
 echo -n "{\"records\": [" > $DIRECTORY_FILE
 
@@ -39,25 +52,33 @@ do
 	openssl genrsa -out "${cert}.key" ${LEN};
 	openssl rsa -in "${cert}.key" -pubout -out "${cert}.pub";
 	openssl req -new -sha256 -key "${cert}.key" -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${cert}" -addext "subjectAltName = DNS:${cert},DNS:*.${cert}.local" -out "${cert}.csr";
-	openssl x509 -req -in "${cert}.csr" -CA root.crt -CAkey root.key -CAcreateserial -out "${cert}.crt" -extensions SAN -extfile <(printf "[SAN]\nsubjectAltName = DNS:${cert},DNS:*.${cert}.local") -days 500 -sha256;
+	openssl x509 -req -in "${cert}.csr" -CA intermediate.crt -CAkey intermediate.key -CAcreateserial -out "${cert}.crt" -extensions SAN -extfile <(printf "[SAN]\nsubjectAltName = DNS:${cert},DNS:*.${cert}.local") -days 500 -sha256;
+	# we add the intermediate certificate
+	cat intermediate.crt >> "${cert}.crt"
 
 	# we generate alternative certificates for testing the pinning (we won't add them to the directory)
 	openssl genrsa -out "${cert}-alt.key" ${LEN};
 	openssl rsa -in "${cert}-alt.key" -pubout -out "${cert}-alt.pub";
 	openssl req -new -sha256 -key "${cert}-alt.key" -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${cert}" -addext "subjectAltName = DNS:${cert},DNS:*.${cert}.local" -out "${cert}-alt.csr";
-	openssl x509 -req -in "${cert}-alt.csr" -CA root.crt -CAkey root.key -CAcreateserial -out "${cert}-alt.crt" -extensions SAN -extfile <(printf "[SAN]\nsubjectAltName = DNS:${cert},DNS:*.${cert}.local") -days 500 -sha256;
+	openssl x509 -req -in "${cert}-alt.csr" -CA intermediate.crt -CAkey intermediate.key -CAcreateserial -out "${cert}-alt.crt" -extensions SAN -extfile <(printf "[SAN]\nsubjectAltName = DNS:${cert},DNS:*.${cert}.local") -days 500 -sha256;
+	# we add the intermediate certificate
+	cat intermediate.crt >> "${cert}-alt.crt"
 
 	# the signing certificates use ECDSA and are for signing service directory entries
 	openssl ecparam -genkey -name prime256v1 -noout -out "${cert}-sign.key";
 	openssl ec -in "${cert}-sign.key" -pubout -out "${cert}-sign.pub";
 	openssl req -new -sha256 -key "${cert}-sign.key" -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${cert}" -addext "keyUsage=digitalSignature" -addext "subjectAltName = URI:iris-name://${cert},URI:iris-group://${groups[${cert}]},DNS:${cert}"  -out "${cert}-sign.csr";
-	openssl x509 -req -in "${cert}-sign.csr" -CA root.crt -CAkey root.key -CAcreateserial -out "${cert}-sign.crt"  -extensions SANKey -extfile <(printf "[SANKey]\nsubjectAltName = URI:iris-name://${cert},URI:iris-group://${groups[${cert}]},DNS:${cert}\nkeyUsage = digitalSignature") -days 500 -sha256;
+	openssl x509 -req -in "${cert}-sign.csr" -CA intermediate.crt -CAkey intermediate.key -CAcreateserial -out "${cert}-sign.crt"  -extensions SANKey -extfile <(printf "[SANKey]\nsubjectAltName = URI:iris-name://${cert},URI:iris-group://${groups[${cert}]},DNS:${cert}\nkeyUsage = digitalSignature") -days 500 -sha256;
+	# we add the intermediate certificate
+	cat intermediate.crt >> "${cert}-sign.crt"
 
 	# we generate alternative certificates for testing the pinning (we won't add them to the directory)
 	openssl ecparam -genkey -name prime256v1 -noout -out "${cert}-sign-alt.key";
 	openssl ec -in "${cert}-sign-alt.key" -pubout -out "${cert}-sign-alt.pub";
 	openssl req -new -sha256 -key "${cert}-sign-alt.key" -subj "/C=${C}/ST=${ST}/L=${L}/O=${O}/OU=${OU}/CN=${cert}" -addext "keyUsage=digitalSignature" -addext "subjectAltName = URI:iris-name://${cert},URI:iris-group://${groups[${cert}]},DNS:${cert}"  -out "${cert}-sign-alt.csr";
-	openssl x509 -req -in "${cert}-sign-alt.csr" -CA root.crt -CAkey root.key -CAcreateserial -out "${cert}-sign-alt.crt"  -extensions SANKey -extfile <(printf "[SANKey]\nsubjectAltName = URI:iris-name://${cert},URI:iris-group://${groups[${cert}]},DNS:${cert}\nkeyUsage = digitalSignature") -days 500 -sha256;
+	openssl x509 -req -in "${cert}-sign-alt.csr" -CA intermediate.crt -CAkey intermediate.key -CAcreateserial -out "${cert}-sign-alt.crt"  -extensions SANKey -extfile <(printf "[SANKey]\nsubjectAltName = URI:iris-name://${cert},URI:iris-group://${groups[${cert}]},DNS:${cert}\nkeyUsage = digitalSignature") -days 500 -sha256;
+	# we add the intermediate certificate
+	cat intermediate.crt >> "${cert}-sign-alt.crt"
 
 	FINGERPRINT_SIGNING=`openssl x509 -noout -fingerprint -sha256 -inform pem -in "${cert}-sign.crt" | sed -e 's/://g' | sed -r 's/.*=(.*)$/\1/g' | awk '{print tolower($0)}'`
 	FINGERPRINT_ENCRYPTION=`openssl x509 -noout -fingerprint -sha256 -inform pem -in "${cert}.crt" | sed -e 's/://g' | sed -r 's/.*=(.*)$/\1/g' | awk '{print tolower($0)}'`

@@ -133,7 +133,7 @@ type HashableTime struct {
 }
 
 func (h HashableTime) HashValue() interface{} {
-	return h.Time.Format(time.RFC3339)
+	return h.Time.Format(time.RFC3339Nano)
 }
 
 func (d *DirectoryEntry) Channel(channelType string) *OperatorChannel {

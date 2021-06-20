@@ -68,6 +68,8 @@ func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, e
 
 	for _, certificateFile := range settings.CAIntermediateCertificateFiles {
 
+		eps.Log.Info(certificateFile)
+
 		cert, err := helpers.LoadCertificate(certificateFile, false)
 
 		if err != nil {
@@ -79,12 +81,13 @@ func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, e
 	}
 
 	f := &RecordDirectory{
-		rootCerts:      rootCerts,
-		orderedRecords: make([]*eps.SignedChangeRecord, 0),
-		recordsByHash:  make(map[string]*eps.SignedChangeRecord),
-		recordChildren: make(map[string][]*eps.SignedChangeRecord),
-		settings:       settings,
-		dataStore:      helpers.MakeFileDataStore(settings.DatabaseFile),
+		rootCerts:         rootCerts,
+		intermediateCerts: intermediateCerts,
+		orderedRecords:    make([]*eps.SignedChangeRecord, 0),
+		recordsByHash:     make(map[string]*eps.SignedChangeRecord),
+		recordChildren:    make(map[string][]*eps.SignedChangeRecord),
+		settings:          settings,
+		dataStore:         helpers.MakeFileDataStore(settings.DatabaseFile),
 	}
 
 	if err := f.dataStore.Init(); err != nil {
@@ -305,8 +308,9 @@ func (f *RecordDirectory) buildChains(records []*eps.SignedChangeRecord, visited
 	chains := make([][]*eps.SignedChangeRecord, 0)
 
 	for _, record := range records {
+		eps.Log.Infof("%s", record.Hash)
 		if _, ok := visited[record.Hash]; ok {
-			return nil, fmt.Errorf("circular relationship detected")
+			continue
 		} else {
 			visited[record.Hash] = true
 		}
