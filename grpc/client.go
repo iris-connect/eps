@@ -74,6 +74,9 @@ func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string
 func (c *VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInfo, clientInfo *eps.ClientInfo) (net.Conn, credentials.AuthInfo, error) {
 
 	tlsInfo := authInfo.(credentials.TLSInfo)
+	if len(tlsInfo.State.PeerCertificates) == 0 {
+		return conn, authInfo, fmt.Errorf("certificate missing")
+	}
 	cert := tlsInfo.State.PeerCertificates[0]
 	name := cert.Subject.CommonName
 
