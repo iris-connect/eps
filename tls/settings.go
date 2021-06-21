@@ -22,4 +22,12 @@ type TLSSettings struct {
 	CACertificateFiles []string `json:"ca_certificate_files"`
 	CertificateFile    string   `json:"certificate_file"`
 	KeyFile            string   `json:"key_file"`
+
+	// This switch only exists to accomodate the inability of certain
+	// certificate authorities to provide TLS certificates with
+	// the necessary rights. Since key pinning is used to verify certificates
+	// in addition to the normal TLS verification enabling this will not
+	// destroy the systems' security, although it will weaken it.
+	// So please do not set this to true...
+	InsecureSkipVerify bool `json:"insecure_skip_verify"`
 }

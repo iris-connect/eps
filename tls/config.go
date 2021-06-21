@@ -65,6 +65,7 @@ func TLSConfig(settings *TLSSettings) (*tls.Config, error) {
 		ClientCAs:                certPool,
 		RootCAs:                  certPool,
 		ServerName:               settings.ServerName,
+		InsecureSkipVerify:       settings.InsecureSkipVerify,
 	}
 
 	return tlsConfig, nil
