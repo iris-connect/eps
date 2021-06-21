@@ -37,6 +37,13 @@ var TLSSettingsForm = forms.Form{
 			},
 		},
 		{
+			Name: "request_client_cert",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: false},
+				forms.IsBoolean{},
+			},
+		},
+		{
 			Name: "ca_certificate_files",
 			Validators: []forms.Validator{
 				forms.IsList{

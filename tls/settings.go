@@ -19,6 +19,7 @@ package tls
 type TLSSettings struct {
 	ServerName         string   `json:"server_name"`
 	VerifyClient       bool     `json:"verify_client"`
+	RequestClientCert  bool     `json:"request_client_cert"`
 	CACertificateFiles []string `json:"ca_certificate_files"`
 	CertificateFile    string   `json:"certificate_file"`
 	KeyFile            string   `json:"key_file"`
