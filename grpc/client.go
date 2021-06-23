@@ -33,32 +33,66 @@ import (
 )
 
 type Client struct {
-	directory  eps.Directory
-	connection *grpc.ClientConn
-	clientInfo *eps.ClientInfo
-	settings   *GRPCClientSettings
-	mutex      sync.Mutex
+	directory   eps.Directory
+	connection  *grpc.ClientConn
+	clientInfos *ClientInfos
+	settings    *GRPCClientSettings
+	mutex       sync.Mutex
+}
+
+type ClientInfos struct {
+	Infos []*eps.ClientInfo
+}
+
+func (c *ClientInfos) PrimaryName() string {
+	if len(c.Infos) == 0 {
+		return ""
+	}
+	return c.Infos[0].Name
+}
+
+func (c *ClientInfos) ClientInfo(name string) *eps.ClientInfo {
+	for _, info := range c.Infos {
+		if info.Name == name || name == "" {
+			return info
+		}
+	}
+	return nil
+}
+
+func (c *ClientInfos) HasName(name string) bool {
+	for _, info := range c.Infos {
+		if info.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func MakeClientInfos() *ClientInfos {
+	return &ClientInfos{
+		Infos: []*eps.ClientInfo{},
+	}
 }
 
 type VerifyCredentials struct {
 	credentials.TransportCredentials
-	directory  eps.Directory
-	ClientInfo *eps.ClientInfo
+	directory   eps.Directory
+	ClientInfos *ClientInfos
 }
 
 type ClientInfoAuthInfo struct {
 	credentials.AuthInfo
-	ClientInfo *eps.ClientInfo
+	ClientInfos *ClientInfos
 }
 
-func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string, clientInfo *eps.ClientInfo) (bool, error) {
+func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string) (*eps.DirectoryEntry, bool, error) {
 	if entry, err := c.directory.EntryFor(name); err != nil {
 		if err == eps.NoEntryFound {
-			return false, nil
+			return nil, false, nil
 		}
-		return false, err
+		return nil, false, err
 	} else {
-		clientInfo.Entry = entry
 		// we go through all certificates for the entry
 		for _, directoryCert := range entry.Certificates {
 			// we make sure the certificate is good for encryption
@@ -67,43 +101,54 @@ func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string
 			}
 			// we check if this is a valid certificate for this operator
 			if helpers.VerifyFingerprint(cert, directoryCert.Fingerprint) {
-				return true, nil
+				return entry, true, nil
 			}
 		}
-		return false, nil
+		return nil, false, nil
 	}
 }
 
-func (c *VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInfo, clientInfo *eps.ClientInfo) (net.Conn, credentials.AuthInfo, error) {
+func (c *VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthInfo, clientInfos *ClientInfos) (net.Conn, credentials.AuthInfo, error) {
 
 	tlsInfo := authInfo.(credentials.TLSInfo)
+
 	if len(tlsInfo.State.PeerCertificates) == 0 {
 		return conn, authInfo, fmt.Errorf("certificate missing")
 	}
+
 	cert := tlsInfo.State.PeerCertificates[0]
 
 	names := []string{cert.Subject.CommonName}
 	names = append(names, cert.DNSNames...)
 
-	if clientInfo == nil {
+	if clientInfos == nil {
 		// we create a new client info object
-		clientInfo = &eps.ClientInfo{}
+		clientInfos = MakeClientInfos()
+	} else {
+		// we reset the infos
+		clientInfos.Infos = []*eps.ClientInfo{}
 	}
 
 	for _, name := range names {
 
-		if ok, err := c.checkFingerprint(cert, name, clientInfo); err != nil {
+		if entry, ok, err := c.checkFingerprint(cert, name); err != nil {
 			return conn, authInfo, err
 		} else if !ok {
 			continue
+		} else {
+			clientInfo := &eps.ClientInfo{
+				Name:  name,
+				Entry: entry,
+			}
+			clientInfos.Infos = append(clientInfos.Infos, clientInfo)
 		}
-		// this name matched
-		clientInfo.Name = name
-		clientInfoAuthInfo := &ClientInfoAuthInfo{authInfo, clientInfo}
-		return conn, clientInfoAuthInfo, nil
 	}
 
-	return conn, authInfo, fmt.Errorf("no name matched")
+	if len(clientInfos.Infos) == 0 {
+		return conn, authInfo, fmt.Errorf("no name matched")
+	}
+
+	return conn, &ClientInfoAuthInfo{authInfo, clientInfos}, nil
 
 }
 
@@ -127,10 +172,11 @@ func (c VerifyCredentials) ClientHandshake(ctx context.Context, endpoint string,
 	}
 	// for the client we pass the existing client info object as it will be
 	// used only once...
-	return c.handshake(conn, authInfo, c.ClientInfo)
+	return c.handshake(conn, authInfo, c.ClientInfos)
 }
 
 func (c *Client) Connect(address, serverName string) error {
+
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -144,9 +190,9 @@ func (c *Client) Connect(address, serverName string) error {
 		return err
 	}
 
-	c.clientInfo = &eps.ClientInfo{}
+	c.clientInfos = MakeClientInfos()
 
-	vc := &VerifyCredentials{directory: c.directory, ClientInfo: c.clientInfo, TransportCredentials: credentials.NewTLS(tlsConfig)}
+	vc := &VerifyCredentials{directory: c.directory, ClientInfos: c.clientInfos, TransportCredentials: credentials.NewTLS(tlsConfig)}
 	opts = append(opts, grpc.WithTransportCredentials(vc))
 
 	c.connection, err = grpc.Dial(address, opts...)
@@ -162,7 +208,7 @@ func (c *Client) Close() error {
 
 	err := c.connection.Close()
 	c.connection = nil
-	c.clientInfo = nil
+	c.clientInfos = nil
 	return err
 }
 
@@ -213,7 +259,13 @@ func (c *Client) ServerCall(handler Handler, stop chan bool) error {
 			Method: pbRequest.Method,
 		}
 
-		response, err := handler.HandleRequest(request, c.clientInfo)
+		clientInfo := c.clientInfos.ClientInfo(pbRequest.ClientName)
+
+		if clientInfo == nil {
+			return fmt.Errorf("no matching operator found")
+		}
+
+		response, err := handler.HandleRequest(request, clientInfo)
 
 		pbResponse := &protobuf.Response{
 			Id: pbRequest.Id,
@@ -271,9 +323,10 @@ func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 	}
 
 	pbRequest := &protobuf.Request{
-		Params: paramsStruct,
-		Method: request.Method,
-		Id:     request.ID,
+		ClientName: c.directory.Name(),
+		Params:     paramsStruct,
+		Method:     request.Method,
+		Id:         request.ID,
 	}
 
 	pbResponse, err := client.Call(ctx, pbRequest)

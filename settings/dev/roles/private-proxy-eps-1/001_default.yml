@@ -31,6 +31,7 @@ channels: # defines all the channels that we want to open when starting the serv
         ca_certificate_files: ["$DIR/../../certs/root.crt"]
         certificate_file: "$DIR/../../certs/private-proxy-1.crt"
         key_file: "$DIR/../../certs/private-proxy-1.key"
+        server_name: foo
   - name: main JSON-RPC server # accepts incoming JSONRPC connections to deliver and receive messages
     type: jsonrpc_server 
     settings:

@@ -99,7 +99,7 @@ func (c *GRPCServerConnection) Open() error {
 				}
 				select {
 				// in case of an error we try to reconnect after 1 second
-				case <-time.After(1 * time.Second):
+				case <-time.After(60 * time.Second):
 				case <-c.stop:
 					c.stop <- true
 					break loop
@@ -117,6 +117,11 @@ func (c *GRPCServerConnection) Close() error {
 	defer c.mutex.Unlock()
 	if !c.connected {
 		return nil
+	}
+	if c.client != nil {
+		if err := c.client.Close(); err != nil {
+			eps.Log.Error(err)
+		}
 	}
 	c.stop <- true
 	select {
@@ -260,7 +265,6 @@ func (c *GRPCClientChannel) backgroundTask() {
 }
 
 func (c *GRPCClientChannel) openConnections() error {
-	eps.Log.Debug("Opening active server connections...")
 	if entries, err := c.Directory().Entries(&eps.DirectoryQuery{
 		Channels: []string{"grpc_server"},
 	}); err != nil {

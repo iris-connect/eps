@@ -33,7 +33,8 @@ import (
 type ConnectedClient struct {
 	CallServer protobuf.EPS_ServerCallServer
 	Stop       chan bool
-	Info       *eps.ClientInfo
+	directory  eps.Directory
+	Infos      *ClientInfos
 	mutex      sync.Mutex
 }
 
@@ -41,7 +42,7 @@ type Server struct {
 	protobuf.UnimplementedEPSServer
 	server           *grpc.Server
 	settings         *GRPCServerSettings
-	connectedClients map[string]*ConnectedClient
+	connectedClients []*ConnectedClient
 	directory        eps.Directory
 	mutex            sync.Mutex
 	handler          Handler
@@ -78,7 +79,7 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 	server := &Server{
 		handler:          handler,
 		directory:        directory,
-		connectedClients: make(map[string]*ConnectedClient),
+		connectedClients: []*ConnectedClient{},
 		server:           grpc.NewServer(opts...),
 		settings:         settings,
 	}
@@ -90,7 +91,7 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 
 func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 
-	eps.Log.Debugf("Trying to deliver request to connected client '%s'...", c.Info.Name)
+	eps.Log.Debugf("Trying to deliver request to connected client '%s'...", c.Infos.PrimaryName())
 
 	// we need to ensure only one goroutine calls this method at once
 	c.mutex.Lock()
@@ -104,9 +105,10 @@ func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, e
 	}
 
 	pbRequest := &protobuf.Request{
-		Params: paramsStruct,
-		Method: request.Method,
-		Id:     request.ID,
+		ClientName: c.directory.Name(),
+		Params:     paramsStruct,
+		Method:     request.Method,
+		Id:         request.ID,
 	}
 
 	if err := c.CallServer.Send(pbRequest); err != nil {
@@ -166,8 +168,7 @@ func (s *Server) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 
 func (s *Server) CanDeliverTo(address *eps.Address) bool {
 	for _, connectedClient := range s.connectedClients {
-		eps.Log.Tracef("Checking client with name '%s'...", connectedClient.Info.Name)
-		if connectedClient.Info.Name == address.Operator {
+		if connectedClient.Infos.HasName(address.Operator) {
 			return true
 		}
 	}
@@ -194,7 +195,13 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 		Method: pbRequest.Method,
 	}
 
-	if response, err := s.handler.HandleRequest(request, clientInfoAuthInfo.ClientInfo); err != nil {
+	clientInfo := clientInfoAuthInfo.ClientInfos.ClientInfo(pbRequest.ClientName)
+
+	if clientInfo == nil {
+		return nil, fmt.Errorf("no matching client")
+	}
+
+	if response, err := s.handler.HandleRequest(request, clientInfo); err != nil {
 		return nil, err
 	} else {
 
@@ -233,20 +240,40 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 func (s *Server) getClient(name string) *ConnectedClient {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	client, _ := s.connectedClients[name]
-	return client
+	for _, client := range s.connectedClients {
+		if client.Infos.HasName(name) {
+			return client
+		}
+	}
+	return nil
 }
 
 func (s *Server) setClient(client *ConnectedClient) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.connectedClients[client.Info.Name] = client
+	newClients := []*ConnectedClient{}
+	for _, existingClient := range s.connectedClients {
+		if existingClient == client {
+			continue
+		}
+		newClients = append(newClients, existingClient)
+	}
+	newClients = append(newClients, client)
+	s.connectedClients = newClients
 }
 
 func (s *Server) deleteClient(client *ConnectedClient) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	delete(s.connectedClients, client.Info.Name)
+	newClients := []*ConnectedClient{}
+	for _, existingClient := range s.connectedClients {
+		if existingClient == client {
+			continue
+		}
+		newClients = append(newClients, existingClient)
+	}
+	newClients = append(newClients, client)
+	s.connectedClients = newClients
 }
 
 func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
@@ -265,17 +292,18 @@ func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 		return fmt.Errorf("cannot determine client info")
 	}
 
-	client := s.getClient(clientInfoAuthInfo.ClientInfo.Name)
+	client := s.getClient(clientInfoAuthInfo.ClientInfos.PrimaryName())
 
 	if client == nil {
 		client = &ConnectedClient{
-			Info: clientInfoAuthInfo.ClientInfo,
-			Stop: make(chan bool),
+			Infos:     clientInfoAuthInfo.ClientInfos,
+			Stop:      make(chan bool),
+			directory: s.directory,
 		}
 		s.setClient(client)
 	}
 
-	eps.Log.Debugf("Received incoming gRPC connection from client '%s'", clientInfoAuthInfo.ClientInfo.Name)
+	eps.Log.Debugf("Received incoming gRPC connection from client '%s' (primary name)", clientInfoAuthInfo.ClientInfos.PrimaryName())
 
 	client.CallServer = server
 

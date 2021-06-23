@@ -8,6 +8,7 @@ message Request {
 	string method = 1;
 	google.protobuf.Struct params = 2;
 	string id = 3;
+	string clientName = 4;
 }
 
 message Error {
