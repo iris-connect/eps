@@ -17,6 +17,7 @@
 package eps
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -131,6 +132,8 @@ type ChangeRecord struct {
 type HashableTime struct {
 	time.Time
 }
+
+var NoEntryFound = fmt.Errorf("no directory entry found")
 
 func (h HashableTime) HashValue() interface{} {
 	return h.Time.Format(time.RFC3339Nano)

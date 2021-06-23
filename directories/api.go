@@ -236,7 +236,7 @@ func (f *APIDirectory) EntryFor(name string) (*eps.DirectoryEntry, error) {
 	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: name}); err != nil {
 		return nil, err
 	} else if len(entries) == 0 {
-		return nil, fmt.Errorf("no entry for %s", name)
+		return nil, eps.NoEntryFound
 	} else {
 		return entries[0], nil
 	}

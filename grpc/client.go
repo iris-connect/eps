@@ -53,6 +53,9 @@ type ClientInfoAuthInfo struct {
 
 func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string, clientInfo *eps.ClientInfo) (bool, error) {
 	if entry, err := c.directory.EntryFor(name); err != nil {
+		if err == eps.NoEntryFound {
+			return false, nil
+		}
 		return false, err
 	} else {
 		clientInfo.Entry = entry
@@ -78,22 +81,29 @@ func (c *VerifyCredentials) handshake(conn net.Conn, authInfo credentials.AuthIn
 		return conn, authInfo, fmt.Errorf("certificate missing")
 	}
 	cert := tlsInfo.State.PeerCertificates[0]
-	name := cert.Subject.CommonName
+
+	names := []string{cert.Subject.CommonName}
+	names = append(names, cert.DNSNames...)
 
 	if clientInfo == nil {
 		// we create a new client info object
 		clientInfo = &eps.ClientInfo{}
 	}
 
-	if ok, err := c.checkFingerprint(cert, name, clientInfo); err != nil {
-		return conn, authInfo, err
-	} else if !ok {
-		return conn, authInfo, fmt.Errorf("invalid certificate")
-	}
-	clientInfo.Name = name
-	clientInfoAuthInfo := &ClientInfoAuthInfo{authInfo, clientInfo}
+	for _, name := range names {
 
-	return conn, clientInfoAuthInfo, nil
+		if ok, err := c.checkFingerprint(cert, name, clientInfo); err != nil {
+			return conn, authInfo, err
+		} else if !ok {
+			continue
+		}
+		// this name matched
+		clientInfo.Name = name
+		clientInfoAuthInfo := &ClientInfoAuthInfo{authInfo, clientInfo}
+		return conn, clientInfoAuthInfo, nil
+	}
+
+	return conn, authInfo, fmt.Errorf("no name matched")
 
 }
 

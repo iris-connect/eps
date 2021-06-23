@@ -22,7 +22,6 @@ package directories
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/iris-connect/eps"
 	epsForms "github.com/iris-connect/eps/forms"
 	"github.com/iris-connect/eps/helpers"
@@ -148,7 +147,7 @@ func (f *JSONDirectory) EntryFor(name string) (*eps.DirectoryEntry, error) {
 	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: name}); err != nil {
 		return nil, err
 	} else if len(entries) == 0 {
-		return nil, fmt.Errorf("no entry for myself")
+		return nil, eps.NoEntryFound
 	} else {
 		return entries[0], nil
 	}
