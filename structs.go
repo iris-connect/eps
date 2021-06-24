@@ -22,6 +22,7 @@ import (
 	"regexp"
 )
 
+var MethodNameRegexp = regexp.MustCompile(`(?i)^(.*)\.(.*)$`)
 var IDAddressRegexp = regexp.MustCompile(`(?i)^(.*)\.([^\(\.]+)\(([^\)]+)\)$`)
 
 type Address struct {
