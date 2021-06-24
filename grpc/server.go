@@ -34,7 +34,7 @@ type ConnectedClient struct {
 	CallServer protobuf.EPS_ServerCallServer
 	Stop       chan bool
 	directory  eps.Directory
-	Infos      *ClientInfos
+	Info       *eps.ClientInfo
 	mutex      sync.Mutex
 }
 
@@ -91,7 +91,7 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 
 func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 
-	eps.Log.Debugf("Trying to deliver request to connected client '%s'...", c.Infos.PrimaryName())
+	eps.Log.Debugf("Trying to deliver request to connected client '%s'...", c.Info.Name)
 
 	// we need to ensure only one goroutine calls this method at once
 	c.mutex.Lock()
@@ -168,7 +168,7 @@ func (s *Server) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 
 func (s *Server) CanDeliverTo(address *eps.Address) bool {
 	for _, connectedClient := range s.connectedClients {
-		if connectedClient.Infos.HasName(address.Operator) {
+		if connectedClient.Info.Name == address.Operator {
 			return true
 		}
 	}
@@ -241,7 +241,7 @@ func (s *Server) getClient(name string) *ConnectedClient {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	for _, client := range s.connectedClients {
-		if client.Infos.HasName(name) {
+		if client.Info.Name == name {
 			return client
 		}
 	}
@@ -276,6 +276,10 @@ func (s *Server) deleteClient(client *ConnectedClient) {
 	s.connectedClients = newClients
 }
 
+type ClientAnnouncement struct {
+	Name string `json:"name"`
+}
+
 func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 
 	// this is a bidirectional message stream
@@ -292,11 +296,35 @@ func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 		return fmt.Errorf("cannot determine client info")
 	}
 
-	client := s.getClient(clientInfoAuthInfo.ClientInfos.PrimaryName())
+	pbResponse, err := server.Recv()
+
+	if err != nil {
+		eps.Log.Error(err)
+		return fmt.Errorf("can't receive handshake packet: %v", err)
+	}
+
+	data := pbResponse.Result.AsMap()
+	clientAnnouncement := &ClientAnnouncement{}
+
+	if params, err := AnnouncementForm.Validate(data); err != nil {
+		return fmt.Errorf("invalid client announcement")
+	} else if err := AnnouncementForm.Coerce(clientAnnouncement, params); err != nil {
+		return err
+	}
+
+	name := clientAnnouncement.Name
+
+	eps.Log.Debugf("Client announced itself as '%s'", name)
+
+	if !clientInfoAuthInfo.ClientInfos.HasName(name) {
+		return fmt.Errorf("invalid client name supplied")
+	}
+
+	client := s.getClient(name)
 
 	if client == nil {
 		client = &ConnectedClient{
-			Infos:     clientInfoAuthInfo.ClientInfos,
+			Info:      clientInfoAuthInfo.ClientInfos.ClientInfo(name),
 			Stop:      make(chan bool),
 			directory: s.directory,
 		}

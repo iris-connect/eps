@@ -225,6 +225,23 @@ func (c *Client) ServerCall(handler Handler, stop chan bool) error {
 		return err
 	}
 
+	announcementStruct, err := structpb.NewStruct(map[string]interface{}{"name": c.directory.Name()})
+
+	if err != nil {
+		return err
+	}
+
+	pbResponse := &protobuf.Response{
+		Id: "1",
+	}
+
+	pbResponse.Result = announcementStruct
+
+	// we announce the client name to the server
+	if err := stream.Send(pbResponse); err != nil {
+		eps.Log.Error(err)
+	}
+
 	for {
 
 		done := make(chan bool, 1)
@@ -262,7 +279,21 @@ func (c *Client) ServerCall(handler Handler, stop chan bool) error {
 		clientInfo := c.clientInfos.ClientInfo(pbRequest.ClientName)
 
 		if clientInfo == nil {
-			return fmt.Errorf("no matching operator found")
+
+			pbResponse := &protobuf.Response{
+				Id: pbRequest.Id,
+			}
+
+			pbResponse.Error = &protobuf.Error{
+				Code:    404,
+				Message: "no matching client found",
+			}
+
+			if err := stream.Send(pbResponse); err != nil {
+				eps.Log.Error(err)
+			}
+
+			continue
 		}
 
 		response, err := handler.HandleRequest(request, clientInfo)
