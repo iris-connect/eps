@@ -37,20 +37,6 @@ jobs:
           export GOARCH=`echo ${{matrix.arch}} | sed 's/[a-z0-9]*_//g'`
           export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)_[a-z0-9]*$/\1/g'`
           make
-      - name: Upload binaries (Linux)
-        if: ${{ matrix.arch == 'linux_amd64' }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: eps-${{matrix.arch}}
-          path: |
-            /tmp/go/bin/*
-      - name: Upload binaries (all other)
-        if: ${{ matrix.arch != 'linux_amd64' }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: eps-${{matrix.arch}}
-          path: |
-            /tmp/go/bin/${{matrix.arch}}/*
       - name: Upload binaries to release page (all other)
         if: ${{ matrix.arch != 'linux_amd64' }}
         uses: softprops/action-gh-release@v1
@@ -67,3 +53,17 @@ jobs:
             /tmp/go/bin/eps-${{matrix.arch}}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload binaries (Linux)
+        if: ${{ matrix.arch == 'linux_amd64' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: eps-${{matrix.arch}}
+          path: |
+            /tmp/go/bin/*
+      - name: Upload binaries (all other)
+        if: ${{ matrix.arch != 'linux_amd64' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: eps-${{matrix.arch}}
+          path: |
+            /tmp/go/bin/${{matrix.arch}}/*
