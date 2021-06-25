@@ -51,3 +51,10 @@ jobs:
           name: eps-${{matrix.arch}}
           path: |
             /tmp/go/bin/${{matrix.arch}}/*
+      - name: Upload binaries
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: /tmp/go/bin/${{matrix.arch}}/eps-${{matrix.arch}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
