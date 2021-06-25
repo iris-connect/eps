@@ -52,7 +52,7 @@ jobs:
           path: |
             /tmp/go/bin/${{matrix.arch}}/*
       - name: rename binaries for non-Linux platforms
-        if: ${{ matrix.arch != 'linux-amd64' }} # we only run the tests on Linux
+        if: ${{ matrix.arch != 'linux_amd64' }}
         run: |
           mv /tmp/go/bin/${{matrix.arch}}/eps /tmp/go/bin/${{matrix.arch}}/eps-${{matrix.arch}}
           mv /tmp/go/bin/${{matrix.arch}}/sd /tmp/go/bin/${{matrix.arch}}/sd-${{matrix.arch}}
