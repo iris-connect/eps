@@ -54,6 +54,7 @@ jobs:
       - name: rename binaries for non-Linux platforms
         if: ${{ matrix.arch != 'linux_amd64' }}
         run: |
+          ls /tmp/go/bin
           mv /tmp/go/bin/${{matrix.arch}}/eps /tmp/go/bin/${{matrix.arch}}/eps-${{matrix.arch}}
           mv /tmp/go/bin/${{matrix.arch}}/sd /tmp/go/bin/${{matrix.arch}}/sd-${{matrix.arch}}
           mv /tmp/go/bin/${{matrix.arch}}/proxy /tmp/go/bin/${{matrix.arch}}/proxy-${{matrix.arch}}
