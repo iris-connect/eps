@@ -3,7 +3,7 @@ name: Publish docker images for DEV
 on:
   push:
     branches:
-      - build-dev-images
+      - master
 
 jobs:
   build_eps:
