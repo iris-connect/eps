@@ -1,0 +1,45 @@
+name: Publish docker images for DEV
+
+on:
+  push:
+    branches:
+      - build-dev-images
+
+jobs:
+  build_eps:
+    name: Push Docker image to docker hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Set target tag/version
+        id: prep
+        run: echo ::set-output name=version::develop
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PW }}
+
+      - name: Build and push eps
+        uses: docker/build-push-action@v2
+        with:
+          tags: inoeg/eps:${{ steps.prep.outputs.version }}
+          push: true
+          file: ./docker/Eps.dockerfile
+
+      - name: Build and push sd
+        uses: docker/build-push-action@v2
+        with:
+          tags: inoeg/sd:${{ steps.prep.outputs.version }}
+          push: true
+          file: ./docker/Sd.dockerfile
+
+      - name: Build and push proxy
+        uses: docker/build-push-action@v2
+        with:
+          tags: inoeg/proxy:${{ steps.prep.outputs.version }}
+          push: true
+          file: ./docker/Proxy.dockerfile
