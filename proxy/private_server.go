@@ -649,6 +649,7 @@ func (s *PrivateServer) announceConnectionsRPC(announcements []*PrivateAnnouncem
 }
 
 func (s *PrivateServer) announceConnections() {
+loop:
 	for {
 
 		groupedAnnouncements := map[string][]*PrivateAnnouncement{}
@@ -673,11 +674,10 @@ func (s *PrivateServer) announceConnections() {
 		}
 
 		select {
-		// in case of an error we try to reconnect after 1 second
 		case <-time.After(10 * time.Minute):
 		case <-s.stop:
 			s.stop <- true
-			break
+			break loop
 		}
 	}
 }
