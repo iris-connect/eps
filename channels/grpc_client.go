@@ -134,11 +134,12 @@ func (c *GRPCServerConnection) Close() error {
 	}
 }
 
-type GRPCClientEntrySettings struct {
-	Address string `json:"address"`
+type GRPCServerEntrySettings struct {
+	Address  string `json:"address"`
+	Internal bool   `json:"internal"`
 }
 
-var GRPCClientEntrySettingsForm = forms.Form{
+var GRPCServerEntrySettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
 			Name: "address",
@@ -146,15 +147,22 @@ var GRPCClientEntrySettingsForm = forms.Form{
 				forms.IsString{},
 			},
 		},
+		{
+			Name: "internal",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: false},
+				forms.IsBoolean{},
+			},
+		},
 	},
 }
 
-func getEntrySettings(settings map[string]interface{}) (*GRPCClientEntrySettings, error) {
-	if params, err := GRPCClientEntrySettingsForm.Validate(settings); err != nil {
+func getEntrySettings(settings map[string]interface{}) (*GRPCServerEntrySettings, error) {
+	if params, err := GRPCServerEntrySettingsForm.Validate(settings); err != nil {
 		return nil, err
 	} else {
-		validatedSettings := &GRPCClientEntrySettings{}
-		if err := GRPCClientEntrySettingsForm.Coerce(validatedSettings, params); err != nil {
+		validatedSettings := &GRPCServerEntrySettings{}
+		if err := GRPCServerEntrySettingsForm.Coerce(validatedSettings, params); err != nil {
 			return nil, err
 		}
 		return validatedSettings, nil
@@ -283,10 +291,15 @@ func (c *GRPCClientChannel) openConnections() error {
 			// we skip this connection if the other endpoint has a gRPC client of its own and the current
 			// endpoint has a gRPC server, as the other endpoint can then just connect to this gRPC
 			// server via its own client...
-			// if ownEntry.Channel("grpc_server") != nil && entry.Channel("grpc_client") != nil {
-			//	eps.Log.Debugf("Skipping gRPC client connection from '%s' to '%s' as the latter has a gRPC client and the former a gRPC server", ownEntry.Name, entry.Name)
-			//	continue
-			// }
+			if ownEntry.Channel("grpc_server") != nil && entry.Channel("grpc_client") != nil {
+				if settings, err := getEntrySettings(ownEntry.Channel("grpc_server").Settings); err != nil {
+					eps.Log.Trace(err)
+					continue
+				} else if settings.Internal == false {
+					eps.Log.Debugf("Skipping gRPC client connection from '%s' to '%s' as the latter has a gRPC client and the former a gRPC server", ownEntry.Name, entry.Name)
+					continue
+				}
+			}
 
 			if channel := entry.Channel("grpc_server"); channel == nil {
 				return fmt.Errorf("this should not happen: no grpc_server channel found")
