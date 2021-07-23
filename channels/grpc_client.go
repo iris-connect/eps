@@ -98,7 +98,6 @@ func (c *GRPCServerConnection) Open() error {
 					}
 				}
 				select {
-				// in case of an error we try to reconnect after 1 second
 				case <-time.After(60 * time.Second):
 				case <-c.stop:
 					c.stop <- true
@@ -122,6 +121,7 @@ func (c *GRPCServerConnection) Close() error {
 		if err := c.client.Close(); err != nil {
 			eps.Log.Error(err)
 		}
+		c.client = nil
 	}
 	c.stop <- true
 	select {
@@ -296,7 +296,7 @@ func (c *GRPCClientChannel) openConnections() error {
 					eps.Log.Trace(err)
 					continue
 				} else if settings.Internal == false {
-					eps.Log.Debugf("Skipping gRPC client connection from '%s' to '%s' as the latter has a gRPC client and the former a gRPC server", ownEntry.Name, entry.Name)
+					eps.Log.Debugf("Skipping gRPC client connection from '%s' to '%s' as the latter has a gRPC client and the former a publicly available gRPC server", ownEntry.Name, entry.Name)
 					continue
 				}
 			}
@@ -379,13 +379,17 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 	} else if err := client.Connect(settings.Address, entry.Name); err != nil {
 		return nil, err
 	} else {
+
+		// we ensure the client will always be closed
+		defer func() {
+			if err := client.Close(); err != nil {
+				eps.Log.Error(err)
+			}
+		}()
+
 		response, err := client.SendRequest(request)
 		if err != nil {
 			return nil, err
-		}
-
-		if err := client.Close(); err != nil {
-			eps.Log.Error(err)
 		}
 
 		return response, nil
