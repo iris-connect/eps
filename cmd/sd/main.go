@@ -89,6 +89,8 @@ func CLI(settings *sd.Settings) {
 					eps.Log.Fatal(err)
 				}
 
+				metricsServer := metrics.MakePrometheusMetricsServer(settings.Metrics)
+
 				// we wait for CTRL-C / Interrupt
 				sigchan := make(chan os.Signal, 1)
 				signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
@@ -101,6 +103,12 @@ func CLI(settings *sd.Settings) {
 
 				if err := server.Stop(); err != nil {
 					eps.Log.Fatal(err)
+				}
+
+				if metricsServer != nil {
+					if err := metricsServer.Stop(); err != nil {
+						eps.Log.Fatal(err)
+					}
 				}
 
 				return nil
@@ -123,7 +131,6 @@ func main() {
 		eps.Log.Error(err)
 		return
 	} else {
-		metrics.OpenPrometheusEndpoint()
 		CLI(settings)
 	}
 }

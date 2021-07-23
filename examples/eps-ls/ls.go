@@ -101,7 +101,6 @@ func main() {
 	if server, err := jsonrpc.MakeJSONRPCServer(settings, handler); err != nil {
 		eps.Log.Fatal(err)
 	} else {
-		metrics.OpenPrometheusEndpoint()
 		server.Start()
 
 		// we wait for CTRL-C / Interrupt

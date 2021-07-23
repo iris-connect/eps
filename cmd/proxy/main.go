@@ -98,6 +98,8 @@ func CLI(settings *proxy.Settings) {
 							eps.Log.Fatal(err)
 						}
 
+						metricsServer := metrics.MakePrometheusMetricsServer(settings.Metrics)
+
 						// we wait for CTRL-C / Interrupt
 						sigchan := make(chan os.Signal, 1)
 						signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
@@ -110,6 +112,12 @@ func CLI(settings *proxy.Settings) {
 
 						if err := server.Stop(); err != nil {
 							eps.Log.Fatal(err)
+						}
+
+						if metricsServer != nil {
+							if err := metricsServer.Stop(); err != nil {
+								eps.Log.Fatal(err)
+							}
 						}
 
 						return nil
@@ -136,6 +144,8 @@ func CLI(settings *proxy.Settings) {
 							eps.Log.Fatal(err)
 						}
 
+						metricsServer := metrics.MakePrometheusMetricsServer(settings.Metrics)
+
 						// we wait for CTRL-C / Interrupt
 						sigchan := make(chan os.Signal, 1)
 						signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
@@ -148,6 +158,12 @@ func CLI(settings *proxy.Settings) {
 
 						if err := server.Stop(); err != nil {
 							eps.Log.Fatal(err)
+						}
+
+						if metricsServer != nil {
+							if err := metricsServer.Stop(); err != nil {
+								eps.Log.Fatal(err)
+							}
 						}
 
 						return nil
@@ -172,7 +188,6 @@ func main() {
 		eps.Log.Error(err)
 		return
 	} else {
-		metrics.OpenPrometheusEndpoint()
 		CLI(settings)
 	}
 }

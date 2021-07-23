@@ -17,6 +17,7 @@
 package proxy
 
 import (
+	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/jsonrpc"
 	"github.com/iris-connect/eps/tls"
 	"time"
@@ -28,6 +29,7 @@ const (
 )
 
 type Settings struct {
+	Metrics *eps.MetricsSettings   `json:"metrics"`
 	Private *PrivateServerSettings `json:"private"`
 	Public  *PublicServerSettings  `json:"public"`
 }

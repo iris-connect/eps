@@ -36,11 +36,16 @@ type SigningSettings struct {
 	KeyFile                        string   `json:"key_file"`
 }
 
+type MetricsSettings struct {
+	BindAddress string `json:"bind_address"`
+}
+
 type Settings struct {
 	Signing     *SigningSettings   `json:"signing"`
 	Definitions *Definitions       `json:"definitions"`
 	Channels    []*ChannelSettings `json:"channels"`
 	Directory   *DirectorySettings `json:"directory"`
+	Metrics     *MetricsSettings   `json:"metrics"`
 	Name        string             `json:"name"`
 }
 

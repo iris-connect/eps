@@ -17,10 +17,12 @@
 package sd
 
 import (
+	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/jsonrpc"
 )
 
 type Settings struct {
+	Metrics       *eps.MetricsSettings           `json:"metrics"`
 	JSONRPCServer *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
 	Directory     *RecordDirectorySettings       `json:"directory"`
 }

@@ -18,6 +18,7 @@ package proxy
 
 import (
 	"fmt"
+	epsForms "github.com/iris-connect/eps/forms"
 	"github.com/iris-connect/eps/jsonrpc"
 	"github.com/iris-connect/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
@@ -41,6 +42,15 @@ var DirectorySettingsForm = forms.Form{
 
 var SettingsForm = forms.Form{
 	Fields: []forms.Field{
+		{
+			Name: "metrics",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsStringMap{
+					Form: &epsForms.MetricsSettingsForm,
+				},
+			},
+		},
 		{
 			Name: "public",
 			Validators: []forms.Validator{

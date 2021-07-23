@@ -64,6 +64,17 @@ var ChannelForm = forms.Form{
 	},
 }
 
+var MetricsSettingsForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "bind_address",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
+
 var SettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
@@ -77,6 +88,15 @@ var SettingsForm = forms.Form{
 			Validators: []forms.Validator{
 				forms.IsStringMap{
 					Form: &DirectorySettingsForm,
+				},
+			},
+		},
+		{
+			Name: "metrics",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsStringMap{
+					Form: &MetricsSettingsForm,
 				},
 			},
 		},

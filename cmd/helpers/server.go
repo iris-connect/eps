@@ -19,6 +19,7 @@ package helpers
 import (
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/helpers"
+	"github.com/iris-connect/eps/metrics"
 	"github.com/urfave/cli"
 	"os"
 	"os/signal"
@@ -83,6 +84,8 @@ func Server(settings *eps.Settings) ([]cli.Command, error) {
 						sigchan := make(chan os.Signal, 1)
 						signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
+						metricsServer := metrics.MakePrometheusMetricsServer(settings.Metrics)
+
 						eps.Log.Info("Waiting for CTRL-C...")
 
 						<-sigchan
@@ -90,6 +93,12 @@ func Server(settings *eps.Settings) ([]cli.Command, error) {
 						eps.Log.Info("Stopping channels...")
 
 						closeChannels(channels)
+
+						if metricsServer != nil {
+							if err := metricsServer.Stop(); err != nil {
+								eps.Log.Error(err)
+							}
+						}
 
 						return nil
 					},

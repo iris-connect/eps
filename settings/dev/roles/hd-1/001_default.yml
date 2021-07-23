@@ -1,4 +1,6 @@
 name: hd-1
+metrics:
+  bind_address: "localhost:2112"
 directory:
 # to use the JSON directory, uncomment this and comment everything below...
 #  type: json

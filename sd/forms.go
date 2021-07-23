@@ -17,12 +17,22 @@
 package sd
 
 import (
+	epsForms "github.com/iris-connect/eps/forms"
 	"github.com/iris-connect/eps/jsonrpc"
 	"github.com/kiprotect/go-helpers/forms"
 )
 
 var RecordDirectorySettingsForm = forms.Form{
 	Fields: []forms.Field{
+		{
+			Name: "metrics",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsStringMap{
+					Form: &epsForms.MetricsSettingsForm,
+				},
+			},
+		},
 		{
 			Name: "ca_certificate_files",
 			Validators: []forms.Validator{
