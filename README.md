@@ -1,24 +1,26 @@
 # Endpoint Server (EPS)
 
-This repository contains the code of the IRIS connect endpoint server (EPS), which manages the communication between different actors in the IRIS connect ecosystem. It provides a gRPC server & client to exchange messages between different actors, as well as a JSON-RPC API client & server for interacting with the server locally.
+This repository contains the code of the IRIS connect endpoint server (EPS), which manages the communication between different actors in the IRIS connect ecosystem. It provides a gRPC server & client to exchange messages between different actors (`eps`), a service directory (`sd`) that provides a public registry of signed information about actors, and a TLS passthrough proxy (`proxy`) that enables actors to directly receive data from users via TLS.
+
+Please also check out the [documentation](https://iris-connect.github.io/eps/docs/) for more detailed information. Please check the `docs` subfolder for instructions on how to build/view the documentation locally.
 
 ## Getting Started
 
 Please ensure your Golang version is recent enough (>=1.13) before you attempt to build the software. 
 
-To build the `eps` binary, simply run
+To build the `eps`, `sd` and `proxy` binaries, simply run
 
 ```bash
 make
 ```
 
-For testing and development you'll also need TLS certificates, which you can generate with
+For testing and development you'll also need TLS certificates, which you can generate via
 
 ```bash
 make certs
 ```
 
-Please note that you need `openssl` on your system for this to work. This will generate all required certificates and put them in the `settings/dev/certs` and `settings/dev/test` folders. Please do not use these certificates in a production setting and do not check them into version control.
+Please note that you need `openssl` on your system for this to work. This will generate all required certificates and put them in the `settings/dev/certs` and `settings/dev/test` folders. Please do not use these certificates in a production setting and do not check them into version control. **Warning:** Running  this command again will delete an re-create all certificates from scratch.
 
 Please see below for additional dependencies you might need to install for various purposes (e.g. to recompile protobuf code).
 
@@ -66,7 +68,7 @@ make sd-test-setup
 
 This should give you a fully functional API-based service directory with certificate and service information.
 
-## Running The Server
+## Running The EPS Server
 
 To run the development EPS server simply run (from the main directory)
 
@@ -75,6 +77,17 @@ EPS_SETTINGS=settings/dev/roles/hd-1 eps server run
 ```
 
 This will run the EPS server for the role `hd-1` (simulating a health department in the system). For this to work you need to ensure that your `GOPATH` is in your `PATH`. This will open the JSON RPC server and (depending on the settings) also a gRPC server.
+
+## Running The Proxy Servers
+
+To run the public and private proxy servers simply run (from the main directory)
+
+```bash
+# private proxy server
+PROXY_SETTINGS=settings/dev/roles/private-proxy-1 proxy run private
+# public proxy server
+PROXY_SETTINGS=settings/dev/roles/private-proxy-1 proxy run public
+```
 
 ## Testing
 
