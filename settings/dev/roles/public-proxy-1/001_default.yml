@@ -1,21 +1,21 @@
 public:
-  name: public-proxy-1
+  name: public-proxy-1.ga
   database_file: /tmp/public-proxy-announcements.db
   tls_bind_address: localhost:4433
   internal_bind_address: localhost:9999
   jsonrpc_client:
     endpoint: https://localhost:5544/jsonrpc
     tls:
-      server_name: public-proxy-1
+      server_name: public-proxy-1.ga
       ca_certificate_files: ["$DIR/../../certs/root.crt"]
-      certificate_file: "$DIR/../../certs/public-proxy-1.crt"
-      key_file: "$DIR/../../certs/public-proxy-1.key"
+      certificate_file: "$DIR/../../certs/public-proxy-1.ga.crt"
+      key_file: "$DIR/../../certs/public-proxy-1.ga.key"
   jsonrpc_server: # the JSON-RPC server that the EPS server uses for communication
     bind_address: "localhost:6655"
     cors:
       allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
     tls:
       ca_certificate_files: ["$DIR/../../certs/root.crt"]
-      certificate_file: "$DIR/../../certs/public-proxy-1.crt"
-      key_file: "$DIR/../../certs/public-proxy-1.key"
+      certificate_file: "$DIR/../../certs/public-proxy-1.ga.crt"
+      key_file: "$DIR/../../certs/public-proxy-1.ga.key"
       validate_client: false

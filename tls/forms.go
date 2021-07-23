@@ -23,9 +23,23 @@ import (
 var TLSSettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
+			Name: "insecure_skip_verify",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: false},
+				forms.IsBoolean{},
+			},
+		},
+		{
 			Name: "verify_client",
 			Validators: []forms.Validator{
 				forms.IsOptional{Default: true},
+				forms.IsBoolean{},
+			},
+		},
+		{
+			Name: "request_client_cert",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: false},
 				forms.IsBoolean{},
 			},
 		},

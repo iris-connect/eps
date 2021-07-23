@@ -114,7 +114,7 @@ func VerifyRecordHash(record *eps.SignedChangeRecord) (bool, error) {
 	return true, nil
 }
 
-func VerifyRecord(record *eps.SignedChangeRecord, verifiedRecords []*eps.SignedChangeRecord, rootCerts []*x509.Certificate) (bool, error) {
+func VerifyRecord(record *eps.SignedChangeRecord, verifiedRecords []*eps.SignedChangeRecord, rootCerts []*x509.Certificate, intermediateCerts []*x509.Certificate) (bool, error) {
 	signedData := &eps.SignedData{
 		Data:      record,
 		Signature: record.Signature,
@@ -164,7 +164,7 @@ func VerifyRecord(record *eps.SignedChangeRecord, verifiedRecords []*eps.SignedC
 		return false, nil
 	}
 
-	return Verify(signedData, rootCerts, "")
+	return Verify(signedData, rootCerts, intermediateCerts, "")
 }
 
 func CalculateRecordHash(record *eps.SignedChangeRecord) error {

@@ -32,13 +32,20 @@ import (
 	"net/url"
 )
 
-func VerifyCertificate(cert, rootCert *x509.Certificate, name string) error {
+func VerifyCertificate(cert, rootCert *x509.Certificate, intermediateCerts []*x509.Certificate, name string) error {
 	roots := x509.NewCertPool()
 	roots.AddCert(rootCert)
 
+	intermediates := x509.NewCertPool()
+
+	for _, intermediateCert := range intermediateCerts {
+		intermediates.AddCert(intermediateCert)
+	}
+
 	opts := x509.VerifyOptions{
-		Roots:     roots,
-		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
+		Roots:         roots,
+		Intermediates: intermediates,
+		KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
 	}
 
 	if name != "" {
@@ -128,7 +135,7 @@ func LoadSignedData(data []byte) (*eps.SignedData, error) {
 	return signedData, json.Unmarshal(data, &signedData)
 }
 
-func Verify(signedData *eps.SignedData, rootCerts []*x509.Certificate, name string) (bool, error) {
+func Verify(signedData *eps.SignedData, rootCerts []*x509.Certificate, intermediateCerts []*x509.Certificate, name string) (bool, error) {
 
 	cert, err := LoadCertificateFromString(signedData.Signature.Certificate, true)
 
@@ -140,7 +147,7 @@ func Verify(signedData *eps.SignedData, rootCerts []*x509.Certificate, name stri
 	if rootCerts != nil {
 		found := false
 		for _, rootCert := range rootCerts {
-			if err := VerifyCertificate(cert, rootCert, name); err == nil {
+			if err := VerifyCertificate(cert, rootCert, intermediateCerts, name); err == nil {
 				found = true
 				break
 			}

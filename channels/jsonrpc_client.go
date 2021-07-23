@@ -20,10 +20,7 @@ import (
 	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/jsonrpc"
-	"regexp"
 )
-
-var MethodNameRegexp = regexp.MustCompile(`(?i)^([^\.]+)\.(.*)$`)
 
 type JSONRPCClientChannel struct {
 	eps.BaseChannel
@@ -63,7 +60,7 @@ func (c *JSONRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Respon
 	jsonrpcRequest := &jsonrpc.Request{}
 	jsonrpcRequest.FromEPSRequest(request)
 
-	if groups := MethodNameRegexp.FindStringSubmatch(jsonrpcRequest.Method); groups == nil {
+	if groups := eps.MethodNameRegexp.FindStringSubmatch(jsonrpcRequest.Method); groups == nil {
 		return nil, fmt.Errorf("invalid method name")
 	} else {
 		// we remove the operator name from the method call before passing it in

@@ -54,26 +54,49 @@
     {
       "created_at": "2021-05-17T10:00:00Z",
       "section": "channels",
-      "name": "private-proxy-1",
+      "name": "private-proxy-1.ga",
       "data" : [
         {
           "type" : "grpc_client"
+        },
+        {
+          "type" : "grpc_server",
+          "settings" : {
+            "address" : "localhost:7776"
+          }
         }
       ]
     },
     {
       "created_at": "2021-05-17T10:00:00Z",
       "section": "groups",
-      "name": "private-proxy-1",
+      "name": "private-proxy-1.ga",
       "data" : ["proxy-users"]
     },
     {
       "created_at": "2021-05-17T10:00:00Z",
       "section": "services",
-      "name": "private-proxy-1",
+      "name": "private-proxy-1.ga",
       "data" : [
         {
-          "name": "private-proxy",
+          "name": "internals",
+          "permissions": [
+            {
+              "group" : "*",
+              "rights" : ["call"]
+            }
+          ],
+          "methods" : [
+            {
+              "name": "_ping"
+            },
+            {
+              "name": "_channels"
+            }
+          ]
+        },
+        {
+          "name": "private-proxy.ga",
           "methods": [
             {
               "name": "incomingConnection",
@@ -109,7 +132,7 @@
     {
       "created_at": "2021-05-17T10:00:00Z",
       "section": "settings",
-      "name": "private-proxy-1",
+      "name": "private-proxy-1.ga",
       "data" : [
         {
           "service": "proxy",
@@ -137,7 +160,7 @@
     {
       "created_at": "2021-05-17T10:00:00Z",
       "section": "channels",
-      "name": "public-proxy-1",
+      "name": "public-proxy-1.ga",
       "data" : [
         {
           "type" : "grpc_server",
@@ -153,13 +176,13 @@
     {
       "created_at": "2021-05-17T10:00:00Z",
       "section": "groups",
-      "name": "public-proxy-1",
+      "name": "public-proxy-1.ga",
       "data" : ["proxy-providers"]
     },
     {
       "created_at": "2021-05-17T10:00:00Z",
       "section": "services",
-      "name": "public-proxy-1",
+      "name": "public-proxy-1.ga",
       "data" : [
         {
           "name": "proxy",

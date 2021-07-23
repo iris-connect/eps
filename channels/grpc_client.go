@@ -42,6 +42,7 @@ type GRPCServerConnection struct {
 	client             *grpc.Client
 	channel            *GRPCClientChannel
 	connected          bool
+	connecting         bool
 	mutex              sync.Mutex
 	stop               chan bool
 }
@@ -60,9 +61,13 @@ func (c *GRPCServerConnection) Open() error {
 		if err := c.Close(); err != nil {
 			return err
 		}
+	} else if c.connecting {
+		return nil
 	} else {
 		eps.Log.Tracef("Opening a new gRPC client connection")
 	}
+	c.connecting = true
+	defer func() { c.connecting = false }()
 	if client, err := grpc.MakeClient(&c.channel.Settings, c.channel.Directory()); err != nil {
 		return err
 	} else if err := client.Connect(c.Address, c.Name); err != nil {
@@ -93,8 +98,7 @@ func (c *GRPCServerConnection) Open() error {
 					}
 				}
 				select {
-				// in case of an error we try to reconnect after 1 second
-				case <-time.After(1 * time.Second):
+				case <-time.After(60 * time.Second):
 				case <-c.stop:
 					c.stop <- true
 					break loop
@@ -113,6 +117,12 @@ func (c *GRPCServerConnection) Close() error {
 	if !c.connected {
 		return nil
 	}
+	if c.client != nil {
+		if err := c.client.Close(); err != nil {
+			eps.Log.Error(err)
+		}
+		c.client = nil
+	}
 	c.stop <- true
 	select {
 	case <-c.stop:
@@ -124,11 +134,12 @@ func (c *GRPCServerConnection) Close() error {
 	}
 }
 
-type GRPCClientEntrySettings struct {
-	Address string `json:"address"`
+type GRPCServerEntrySettings struct {
+	Address  string `json:"address"`
+	Internal bool   `json:"internal"`
 }
 
-var GRPCClientEntrySettingsForm = forms.Form{
+var GRPCServerEntrySettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
 			Name: "address",
@@ -136,15 +147,22 @@ var GRPCClientEntrySettingsForm = forms.Form{
 				forms.IsString{},
 			},
 		},
+		{
+			Name: "internal",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: false},
+				forms.IsBoolean{},
+			},
+		},
 	},
 }
 
-func getEntrySettings(settings map[string]interface{}) (*GRPCClientEntrySettings, error) {
-	if params, err := GRPCClientEntrySettingsForm.Validate(settings); err != nil {
+func getEntrySettings(settings map[string]interface{}) (*GRPCServerEntrySettings, error) {
+	if params, err := GRPCServerEntrySettingsForm.Validate(settings); err != nil {
 		return nil, err
 	} else {
-		validatedSettings := &GRPCClientEntrySettings{}
-		if err := GRPCClientEntrySettingsForm.Coerce(validatedSettings, params); err != nil {
+		validatedSettings := &GRPCServerEntrySettings{}
+		if err := GRPCServerEntrySettingsForm.Coerce(validatedSettings, params); err != nil {
 			return nil, err
 		}
 		return validatedSettings, nil
@@ -246,7 +264,7 @@ func (c *GRPCClientChannel) backgroundTask() {
 			eps.Log.Debug("Stopping gRPC client background task")
 			c.stop <- true
 			return
-		case <-time.After(5 * time.Second):
+		case <-time.After(60 * time.Second):
 			if err := c.openConnections(); err != nil {
 				eps.Log.Error(err)
 			}
@@ -255,7 +273,6 @@ func (c *GRPCClientChannel) backgroundTask() {
 }
 
 func (c *GRPCClientChannel) openConnections() error {
-	eps.Log.Debug("Opening active server connections...")
 	if entries, err := c.Directory().Entries(&eps.DirectoryQuery{
 		Channels: []string{"grpc_server"},
 	}); err != nil {
@@ -275,8 +292,13 @@ func (c *GRPCClientChannel) openConnections() error {
 			// endpoint has a gRPC server, as the other endpoint can then just connect to this gRPC
 			// server via its own client...
 			if ownEntry.Channel("grpc_server") != nil && entry.Channel("grpc_client") != nil {
-				eps.Log.Debugf("Skipping gRPC client connection from '%s' to '%s' as the latter has a gRPC client and the former a gRPC server", ownEntry.Name, entry.Name)
-				continue
+				if settings, err := getEntrySettings(ownEntry.Channel("grpc_server").Settings); err != nil {
+					eps.Log.Trace(err)
+					continue
+				} else if settings.Internal == false {
+					eps.Log.Debugf("Skipping gRPC client connection from '%s' to '%s' as the latter has a gRPC client and the former a publicly available gRPC server", ownEntry.Name, entry.Name)
+					continue
+				}
 			}
 
 			if channel := entry.Channel("grpc_server"); channel == nil {
@@ -288,7 +310,7 @@ func (c *GRPCClientChannel) openConnections() error {
 					// we won't open a channel to ourselves...
 					continue
 				}
-				eps.Log.Debugf("Opening channel to %s at %s", entry.Name, settings.Address)
+				eps.Log.Tracef("Maintaining connection to %s at %s", entry.Name, settings.Address)
 				if err := c.openConnection(settings.Address, entry.Name); err != nil {
 					// we only log this as tracing errors
 					eps.Log.Trace(err)
@@ -357,13 +379,17 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 	} else if err := client.Connect(settings.Address, entry.Name); err != nil {
 		return nil, err
 	} else {
+
+		// we ensure the client will always be closed
+		defer func() {
+			if err := client.Close(); err != nil {
+				eps.Log.Error(err)
+			}
+		}()
+
 		response, err := client.SendRequest(request)
 		if err != nil {
 			return nil, err
-		}
-
-		if err := client.Close(); err != nil {
-			eps.Log.Error(err)
 		}
 
 		return response, nil

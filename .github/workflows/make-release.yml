@@ -38,16 +38,36 @@ jobs:
           export GOOS=`echo ${{matrix.arch}} | sed 's/\([a-z0-9]*\)_[a-z0-9]*$/\1/g'`
           make
       - name: Upload binaries (Linux)
-        if: ${{ matrix.arch == 'linux_amd64' }} # we only run the tests on Linux
+        if: ${{ matrix.arch == 'linux_amd64' }}
         uses: actions/upload-artifact@v2
         with:
           name: eps-${{matrix.arch}}
           path: |
             /tmp/go/bin/*
       - name: Upload binaries (all other)
-        if: ${{ matrix.arch != 'linux_amd64' }} # we only run the tests on Linux
+        if: ${{ matrix.arch != 'linux_amd64' }}
         uses: actions/upload-artifact@v2
         with:
           name: eps-${{matrix.arch}}
           path: |
             /tmp/go/bin/${{matrix.arch}}/*
+      - name: rename binaries for non-Linux platforms
+        if: ${{ matrix.arch != 'linux_amd64' && matrix.arch != 'windows_amd64' }}
+        run: |
+          mv /tmp/go/bin/${{matrix.arch}}/eps /tmp/go/bin/${{matrix.arch}}/eps-${{matrix.arch}}
+          mv /tmp/go/bin/${{matrix.arch}}/sd /tmp/go/bin/${{matrix.arch}}/sd-${{matrix.arch}}
+          mv /tmp/go/bin/${{matrix.arch}}/proxy /tmp/go/bin/${{matrix.arch}}/proxy-${{matrix.arch}}
+      - name: rename binaries for non-Linux platforms
+        if: ${{ matrix.arch == 'windows_amd64' }}
+        run: |
+          mv /tmp/go/bin/${{matrix.arch}}/eps.exe /tmp/go/bin/${{matrix.arch}}/eps-${{matrix.arch}}.exe
+          mv /tmp/go/bin/${{matrix.arch}}/sd.exe /tmp/go/bin/${{matrix.arch}}/sd-${{matrix.arch}}.exe
+          mv /tmp/go/bin/${{matrix.arch}}/proxy.exe /tmp/go/bin/${{matrix.arch}}/proxy-${{matrix.arch}}.exe
+      - name: Upload binaries to release page
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            /tmp/go/bin/**/*
+            /tmp/go/bin/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

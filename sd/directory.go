@@ -31,19 +31,21 @@ const (
 )
 
 type RecordDirectorySettings struct {
-	DatabaseFile       string   `json:"database_file"`
-	CACertificateFiles []string `json:"ca_certificate_files"`
+	DatabaseFile                   string   `json:"database_file"`
+	CACertificateFiles             []string `json:"ca_certificate_files"`
+	CAIntermediateCertificateFiles []string `json:"ca_intermediate_certificate_files"`
 }
 
 type RecordDirectory struct {
-	rootCerts      []*x509.Certificate
-	dataStore      helpers.DataStore
-	settings       *RecordDirectorySettings
-	entries        map[string]*eps.DirectoryEntry
-	recordsByHash  map[string]*eps.SignedChangeRecord
-	recordChildren map[string][]*eps.SignedChangeRecord
-	orderedRecords []*eps.SignedChangeRecord
-	mutex          sync.Mutex
+	rootCerts         []*x509.Certificate
+	intermediateCerts []*x509.Certificate
+	dataStore         helpers.DataStore
+	settings          *RecordDirectorySettings
+	entries           map[string]*eps.DirectoryEntry
+	recordsByHash     map[string]*eps.SignedChangeRecord
+	recordChildren    map[string][]*eps.SignedChangeRecord
+	orderedRecords    []*eps.SignedChangeRecord
+	mutex             sync.Mutex
 }
 
 func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, error) {
@@ -62,13 +64,30 @@ func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, e
 
 	}
 
+	intermediateCerts := make([]*x509.Certificate, 0)
+
+	for _, certificateFile := range settings.CAIntermediateCertificateFiles {
+
+		eps.Log.Info(certificateFile)
+
+		cert, err := helpers.LoadCertificate(certificateFile, false)
+
+		if err != nil {
+			return nil, err
+		}
+
+		intermediateCerts = append(intermediateCerts, cert)
+
+	}
+
 	f := &RecordDirectory{
-		rootCerts:      rootCerts,
-		orderedRecords: make([]*eps.SignedChangeRecord, 0),
-		recordsByHash:  make(map[string]*eps.SignedChangeRecord),
-		recordChildren: make(map[string][]*eps.SignedChangeRecord),
-		settings:       settings,
-		dataStore:      helpers.MakeFileDataStore(settings.DatabaseFile),
+		rootCerts:         rootCerts,
+		intermediateCerts: intermediateCerts,
+		orderedRecords:    make([]*eps.SignedChangeRecord, 0),
+		recordsByHash:     make(map[string]*eps.SignedChangeRecord),
+		recordChildren:    make(map[string][]*eps.SignedChangeRecord),
+		settings:          settings,
+		dataStore:         helpers.MakeFileDataStore(settings.DatabaseFile),
 	}
 
 	if err := f.dataStore.Init(); err != nil {
@@ -136,7 +155,7 @@ func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord, records []*e
 	}
 
 	// we verify the signature and hash of the record
-	if ok, err := helpers.VerifyRecord(record, records, f.rootCerts); err != nil {
+	if ok, err := helpers.VerifyRecord(record, records, f.rootCerts, f.intermediateCerts); err != nil {
 		return false, err
 	} else if !ok {
 		return false, nil
@@ -289,8 +308,9 @@ func (f *RecordDirectory) buildChains(records []*eps.SignedChangeRecord, visited
 	chains := make([][]*eps.SignedChangeRecord, 0)
 
 	for _, record := range records {
+		eps.Log.Infof("%s", record.Hash)
 		if _, ok := visited[record.Hash]; ok {
-			return nil, fmt.Errorf("circular relationship detected")
+			continue
 		} else {
 			visited[record.Hash] = true
 		}
@@ -373,7 +393,7 @@ func (f *RecordDirectory) update() ([]*eps.SignedChangeRecord, error) {
 			for j, record := range chain {
 				eps.Log.Infof("Chain %d, record %d: %s", i, j, record.Hash)
 				// we verify the signature of the record
-				if ok, err := helpers.VerifyRecord(record, chain[:j], f.rootCerts); err != nil {
+				if ok, err := helpers.VerifyRecord(record, chain[:j], f.rootCerts, f.intermediateCerts); err != nil {
 					return nil, err
 				} else if !ok {
 					eps.Log.Warning("signature does not match, ignoring this chain...")

@@ -17,16 +17,16 @@ build:
 dep:
 	@go get ./...
 
-install:
+install: build
 	@go install $(GOFLAGS) ./...
 
-test: dep
+test:
 	EPS_SETTINGS=$(EPS_TEST_SETTINGS) go test $(testargs) `go list ./...`
 
-test-races: dep
+test-races:
 	EPS_SETTINGS=$(EPS_TEST_SETTINGS) go test -race $(testargs) `go list ./...`
 
-bench: dep
+bench:
 	EPS_SETTINGS=$(EPS_TEST_SETTINGS) go test -run=NONE -bench=. $(GOFLAGS) `go list ./... | grep -v api/`
 
 clean:

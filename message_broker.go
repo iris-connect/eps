@@ -52,6 +52,14 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 	return nil
 }
 
+func (b *BasicMessageBroker) handleInternalRequest(address *Address, request *Request) (*Response, error) {
+	switch address.Method {
+	case "_ping":
+		return &Response{Result: request.Params, Error: nil, ID: &address.ID}, nil
+	}
+	return nil, nil
+}
+
 func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *ClientInfo) (*Response, error) {
 
 	b.mutex.Lock()
@@ -116,7 +124,11 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 		}
 	}
 
-	Log.Debug("Checking channels...")
+	if address.Operator == ownEntry.Name {
+		if response, err := b.handleInternalRequest(address, request); response != nil || err != nil {
+			return response, err
+		}
+	}
 
 	// To do: Check if a client can actually call the service method of the
 	// given operator, reject the request if that's not the case.

@@ -21,6 +21,17 @@ import (
 	"github.com/kiprotect/go-helpers/forms"
 )
 
+var AnnouncementForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
+
 var GRPCClientSettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{

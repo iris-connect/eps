@@ -148,8 +148,18 @@ func submitChangeRecords(changeRecords []*eps.ChangeRecord, settings *eps.Settin
 		eps.Log.Fatal(err)
 	}
 
+	intermediateCertificates := []*x509.Certificate{}
+
+	for _, certificateFile := range settings.Signing.CAIntermediateCertificateFiles {
+		if cert, err := helpers.LoadCertificate(certificateFile, false); err != nil {
+			eps.Log.Fatal(err)
+		} else {
+			intermediateCertificates = append(intermediateCertificates, cert)
+		}
+	}
+
 	// we ensure the certificate is valid for signing
-	if err := helpers.VerifyCertificate(certificate, rootCertificate, settings.Name); err != nil {
+	if err := helpers.VerifyCertificate(certificate, rootCertificate, intermediateCertificates, settings.Name); err != nil {
 		eps.Log.Fatal(err)
 	}
 
@@ -242,8 +252,18 @@ func sign(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
+	intermediateCertificates := []*x509.Certificate{}
+
+	for _, certificateFile := range settings.Signing.CAIntermediateCertificateFiles {
+		if cert, err := helpers.LoadCertificate(certificateFile, false); err != nil {
+			eps.Log.Fatal(err)
+		} else {
+			intermediateCertificates = append(intermediateCertificates, cert)
+		}
+	}
+
 	// we ensure the certificate is valid for signing
-	if err := helpers.VerifyCertificate(certificate, rootCertificate, settings.Name); err != nil {
+	if err := helpers.VerifyCertificate(certificate, rootCertificate, intermediateCertificates, settings.Name); err != nil {
 		eps.Log.Fatal(err)
 	}
 
@@ -273,7 +293,7 @@ func sign(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
-	if ok, err := helpers.Verify(loadedSignedData, []*x509.Certificate{rootCertificate}, settings.Name); err != nil {
+	if ok, err := helpers.Verify(loadedSignedData, []*x509.Certificate{rootCertificate}, intermediateCertificates, settings.Name); err != nil {
 		eps.Log.Fatal(err)
 	} else if !ok {
 		eps.Log.Fatal("Signature is not valid!")
@@ -318,7 +338,17 @@ func verify(c *cli.Context, settings *eps.Settings) error {
 		eps.Log.Fatal(err)
 	}
 
-	if ok, err := helpers.Verify(signedData, []*x509.Certificate{rootCertificate}, name); err != nil {
+	intermediateCertificates := []*x509.Certificate{}
+
+	for _, certificateFile := range settings.Signing.CAIntermediateCertificateFiles {
+		if cert, err := helpers.LoadCertificate(certificateFile, false); err != nil {
+			eps.Log.Fatal(err)
+		} else {
+			intermediateCertificates = append(intermediateCertificates, cert)
+		}
+	}
+
+	if ok, err := helpers.Verify(signedData, []*x509.Certificate{rootCertificate}, intermediateCertificates, name); err != nil {
 		eps.Log.Fatal(err)
 	} else if !ok {
 		eps.Log.Fatal("Signature is not valid!")

@@ -33,6 +33,7 @@ import (
 type ConnectedClient struct {
 	CallServer protobuf.EPS_ServerCallServer
 	Stop       chan bool
+	directory  eps.Directory
 	Info       *eps.ClientInfo
 	mutex      sync.Mutex
 }
@@ -41,7 +42,7 @@ type Server struct {
 	protobuf.UnimplementedEPSServer
 	server           *grpc.Server
 	settings         *GRPCServerSettings
-	connectedClients map[string]*ConnectedClient
+	connectedClients []*ConnectedClient
 	directory        eps.Directory
 	mutex            sync.Mutex
 	handler          Handler
@@ -72,13 +73,13 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
 		return nil, err
 	} else {
-		opts = append(opts, grpc.Creds(VerifyCredentials{directory: directory, ClientInfo: &eps.ClientInfo{}, TransportCredentials: credentials.NewTLS(tlsConfig)}))
+		opts = append(opts, grpc.Creds(VerifyCredentials{directory: directory, TransportCredentials: credentials.NewTLS(tlsConfig)}))
 	}
 
 	server := &Server{
 		handler:          handler,
 		directory:        directory,
-		connectedClients: make(map[string]*ConnectedClient),
+		connectedClients: []*ConnectedClient{},
 		server:           grpc.NewServer(opts...),
 		settings:         settings,
 	}
@@ -99,21 +100,27 @@ func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, e
 	paramsStruct, err := structpb.NewStruct(request.Params)
 
 	if err != nil {
+		c.Stop <- true
 		return nil, err
 	}
 
 	pbRequest := &protobuf.Request{
-		Params: paramsStruct,
-		Method: request.Method,
-		Id:     request.ID,
+		ClientName: c.directory.Name(),
+		Params:     paramsStruct,
+		Method:     request.Method,
+		Id:         request.ID,
 	}
 
 	if err := c.CallServer.Send(pbRequest); err != nil {
 		eps.Log.Errorf("Cannot deliver request: %v", err)
+		c.Stop <- true
 		return nil, err
 	}
 
 	if pbResponse, err := c.CallServer.Recv(); err != nil {
+		eps.Log.Errorf("Cannot receive response: %v", err)
+		// we close the connection
+		c.Stop <- true
 		return nil, err
 	} else {
 
@@ -161,7 +168,6 @@ func (s *Server) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 
 func (s *Server) CanDeliverTo(address *eps.Address) bool {
 	for _, connectedClient := range s.connectedClients {
-		eps.Log.Tracef("Checking client with name '%s'...", connectedClient.Info.Name)
 		if connectedClient.Info.Name == address.Operator {
 			return true
 		}
@@ -189,7 +195,13 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 		Method: pbRequest.Method,
 	}
 
-	if response, err := s.handler.HandleRequest(request, clientInfoAuthInfo.ClientInfo); err != nil {
+	clientInfo := clientInfoAuthInfo.ClientInfos.ClientInfo(pbRequest.ClientName)
+
+	if clientInfo == nil {
+		return nil, fmt.Errorf("no matching client")
+	}
+
+	if response, err := s.handler.HandleRequest(request, clientInfo); err != nil {
 		return nil, err
 	} else {
 
@@ -228,14 +240,44 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 func (s *Server) getClient(name string) *ConnectedClient {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	client, _ := s.connectedClients[name]
-	return client
+	for _, client := range s.connectedClients {
+		if client.Info.Name == name {
+			return client
+		}
+	}
+	return nil
 }
 
 func (s *Server) setClient(client *ConnectedClient) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.connectedClients[client.Info.Name] = client
+	newClients := []*ConnectedClient{}
+	for _, existingClient := range s.connectedClients {
+		if existingClient == client {
+			continue
+		}
+		newClients = append(newClients, existingClient)
+	}
+	newClients = append(newClients, client)
+	s.connectedClients = newClients
+}
+
+func (s *Server) deleteClient(client *ConnectedClient) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	newClients := []*ConnectedClient{}
+	for _, existingClient := range s.connectedClients {
+		if existingClient == client {
+			continue
+		}
+		newClients = append(newClients, existingClient)
+	}
+	newClients = append(newClients, client)
+	s.connectedClients = newClients
+}
+
+type ClientAnnouncement struct {
+	Name string `json:"name"`
 }
 
 func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
@@ -254,22 +296,49 @@ func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 		return fmt.Errorf("cannot determine client info")
 	}
 
-	client := s.getClient(clientInfoAuthInfo.ClientInfo.Name)
+	pbResponse, err := server.Recv()
+
+	if err != nil {
+		eps.Log.Error(err)
+		return fmt.Errorf("can't receive handshake packet: %v", err)
+	}
+
+	data := pbResponse.Result.AsMap()
+	clientAnnouncement := &ClientAnnouncement{}
+
+	if params, err := AnnouncementForm.Validate(data); err != nil {
+		return fmt.Errorf("invalid client announcement")
+	} else if err := AnnouncementForm.Coerce(clientAnnouncement, params); err != nil {
+		return err
+	}
+
+	name := clientAnnouncement.Name
+
+	eps.Log.Debugf("Client announced itself as '%s'", name)
+
+	if !clientInfoAuthInfo.ClientInfos.HasName(name) {
+		return fmt.Errorf("invalid client name supplied")
+	}
+
+	client := s.getClient(name)
 
 	if client == nil {
 		client = &ConnectedClient{
-			Info: clientInfoAuthInfo.ClientInfo,
-			Stop: make(chan bool),
+			Info:      clientInfoAuthInfo.ClientInfos.ClientInfo(name),
+			Stop:      make(chan bool),
+			directory: s.directory,
 		}
 		s.setClient(client)
 	}
 
-	eps.Log.Debugf("Received incoming gRPC connection from client '%s'", clientInfoAuthInfo.ClientInfo.Name)
+	eps.Log.Debugf("Received incoming gRPC connection from client '%s' (primary name)", clientInfoAuthInfo.ClientInfos.PrimaryName())
 
 	client.CallServer = server
 
 	// we wait for the client to stop...
 	<-client.Stop
+
+	s.deleteClient(client)
 
 	return nil
 

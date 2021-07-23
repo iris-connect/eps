@@ -77,6 +77,17 @@ var SigningSettingsForm = forms.Form{
 			},
 		},
 		{
+			Name: "ca_intermediate_certificate_files",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsList{
+					Validators: []forms.Validator{
+						forms.IsString{},
+					},
+				},
+			},
+		},
+		{
 			Name: "certificate_file",
 			Validators: []forms.Validator{
 				forms.IsOptional{},

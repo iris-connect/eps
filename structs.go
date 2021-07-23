@@ -22,7 +22,8 @@ import (
 	"regexp"
 )
 
-var IDAddressRegexp = regexp.MustCompile(`(?i)^([^\.]+)\.([^\()]+)\(([^\)]+)\)$`)
+var MethodNameRegexp = regexp.MustCompile(`(?i)^(.*)\.(.*)$`)
+var IDAddressRegexp = regexp.MustCompile(`(?i)^(.*)\.([^\(\.]+)\(([^\)]+)\)$`)
 
 type Address struct {
 	Operator string `json:"operator"`

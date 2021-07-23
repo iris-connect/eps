@@ -9,4 +9,4 @@ jsonrpc_server: # the JSON-RPC server that the EPS server uses for communication
 directory:
   database_file: /tmp/service-directory.records
   ca_certificate_files: ["$DIR/../../certs/root.crt"]
-  
+  ca_intermediate_certificate_files: ["$DIR/../../certs/intermediate.crt"]
