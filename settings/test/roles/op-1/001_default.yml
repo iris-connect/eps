@@ -1,0 +1,14 @@
+name: $OP
+vars:
+  OP:
+    source: literal
+    value: op-1
+    type: string
+channels:
+  - name: test gRPC client
+    type: grpc_client
+    settings:
+      tls:
+        ca_certificate_files: ["$DIR/../../certs/root.crt"]
+        certificate_file: "$DIR/../../certs/$OP.crt"
+        key_file: "$DIR/../../certs/$OP.key"

@@ -1,6 +1,41 @@
 {
   "records" : [
     {
+      "name": "hd-1",
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "services",
+      "data": [
+        {
+          "name": "arithmetic",
+          "permissions": [{"group": "Operators", "rights" : ["call"]}],
+          "methods": [
+            {
+              "name": "add",
+              "params": [
+                {
+                  "name": "name",
+                  "validators": [
+                    {"type": "IsString", "config":{"MinLength": 1, "MaxLength": 100}},
+                    {"type": "IsURL"}
+                  ]
+                },
+                {
+                  "name": "id",
+                  "validators": [
+                    {"type": "IsBytes", "config": {"Encoding": "base64", "MinLength": 16, "MaxLength": 16}}
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "check",
+              "permissions": [{"group": "HealthDepartments", "rights" : ["call"]}]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "created_at": "2021-05-17T10:00:00Z",
       "section": "channels",
       "name": "op-1",
@@ -9,6 +44,12 @@
           "type" : "grpc_client"
         }
       ]
+    },
+    {
+      "name": "op-1",
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "groups",
+      "data": ["Operators"]
     },
     {
       "name": "ls-1",

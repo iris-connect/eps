@@ -406,11 +406,13 @@ func (c *GRPCClientChannel) CanDeliverTo(address *eps.Address) bool {
 
 	// we check if the requested service offers a gRPC server
 	if entry, err := c.DirectoryEntry(address, "grpc_server"); entry != nil {
+		eps.Log.Info("Can deliver!")
 		return true
 	} else if err != nil {
 		// we log this error
 		eps.Log.Error(err)
 	}
+	eps.Log.Info("cannot deliver")
 
 	return false
 }

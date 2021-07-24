@@ -50,3 +50,30 @@ func InitializeChannels(broker eps.MessageBroker, directory eps.Directory, setti
 	}
 	return channels, nil
 }
+
+func OpenChannels(broker eps.MessageBroker, directory eps.Directory, settings *eps.Settings) ([]eps.Channel, error) {
+
+	channels, err := InitializeChannels(broker, directory, settings)
+
+	if err != nil {
+		return nil, err
+	} else {
+		for _, channel := range channels {
+			if err := channel.Open(); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return channels, nil
+}
+
+func CloseChannels(channels []eps.Channel) error {
+	var lastErr error
+	for _, channel := range channels {
+		if err := channel.Close(); err != nil {
+			lastErr = err
+			eps.Log.Error(err)
+		}
+	}
+	return lastErr
+}

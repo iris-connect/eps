@@ -24,41 +24,46 @@ import (
 	"testing"
 )
 
+var clientFixtures = []th.FC{
+	{fixtures.Settings{Paths: []string{"", "roles/op-1"}}, "settings"},
+	{fixtures.Directory{}, "directory"},
+	{fixtures.MessageBroker{}, "broker"},
+	{fixtures.Channel{"test gRPC client"}, "client"},
+}
+
+var serverFixtures = []th.FC{
+	{fixtures.Settings{Paths: []string{"", "roles/hd-1"}}, "settings"},
+	{fixtures.Directory{}, "directory"},
+	{fixtures.MessageBroker{}, "broker"},
+	{fixtures.Channels{Open: true}, "channels"},
+}
+
 func TestGRPCClientConnection(t *testing.T) {
 
-	fixtures := []th.FC{
-		{fixtures.Settings{}, "settings"},
-		{fixtures.Directory{}, "directory"},
-		{fixtures.MessageBroker{}, "broker"},
-		{fixtures.Channel{"test gRPC client"}, "client"},
-		{fixtures.Channel{"test gRPC server"}, "server"},
-	}
-
-	fc, err := th.SetupFixtures(fixtures)
+	cf, err := th.SetupFixtures(clientFixtures)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer th.TeardownFixtures(fixtures, fc)
+	defer th.TeardownFixtures(clientFixtures, cf)
 
-	client := fc["client"].(*channels.GRPCClientChannel)
-	server := fc["server"].(*channels.GRPCServerChannel)
+	sf, err := th.SetupFixtures(serverFixtures)
 
-	if err := server.Open(); err != nil {
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := client.Open(); err != nil {
-		t.Fatal(err)
-	}
+	defer th.TeardownFixtures(serverFixtures, sf)
+
+	client := cf["client"].(*channels.GRPCClientChannel)
 
 	request := &eps.Request{
 		ID: "hd-1.add(1)",
 	}
 
-	if _, err := client.DeliverRequest(request); err == nil {
-		t.Fatalf("expeceted an error")
+	if _, err := client.DeliverRequest(request); err != nil {
+		t.Fatal(err)
 	}
 
 }

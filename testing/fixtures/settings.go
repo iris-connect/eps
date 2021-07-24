@@ -17,23 +17,40 @@
 package fixtures
 
 import (
+	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/definitions"
 	"github.com/iris-connect/eps/helpers"
+	"path"
 )
 
 type Settings struct {
+	Paths []string
 }
 
 func (c Settings) Setup(fixtures map[string]interface{}) (interface{}, error) {
 	// we set the loglevel to 'debug' so we can see which settings files are being loaded
 	var defs *eps.Definitions
+	var paths []string
 	var ok bool
 	if defs, ok = fixtures["definitions"].(*eps.Definitions); !ok {
 		defs = &definitions.Default
 	}
+	settingsPaths := helpers.SettingsPaths()
+	if c.Paths != nil {
+		if len(settingsPaths) != 1 {
+			return nil, fmt.Errorf("expected a single settings path prefix")
+		}
+		fullPaths := []string{}
+		for _, pth := range c.Paths {
+			fullPaths = append(fullPaths, path.Join(append(settingsPaths, pth)...))
+		}
+		paths = fullPaths
+	} else {
+		paths = settingsPaths
+	}
 	eps.Log.SetLevel(eps.DebugLogLevel)
-	return helpers.Settings(helpers.SettingsPaths(), defs)
+	return helpers.Settings(paths, defs)
 }
 
 func (c Settings) Teardown(fixture interface{}) error {

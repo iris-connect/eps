@@ -208,29 +208,30 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 		pbResponse := &protobuf.Response{
 			Id: pbRequest.Id,
 		}
-		if response.Result != nil {
-			resultStruct, err := structpb.NewStruct(response.Result)
-			if err != nil {
-				return nil, err
-			}
-			pbResponse.Result = resultStruct
-		}
-		if response.Error != nil {
-			pbResponse.Error = &protobuf.Error{
-				Code:    int32(response.Error.Code),
-				Message: response.Error.Message,
-			}
-
-			if response.Error.Data != nil {
-				errorStruct, err := structpb.NewStruct(response.Error.Data)
+		if response != nil {
+			if response.Result != nil {
+				resultStruct, err := structpb.NewStruct(response.Result)
 				if err != nil {
 					return nil, err
 				}
-				pbResponse.Error.Data = errorStruct
+				pbResponse.Result = resultStruct
 			}
+			if response.Error != nil {
+				pbResponse.Error = &protobuf.Error{
+					Code:    int32(response.Error.Code),
+					Message: response.Error.Message,
+				}
 
+				if response.Error.Data != nil {
+					errorStruct, err := structpb.NewStruct(response.Error.Data)
+					if err != nil {
+						return nil, err
+					}
+					pbResponse.Error.Data = errorStruct
+				}
+
+			}
 		}
-
 		return pbResponse, nil
 
 	}

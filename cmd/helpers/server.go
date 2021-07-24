@@ -26,30 +26,6 @@ import (
 	"syscall"
 )
 
-func openChannels(broker eps.MessageBroker, directory eps.Directory, settings *eps.Settings) []eps.Channel {
-
-	channels, err := helpers.InitializeChannels(broker, directory, settings)
-
-	if err != nil {
-		eps.Log.Fatal(err)
-	} else {
-		for _, channel := range channels {
-			if err := channel.Open(); err != nil {
-				eps.Log.Fatal(err)
-			}
-		}
-	}
-	return channels
-}
-
-func closeChannels(channels []eps.Channel) {
-	for _, channel := range channels {
-		if err := channel.Close(); err != nil {
-			eps.Log.Error(err)
-		}
-	}
-}
-
 func Server(settings *eps.Settings) ([]cli.Command, error) {
 
 	return []cli.Command{
@@ -78,7 +54,11 @@ func Server(settings *eps.Settings) ([]cli.Command, error) {
 							eps.Log.Fatal(err)
 						}
 
-						channels := openChannels(broker, directory, settings)
+						channels, err := helpers.OpenChannels(broker, directory, settings)
+
+						if err != nil {
+							eps.Log.Fatal(err)
+						}
 
 						// we wait for CTRL-C / Interrupt
 						sigchan := make(chan os.Signal, 1)
@@ -92,7 +72,8 @@ func Server(settings *eps.Settings) ([]cli.Command, error) {
 
 						eps.Log.Info("Stopping channels...")
 
-						closeChannels(channels)
+						// errors occuring within CloseChannels get logged automatically...
+						helpers.CloseChannels(channels)
 
 						if metricsServer != nil {
 							if err := metricsServer.Stop(); err != nil {

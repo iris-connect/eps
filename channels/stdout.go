@@ -20,6 +20,8 @@
 package channels
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/kiprotect/go-helpers/forms"
 )
@@ -63,9 +65,17 @@ func (c *StdoutChannel) Close() error {
 }
 
 func (c *StdoutChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
+	if jsonData, err := json.MarshalIndent(request, "", "  "); err != nil {
+		return nil, err
+	} else {
+		fmt.Println(string(jsonData))
+	}
 	return nil, nil
 }
 
 func (c *StdoutChannel) CanDeliverTo(address *eps.Address) bool {
+	if address.Operator == c.Directory().Name() {
+		return true
+	}
 	return false
 }

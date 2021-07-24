@@ -23,6 +23,7 @@ import (
 )
 
 type Channels struct {
+	Open bool
 }
 
 func (c Channels) Setup(fixtures map[string]interface{}) (interface{}, error) {
@@ -44,7 +45,11 @@ func (c Channels) Setup(fixtures map[string]interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("directory missing")
 	}
 
-	return helpers.InitializeChannels(broker, directory, settings)
+	if c.Open {
+		return helpers.OpenChannels(broker, directory, settings)
+	} else {
+		return helpers.InitializeChannels(broker, directory, settings)
+	}
 }
 
 func (c Channels) Teardown(fixture interface{}) error {
