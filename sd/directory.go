@@ -378,20 +378,22 @@ func (f *RecordDirectory) update() ([]*eps.SignedChangeRecord, error) {
 
 		verifiedChains := make([][]*eps.SignedChangeRecord, 0)
 		for i, chain := range chains {
-			valid := true
+			validRecords := make([]*eps.SignedChangeRecord, 0)
 			for j, record := range chain {
 				eps.Log.Infof("Chain %d, record %d: %s", i, j, record.Hash)
 				// we verify the signature of the record
 				if ok, err := helpers.VerifyRecord(record, chain[:j], f.rootCerts, f.intermediateCerts); err != nil {
-					return nil, err
+					eps.Log.Errorf("Warning, error verifying record: %v", err)
+					continue
 				} else if !ok {
 					eps.Log.Warning("signature does not match, ignoring this chain...")
-					valid = false
-					break
+					continue
+				} else {
+					validRecords = append(validRecords, record)
 				}
 			}
-			if valid {
-				verifiedChains = append(verifiedChains, chain)
+			if len(validRecords) > 0 {
+				verifiedChains = append(verifiedChains, validRecords)
 			}
 		}
 
