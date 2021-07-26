@@ -308,7 +308,7 @@ func (c *Client) ServerCall(handler Handler, stop chan bool) error {
 				Code:    -100,
 				Message: err.Error(),
 			}
-		} else {
+		} else if response != nil {
 			if response.Result != nil {
 				resultStruct, err := structpb.NewStruct(response.Result)
 				if err != nil {

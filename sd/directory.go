@@ -147,13 +147,6 @@ func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord, records []*e
 		return true, nil
 	}
 
-	for _, group := range subjectInfo.Groups {
-		if group == "sd-admin" {
-			// service directory admins can do everything
-			return true, nil
-		}
-	}
-
 	// we verify the signature and hash of the record
 	if ok, err := helpers.VerifyRecord(record, records, f.rootCerts, f.intermediateCerts); err != nil {
 		return false, err
@@ -189,10 +182,6 @@ func (f *RecordDirectory) Append(records []*eps.SignedChangeRecord) error {
 			if (tip != nil && record.ParentHash != tip.Hash) || (tip == nil && record.ParentHash != "") {
 				return fmt.Errorf("stale append, please try again")
 			}
-		} else {
-			// this is a new root records, we disregard all previous root records
-			// new root records can only be created by directory admins
-			records = make([]*eps.SignedChangeRecord, 0)
 		}
 
 		if ok, err := f.canAppend(record, records); err != nil {

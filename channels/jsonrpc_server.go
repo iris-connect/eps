@@ -19,6 +19,7 @@ package channels
 import (
 	"fmt"
 	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/forms"
 	"github.com/iris-connect/eps/jsonrpc"
 )
 
@@ -57,12 +58,23 @@ func MakeJSONRPCServerChannel(settings interface{}) (eps.Channel, error) {
 
 func (c *JSONRPCServerChannel) handler(context *jsonrpc.Context) *jsonrpc.Response {
 
-	// we transform this JSON-RPC request into an EPS request
-	request := &eps.Request{
-		Method: context.Request.Method,
-		Params: context.Request.Params,
-		ID:     fmt.Sprintf("%s(%s)", context.Request.Method, context.Request.ID),
+	request := &eps.Request{}
+
+	// we make sure the parameters are well-formed
+	if params, err := forms.RequestForm.Validate(map[string]interface{}{
+		"method": context.Request.Method,
+		"params": context.Request.Params,
+		"id":     context.Request.ID,
+	}); err != nil {
+		return context.Error(400, "invalid request", err)
+	} else if err := forms.RequestForm.Coerce(request, params); err != nil {
+		eps.Log.Error(err)
+		return context.InternalError()
 	}
+
+	// we replace the ID with an addressable ID that we can use to reconstruct
+	// the sender of the request later
+	request.ID = fmt.Sprintf("%s(%s)", request.Method, request.ID)
 
 	// this request comes from the server itself
 	clientInfo := &eps.ClientInfo{

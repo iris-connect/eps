@@ -20,6 +20,29 @@ import (
 	"github.com/kiprotect/go-helpers/forms"
 )
 
+var RequestForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "name",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "id",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "params",
+			Validators: []forms.Validator{
+				forms.IsStringMap{},
+			},
+		},
+	},
+}
+
 var ClientInfoForm = forms.Form{
 	Fields: []forms.Field{
 		{

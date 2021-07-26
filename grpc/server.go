@@ -68,8 +68,14 @@ func (s *Server) Stop() error {
 	return nil
 }
 
+// currently we allow messages up to 4MB in size
+var MaxMessageSize = 1024 * 1024 * 4
+
 func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Directory) (*Server, error) {
-	var opts []grpc.ServerOption
+	opts := []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(MaxMessageSize),
+		grpc.MaxSendMsgSize(MaxMessageSize),
+	}
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
 		return nil, err
 	} else {
@@ -195,6 +201,8 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 		Method: pbRequest.Method,
 	}
 
+	// we make sure the name that the client has given matches with one name
+	// from the certificate...
 	clientInfo := clientInfoAuthInfo.ClientInfos.ClientInfo(pbRequest.ClientName)
 
 	if clientInfo == nil {
@@ -325,16 +333,20 @@ func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 
 	if client == nil {
 		client = &ConnectedClient{
-			Info:      clientInfoAuthInfo.ClientInfos.ClientInfo(name),
-			Stop:      make(chan bool),
-			directory: s.directory,
+			Info:       clientInfoAuthInfo.ClientInfos.ClientInfo(name),
+			Stop:       make(chan bool),
+			CallServer: server,
+			directory:  s.directory,
 		}
 		s.setClient(client)
 	}
 
 	eps.Log.Debugf("Received incoming gRPC connection from client '%s' (primary name)", clientInfoAuthInfo.ClientInfos.PrimaryName())
 
+	// we update the CallServer reference in the client (in case it has been updated)
+	s.mutex.Lock()
 	client.CallServer = server
+	s.mutex.Unlock()
 
 	// we wait for the client to stop...
 	<-client.Stop

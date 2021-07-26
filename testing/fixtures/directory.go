@@ -22,9 +22,7 @@ import (
 	"github.com/iris-connect/eps/helpers"
 )
 
-type Directory struct {
-	Name string
-}
+type Directory struct{}
 
 func (c Directory) Setup(fixtures map[string]interface{}) (interface{}, error) {
 	settings, ok := fixtures["settings"].(*eps.Settings)
