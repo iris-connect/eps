@@ -10,10 +10,10 @@ jobs:
     name: Push Docker image to GitHub Packages
     runs-on: ubuntu-latest
     steps:
-      - name: Extract version
-        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Check out the repo
         uses: actions/checkout@v2
+      - name: Extract version
+        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Build and push eps
         uses: docker/build-push-action@v1
         with:

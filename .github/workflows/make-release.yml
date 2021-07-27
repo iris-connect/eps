@@ -16,8 +16,6 @@ jobs:
       GOPATH: /tmp/go
       GOARCH: 
     steps:
-      - name: Extract version
-        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: create Go path
         run: |
           mkdir -p /tmp/go
@@ -27,6 +25,8 @@ jobs:
           go-version: ${{matrix.go-version}}
       - name: Checkout repository
         uses: actions/checkout@v2
+      - name: Extract version
+        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: run tests
         if: ${{ matrix.arch == 'linux-amd64' }} # we only run the tests on Linux
         run: |
