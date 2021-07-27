@@ -23,7 +23,7 @@ import (
 var RequestForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "name",
+			Name: "method",
 			Validators: []forms.Validator{
 				forms.IsString{},
 			},
