@@ -17,7 +17,7 @@ jobs:
       - name: Build and push eps
         uses: docker/build-push-action@v1
         with:
-          build-args: |
+          build_args: |
             VERSION=$VERSION
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PW }}        
@@ -27,7 +27,7 @@ jobs:
       - name: Build and push sd
         uses: docker/build-push-action@v1
         with:
-          build-args: |
+          build_args: |
             VERSION=$VERSION
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PW }}        
@@ -37,7 +37,7 @@ jobs:
       - name: Build and push proxy
         uses: docker/build-push-action@v1
         with:
-          build-args: |
+          build_args: |
             VERSION=$VERSION
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PW }}        
