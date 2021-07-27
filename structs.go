@@ -22,6 +22,9 @@ import (
 	"regexp"
 )
 
+// this variable gets updated using the build process
+var Version = "development"
+
 var MethodNameRegexp = regexp.MustCompile(`(?i)^(.*)\.(.*)$`)
 var IDAddressRegexp = regexp.MustCompile(`(?i)^(.*)\.([^\(\.]+)\(([^\)]+)\)$`)
 

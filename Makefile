@@ -2,8 +2,9 @@
 .PHONY: all test clean build install protobuf examples
 
 SHELL := /bin/bash
+VERSION ?= development
 
-GOFLAGS ?= $(GOFLAGS:)
+GOFLAGS ?= $(GOFLAGS:) -ldflags "-X 'github.com/iris-connect/eps.Version=$(VERSION)'"
 
 export EPS_TEST = yes
 

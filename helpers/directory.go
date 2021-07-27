@@ -143,27 +143,31 @@ func VerifyRecord(record *eps.SignedChangeRecord, verifiedRecords []*eps.SignedC
 		return false, err
 	}
 
-	fingerprint := GetRecordFingerprint(verifiedRecords, subjectInfo.Name, "signing")
+	admin := false
+	for _, group := range subjectInfo.Groups {
+		if group == "sd-admin" {
+			// service directory admins can upload its own certificate info
+			// (but only if that info doesn't exist yet)
+			admin = true
+			break
+		}
+	}
 
-	if fingerprint == "" {
-		admin := false
-		for _, group := range subjectInfo.Groups {
-			if group == "sd-admin" {
-				// service directory admins can upload its own certificate info
-				// (but only if that info doesn't exist yet)
-				admin = true
-				break
-			}
-		}
-		// only a service directory admin can proceed without fingerprint validation
-		if !admin {
-			return false, nil
-		}
-	} else if !VerifyFingerprint(cert, fingerprint) {
-		// the fingerprint does not match the one we have on record
+	// only service-directory admins can continue
+	if !admin {
 		return false, nil
 	}
 
+	fingerprint := GetRecordFingerprint(verifiedRecords, subjectInfo.Name, "signing")
+
+	if fingerprint != "" {
+		if !VerifyFingerprint(cert, fingerprint) {
+			// the fingerprint does not match the one we have on record
+			return false, nil
+		}
+	}
+
+	// finally we verify the cryptographic signature
 	return Verify(signedData, rootCerts, intermediateCerts, "")
 }
 

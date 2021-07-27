@@ -16,6 +16,8 @@ jobs:
       GOPATH: /tmp/go
       GOARCH: 
     steps:
+      - name: Extract version
+        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: create Go path
         run: |
           mkdir -p /tmp/go

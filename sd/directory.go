@@ -129,33 +129,7 @@ func (f *RecordDirectory) Entries(*eps.DirectoryQuery) ([]*eps.DirectoryEntry, e
 
 // determines whether a subject can append to the service directory
 func (f *RecordDirectory) canAppend(record *eps.SignedChangeRecord, records []*eps.SignedChangeRecord) (bool, error) {
-
-	cert, err := helpers.LoadCertificateFromString(record.Signature.Certificate, true)
-
-	if err != nil {
-		return false, err
-	}
-
-	subjectInfo, err := helpers.GetSubjectInfo(cert)
-
-	if err != nil {
-		return false, err
-	}
-
-	// operators can edit their own channels and set their own preferences
-	if subjectInfo.Name == record.Record.Name && (record.Record.Section == "channels" || record.Record.Section == "preferences") {
-		return true, nil
-	}
-
-	// we verify the signature and hash of the record
-	if ok, err := helpers.VerifyRecord(record, records, f.rootCerts, f.intermediateCerts); err != nil {
-		return false, err
-	} else if !ok {
-		return false, nil
-	}
-
-	// everything else is forbidden
-	return false, nil
+	return helpers.VerifyRecord(record, records, f.rootCerts, f.intermediateCerts)
 }
 
 // Appends a series of records

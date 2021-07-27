@@ -196,12 +196,18 @@ func submitChangeRecords(changeRecords []*eps.ChangeRecord, settings *eps.Settin
 			eps.Log.Fatal(err)
 		}
 
-		eps.Log.Info(signedChangeRecord.Hash)
-
 		signedData, err := helpers.Sign(signedChangeRecord, key, certificate)
 
 		if err != nil {
 			eps.Log.Fatal(err)
+		}
+
+		eps.Log.Info(signedChangeRecord.Hash)
+
+		if ok, err := helpers.Verify(signedData, []*x509.Certificate{rootCertificate}, intermediateCertificates, settings.Name); err != nil {
+			eps.Log.Fatal(err)
+		} else if !ok {
+			eps.Log.Fatalf("cannot verify signature")
 		}
 
 		signedChangeRecord.Signature = signedData.Signature

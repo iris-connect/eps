@@ -17,6 +17,7 @@
 package helpers
 
 import (
+	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/helpers"
 	"github.com/urfave/cli"
@@ -84,7 +85,13 @@ func CLI(settings *eps.Settings) {
 		},
 	}
 
-	bareCommands := []cli.Command{}
+	bareCommands := []cli.Command{
+		{
+			Name:   "version",
+			Usage:  "Print the software version",
+			Action: func(c *cli.Context) error { fmt.Println(eps.Version); return nil },
+		},
+	}
 
 	// we add commands from the definitions
 	for _, commandsDefinition := range settings.Definitions.CommandsDefinitions {
