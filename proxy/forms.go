@@ -22,6 +22,7 @@ import (
 	"github.com/iris-connect/eps/jsonrpc"
 	"github.com/iris-connect/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
+	"regexp"
 	"time"
 )
 
@@ -33,6 +34,7 @@ var DirectorySettingsForm = forms.Form{
 				forms.IsList{
 					Validators: []forms.Validator{
 						forms.IsString{},
+						forms.MatchesRegex{Regex: regexp.MustCompile(`^\.`)},
 					},
 				},
 			},
