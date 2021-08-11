@@ -44,6 +44,14 @@ func Settings(definitions *eps.Definitions) (*eps.Settings, error) {
 	return helpers.Settings(settingsPaths, definitions)
 }
 
+var CommonCommands = []cli.Command{
+	{
+		Name:   "version",
+		Usage:  "Print the software version",
+		Action: func(c *cli.Context) error { fmt.Println(eps.Version); return nil },
+	},
+}
+
 var CommonFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "level",
@@ -72,7 +80,7 @@ func InitCLI(f func(c *cli.Context) error, service string) func(c *cli.Context) 
 		}
 		eps.Log.SetLevel(logLevel)
 
-		eps.Log.Infof("%s version: %s", service, eps.Version)
+		eps.Log.Debugf("%s version: %s", service, eps.Version)
 
 		format := c.GlobalString("format")
 		if format != "" {

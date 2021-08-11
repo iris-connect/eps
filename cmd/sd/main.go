@@ -37,7 +37,7 @@ func CLI(settings *sd.Settings) {
 	app.Usage = "Run all service directory commands"
 	app.Flags = cmdHelpers.CommonFlags
 
-	bareCommands := []cli.Command{
+	bareCommands := append([]cli.Command{
 		{
 			Name:  "run",
 			Flags: []cli.Flag{},
@@ -79,7 +79,7 @@ func CLI(settings *sd.Settings) {
 				return nil
 			},
 		},
-	}
+	}, cmdHelpers.CommonCommands...)
 
 	app.Commands = cmdHelpers.Decorate(bareCommands, cmdHelpers.InitCLI, "SD_")
 

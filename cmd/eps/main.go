@@ -17,7 +17,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/cmd/helpers"
 	"github.com/iris-connect/eps/definitions"
@@ -43,13 +42,7 @@ func CLI(settings *eps.Settings) {
 	app.Usage = "Run all server commands"
 	app.Flags = helpers.CommonFlags
 
-	bareCommands := []cli.Command{
-		{
-			Name:   "version",
-			Usage:  "Print the software version",
-			Action: func(c *cli.Context) error { fmt.Println(eps.Version); return nil },
-		},
-	}
+	bareCommands := helpers.CommonCommands
 
 	// we add commands from the definitions
 	for _, commandsDefinition := range settings.Definitions.CommandsDefinitions {

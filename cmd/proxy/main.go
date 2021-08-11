@@ -37,7 +37,7 @@ func CLI(settings *proxy.Settings) {
 	app.Usage = "Run all proxy server commands"
 	app.Flags = cmdHelpers.CommonFlags
 
-	bareCommands := []cli.Command{
+	bareCommands := append([]cli.Command{
 		{
 			Name:  "run",
 			Usage: "Run the public or private proxy",
@@ -136,7 +136,7 @@ func CLI(settings *proxy.Settings) {
 				},
 			},
 		},
-	}
+	}, cmdHelpers.CommonCommands...)
 
 	app.Commands = cmdHelpers.Decorate(bareCommands, cmdHelpers.InitCLI, "PRO")
 
