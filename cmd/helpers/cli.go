@@ -72,6 +72,8 @@ func InitCLI(f func(c *cli.Context) error, service string) func(c *cli.Context) 
 		}
 		eps.Log.SetLevel(logLevel)
 
+		eps.Log.Infof("%s version: %s", service, eps.Version)
+
 		format := c.GlobalString("format")
 		if format != "" {
 			if err := eps.SetLogFormat(format, service); err != nil {
