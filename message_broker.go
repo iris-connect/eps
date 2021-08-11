@@ -19,6 +19,7 @@ package eps
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
 type MessageBroker interface {
@@ -55,7 +56,12 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 func (b *BasicMessageBroker) handleInternalRequest(address *Address, request *Request) (*Response, error) {
 	switch address.Method {
 	case "_ping":
-		return &Response{Result: request.Params, Error: nil, ID: &address.ID}, nil
+
+		if ownEntry, err := b.directory.OwnEntry(); err != nil {
+			return nil, fmt.Errorf("error retrieving own entry: %w", err)
+		} else {
+			return &Response{Result: map[string]interface{}{"timestamp": time.Now().Format(time.RFC3339Nano), "params": request.Params, "serverInfo": ownEntry}, Error: nil, ID: &address.ID}, nil
+		}
 	}
 	return nil, nil
 }
