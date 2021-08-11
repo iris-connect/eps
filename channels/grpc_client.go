@@ -287,7 +287,6 @@ func (c *GRPCClientChannel) openConnections() error {
 		// we mark all connections as stale
 		c.markConnectionsStale()
 		for _, entry := range peerEntries {
-
 			// we skip this connection if the other endpoint has a gRPC client of its own and the current
 			// endpoint has a gRPC server, as the other endpoint can then just connect to this gRPC
 			// server via its own client...

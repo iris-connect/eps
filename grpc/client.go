@@ -26,10 +26,12 @@ import (
 	"github.com/iris-connect/eps/tls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/types/known/structpb"
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Client struct {
@@ -181,7 +183,13 @@ func (c *Client) Connect(address, serverName string) error {
 	defer c.mutex.Unlock()
 
 	var err error
-	var opts []grpc.DialOption
+	opts := []grpc.DialOption{
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                30 * time.Second,
+			Timeout:             20 * time.Second,
+			PermitWithoutStream: true,
+		}),
+	}
 
 	tlsConfig, err := tls.TLSClientConfig(c.settings.TLS)
 

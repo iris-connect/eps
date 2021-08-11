@@ -24,10 +24,12 @@ import (
 	"github.com/iris-connect/eps/tls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/structpb"
 	"net"
 	"sync"
+	"time"
 )
 
 type ConnectedClient struct {
@@ -75,6 +77,8 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 	opts := []grpc.ServerOption{
 		grpc.MaxRecvMsgSize(MaxMessageSize),
 		grpc.MaxSendMsgSize(MaxMessageSize),
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{MinTime: 15 * time.Second, PermitWithoutStream: true}),
+		grpc.KeepaliveParams(keepalive.ServerParameters{MaxConnectionIdle: 60 * time.Second, MaxConnectionAge: 24 * time.Hour, MaxConnectionAgeGrace: 1 * time.Minute, Time: 1 * time.Minute, Timeout: 30 * time.Second}),
 	}
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
 		return nil, err
@@ -281,7 +285,6 @@ func (s *Server) deleteClient(client *ConnectedClient) {
 		}
 		newClients = append(newClients, existingClient)
 	}
-	newClients = append(newClients, client)
 	s.connectedClients = newClients
 }
 
@@ -349,7 +352,13 @@ func (s *Server) ServerCall(server protobuf.EPS_ServerCallServer) error {
 	s.mutex.Unlock()
 
 	// we wait for the client to stop...
-	<-client.Stop
+	select {
+	case <-client.Stop:
+		break
+	// the server is done (e.g. because the connection was closed)
+	case <-server.Context().Done():
+		break
+	}
 
 	s.deleteClient(client)
 

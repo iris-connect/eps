@@ -26,7 +26,7 @@ channels: # defines all the channels that we want to open when starting the serv
   - name: main JSON-RPC server # accepts incoming JSONRPC connections to deliver and receive messages
     type: jsonrpc_server 
     settings:
-      bind_address: "localhost:5556"
+      bind_address: "localhost:5557"
       cors:
         allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
       tls:
