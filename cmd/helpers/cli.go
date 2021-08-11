@@ -21,19 +21,18 @@ import (
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/helpers"
 	"github.com/urfave/cli"
-	"os"
 )
 
-type decorator func(f func(c *cli.Context) error) func(c *cli.Context) error
+type Decorator func(f func(c *cli.Context) error, service string) func(c *cli.Context) error
 
-func decorate(commands []cli.Command, decorator decorator) []cli.Command {
+func Decorate(commands []cli.Command, decorator Decorator, service string) []cli.Command {
 	newCommands := make([]cli.Command, len(commands))
 	for i, command := range commands {
 		if command.Action != nil {
-			command.Action = decorator(command.Action.(func(c *cli.Context) error))
+			command.Action = decorator(command.Action.(func(c *cli.Context) error), service)
 		}
 		if command.Subcommands != nil {
-			command.Subcommands = decorate(command.Subcommands, decorator)
+			command.Subcommands = Decorate(command.Subcommands, decorator, service)
 		}
 		newCommands[i] = command
 	}
@@ -45,69 +44,47 @@ func Settings(definitions *eps.Definitions) (*eps.Settings, error) {
 	return helpers.Settings(settingsPaths, definitions)
 }
 
-func CLI(settings *eps.Settings) {
+var CommonFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:  "level",
+		Value: "info",
+		Usage: "The desired log level",
+	},
+	cli.StringFlag{
+		Name:  "format",
+		Value: "",
+		Usage: "The desired log format (possible values: iris)",
+	},
+	cli.StringFlag{
+		Name:  "profile",
+		Value: "",
+		Usage: "enable profiler and store results to given filename",
+	},
+}
 
-	var err error
+func InitCLI(f func(c *cli.Context) error, service string) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
 
-	init := func(f func(c *cli.Context) error) func(c *cli.Context) error {
-		return func(c *cli.Context) error {
-
-			level := c.GlobalString("level")
-			logLevel, err := eps.ParseLevel(level)
-			if err != nil {
-				return err
-			}
-			eps.Log.SetLevel(logLevel)
-
-			runner := func() error { return f(c) }
-			profiler := c.GlobalString("profile")
-			if profiler != "" {
-				return runWithProfiler(profiler, runner)
-			}
-
-			return f(c)
+		level := c.GlobalString("level")
+		logLevel, err := eps.ParseLevel(level)
+		if err != nil {
+			return fmt.Errorf("error parsing flag: %w", err)
 		}
-	}
+		eps.Log.SetLevel(logLevel)
 
-	app := cli.NewApp()
-	app.Name = "Endpoint Server"
-	app.Usage = "Run all server commands"
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "level",
-			Value: "info",
-			Usage: "The desired log level",
-		},
-		cli.StringFlag{
-			Name:  "profile",
-			Value: "",
-			Usage: "enable profiler and store results to given filename",
-		},
-	}
-
-	bareCommands := []cli.Command{
-		{
-			Name:   "version",
-			Usage:  "Print the software version",
-			Action: func(c *cli.Context) error { fmt.Println(eps.Version); return nil },
-		},
-	}
-
-	// we add commands from the definitions
-	for _, commandsDefinition := range settings.Definitions.CommandsDefinitions {
-		if commands, err := commandsDefinition.Maker(settings); err != nil {
-			eps.Log.Fatal(err)
-		} else {
-			bareCommands = append(bareCommands, commands...)
+		format := c.GlobalString("format")
+		if format != "" {
+			if err := eps.SetLogFormat(format, service); err != nil {
+				return fmt.Errorf("error setting log formatter: %w", err)
+			}
 		}
+
+		runner := func() error { return f(c) }
+		profiler := c.GlobalString("profile")
+		if profiler != "" {
+			return runWithProfiler(profiler, runner)
+		}
+
+		return f(c)
 	}
-
-	app.Commands = decorate(bareCommands, init)
-
-	err = app.Run(os.Args)
-
-	if err != nil {
-		eps.Log.Error(err)
-	}
-
 }

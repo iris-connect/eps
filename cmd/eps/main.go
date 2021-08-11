@@ -17,9 +17,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/cmd/helpers"
 	"github.com/iris-connect/eps/definitions"
+	"github.com/urfave/cli"
+	"os"
 )
 
 func main() {
@@ -27,6 +30,42 @@ func main() {
 		eps.Log.Error(err)
 		return
 	} else {
-		helpers.CLI(settings)
+		CLI(settings)
 	}
+}
+
+func CLI(settings *eps.Settings) {
+
+	var err error
+
+	app := cli.NewApp()
+	app.Name = "Endpoint Server"
+	app.Usage = "Run all server commands"
+	app.Flags = helpers.CommonFlags
+
+	bareCommands := []cli.Command{
+		{
+			Name:   "version",
+			Usage:  "Print the software version",
+			Action: func(c *cli.Context) error { fmt.Println(eps.Version); return nil },
+		},
+	}
+
+	// we add commands from the definitions
+	for _, commandsDefinition := range settings.Definitions.CommandsDefinitions {
+		if commands, err := commandsDefinition.Maker(settings); err != nil {
+			eps.Log.Fatal(err)
+		} else {
+			bareCommands = append(bareCommands, commands...)
+		}
+	}
+
+	app.Commands = helpers.Decorate(bareCommands, helpers.InitCLI, "EPS")
+
+	err = app.Run(os.Args)
+
+	if err != nil {
+		eps.Log.Error(err)
+	}
+
 }

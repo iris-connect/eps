@@ -49,7 +49,7 @@ func MakeJSONRPCServerChannel(settings interface{}) (eps.Channel, error) {
 	}
 
 	if server, err := jsonrpc.MakeJSONRPCServer(&rpcSettings, s.handler); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating JSON-RPC server: %w", err)
 	} else {
 		s.Server = server
 		return s, nil

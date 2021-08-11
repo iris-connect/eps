@@ -138,7 +138,7 @@ func MakeAPIDirectory(name string, settings interface{}) (eps.Directory, error) 
 		cert, err := helpers.LoadCertificate(certificateFile, false)
 
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error loading API directory root certificate: %w", err)
 		}
 
 		rootCerts = append(rootCerts, cert)
@@ -151,7 +151,7 @@ func MakeAPIDirectory(name string, settings interface{}) (eps.Directory, error) 
 		cert, err := helpers.LoadCertificate(certificateFile, false)
 
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error loading API directory intermediate certificate: %w", err)
 		}
 
 		intermediateCerts = append(intermediateCerts, cert)
@@ -208,7 +208,7 @@ func (f *APIDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntry
 	if time.Now().Add(-time.Duration(2*f.settings.CacheEntriesFor) * time.Second).After(lastUpdate) {
 		// last update was more than 2 minutes ago, we update synchronously
 		if err := f.update(); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error updating service directory: %w", err)
 		}
 	} else if time.Now().Add(-time.Duration(f.settings.CacheEntriesFor) * time.Second).After(lastUpdate) {
 		// last update was more than 1 minute ago, we update in the background
@@ -234,7 +234,7 @@ func (f *APIDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntry
 func (f *APIDirectory) EntryFor(name string) (*eps.DirectoryEntry, error) {
 	// locking is done by Entries method
 	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: name}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving service directory entry: %w", err)
 	} else if len(entries) == 0 {
 		return nil, eps.NoEntryFound
 	} else {
@@ -256,10 +256,10 @@ func (f *APIDirectory) Tip() (*eps.SignedChangeRecord, error) {
 	request := jsonrpc.MakeRequest("getTip", "", map[string]interface{}{})
 
 	if result, err := f.jsonrpcClient.Call(request); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting tip from service directory: %w", err)
 	} else {
 		if result.Error != nil {
-			return nil, fmt.Errorf(result.Error.Message)
+			return nil, fmt.Errorf("JSON-RPC error: %s", result.Error.Message)
 		}
 
 		if result.Result == nil {
@@ -267,7 +267,7 @@ func (f *APIDirectory) Tip() (*eps.SignedChangeRecord, error) {
 		}
 
 		if mapResult, ok := result.Result.(map[string]interface{}); !ok {
-			return nil, fmt.Errorf("expected a map")
+			return nil, fmt.Errorf("expected a map as result for 'getTip' call to service directory")
 		} else if params, err := epsForms.SignedChangeRecordForm.Validate(mapResult); err != nil {
 			return nil, err
 		} else {
@@ -292,11 +292,11 @@ func (f *APIDirectory) Submit(signedChangeRecords []*eps.SignedChangeRecord) err
 	request := jsonrpc.MakeRequest("submitRecords", "", map[string]interface{}{"records": signedChangeRecords})
 
 	if result, err := f.jsonrpcClient.Call(request); err != nil {
-		return err
+		return fmt.Errorf("error submitting records to service directory: %w", err)
 	} else {
 		if result.Error != nil {
 			eps.Log.Error(result.Error)
-			return fmt.Errorf(result.Error.Message)
+			return fmt.Errorf("JSON-RPC error: %s", result.Error.Message)
 		}
 		return nil
 	}
@@ -311,7 +311,7 @@ func (f *APIDirectory) integrate(records []*eps.SignedChangeRecord) error {
 			entry.Name = record.Record.Name
 		}
 		if err := helpers.IntegrateChangeRecord(record, entry); err != nil {
-			return err
+			return fmt.Errorf("error integrating change record: %w", err)
 		}
 		f.entries[record.Record.Name] = entry
 	}
@@ -346,11 +346,11 @@ func (f *APIDirectory) update() error {
 	request := jsonrpc.MakeRequest("getRecords", "", map[string]interface{}{"after": tipHash})
 
 	if result, err := f.jsonrpcClient.Call(request); err != nil {
-		return err
+		return fmt.Errorf("error getting records from service directory: %w", err)
 	} else {
 
 		if result.Error != nil {
-			return fmt.Errorf(result.Error.Message)
+			return fmt.Errorf("JSON-RPC error: %s", result.Error.Message)
 		}
 
 		if result.Result == nil {
@@ -393,7 +393,7 @@ func (f *APIDirectory) update() error {
 				// we verify all records before we integate them
 				for i, record := range fullRecords {
 					if ok, err := helpers.VerifyRecord(record, fullRecords[:i], f.rootCerts, f.intermediateCerts); err != nil {
-						return err
+						return fmt.Errorf("cannot verify service directory record: %w", err)
 					} else if !ok {
 						return fmt.Errorf("invalid record found")
 					}

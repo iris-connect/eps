@@ -51,7 +51,7 @@ func (b *BaseChannel) OperatorEntry(name string) (*DirectoryEntry, error) {
 	if entries, err := b.Directory().Entries(&DirectoryQuery{
 		Operator: name,
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving operator entry: %w", err)
 	} else if len(entries) == 0 {
 		return nil, fmt.Errorf("no entry found")
 	} else {
@@ -65,7 +65,7 @@ func (b *BaseChannel) DirectoryEntry(address *Address, channel string) (*Directo
 		Operator: address.Operator,
 		Channels: []string{channel},
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving directory entry: %w", err)
 	} else if len(entries) > 0 {
 		return entries[0], nil
 	}

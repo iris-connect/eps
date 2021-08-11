@@ -121,7 +121,7 @@ func VerifyRecord(record *eps.SignedChangeRecord, verifiedRecords []*eps.SignedC
 	}
 
 	if ok, err := VerifyRecordHash(record); err != nil {
-		return false, err
+		return false, fmt.Errorf("error verifying record hash: %w", err)
 	} else if !ok {
 		return false, fmt.Errorf("invalid hash value")
 	}
@@ -134,13 +134,13 @@ func VerifyRecord(record *eps.SignedChangeRecord, verifiedRecords []*eps.SignedC
 	cert, err := LoadCertificateFromString(signature.Certificate, true)
 
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error loading entry certificate: %w", err)
 	}
 
 	subjectInfo, err := GetSubjectInfo(cert)
 
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error retrieving subject info: %w", err)
 	}
 
 	admin := false
@@ -179,7 +179,7 @@ func CalculateRecordHash(record *eps.SignedChangeRecord) error {
 	hash, err := StructuredHash(record.Record)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error calculating record hash: %w", err)
 	}
 
 	record.Hash = hex.EncodeToString(hash[:])

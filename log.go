@@ -17,7 +17,11 @@
 package eps
 
 import (
+	"fmt"
 	log "github.com/sirupsen/logrus"
+	"os"
+	"strings"
+	"time"
 )
 
 type Logger struct {
@@ -38,9 +42,36 @@ const (
 func ParseLevel(level string) (Level, error) {
 	lvl, err := log.ParseLevel(level)
 	if err != nil {
-		return PanicLogLevel, err
+		return PanicLogLevel, fmt.Errorf("error parsing level: %w", err)
 	}
 	return Level(lvl), err
+}
+
+type IRISFormatter struct {
+	service string
+}
+
+func SetLogFormat(format string, service string) error {
+	switch format {
+	case "iris":
+		log.SetFormatter(&IRISFormatter{service: service})
+	default:
+		return fmt.Errorf("unknown log format: %s", format)
+	}
+	return nil
+}
+
+func (c *IRISFormatter) Format(entry *log.Entry) ([]byte, error) {
+	timestamp := time.Now().Format(time.RFC3339Nano)
+	loglevel := strings.ToUpper(entry.Level.String())
+	pid := os.Getpid()
+	thread := "[nan]" // thread ID is not applicable to Golang
+	function := "[nan]"
+	if entry.Caller != nil {
+		function = entry.Caller.Function
+	}
+	message := entry.Message
+	return []byte(fmt.Sprintf("%s %s %d %s %s %s : %s\n", timestamp, loglevel, pid, c.service, thread, function, message)), nil
 }
 
 func (l *Logger) Fatal(args ...interface{}) {

@@ -66,7 +66,7 @@ func (c *StdoutChannel) Close() error {
 
 func (c *StdoutChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 	if jsonData, err := json.MarshalIndent(request, "", "  "); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error marshaling to JSON: %w", err)
 	} else {
 		fmt.Println(string(jsonData))
 	}

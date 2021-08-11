@@ -22,6 +22,7 @@ package directories
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/iris-connect/eps"
 	epsForms "github.com/iris-connect/eps/forms"
 	"github.com/iris-connect/eps/helpers"
@@ -131,7 +132,7 @@ func (f *JSONDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntr
 	defer f.mutex.Unlock()
 
 	if err := f.load(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error loading JSON directory: %w", err)
 	}
 
 	entries := make([]*eps.DirectoryEntry, 0)
@@ -145,7 +146,7 @@ func (f *JSONDirectory) Entries(query *eps.DirectoryQuery) ([]*eps.DirectoryEntr
 
 func (f *JSONDirectory) EntryFor(name string) (*eps.DirectoryEntry, error) {
 	if entries, err := f.Entries(&eps.DirectoryQuery{Operator: name}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving entry: %w", err)
 	} else if len(entries) == 0 {
 		return nil, eps.NoEntryFound
 	} else {
@@ -179,7 +180,7 @@ func loadRecords(recordsPath string) ([]*eps.ChangeRecord, error) {
 
 	fi, err := os.Stat(recordsPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving records path info: %w", err)
 	}
 	var recordsFiles []string
 	if fi.Mode().IsDir() {
@@ -193,15 +194,15 @@ func loadRecords(recordsPath string) ([]*eps.ChangeRecord, error) {
 	for _, recordsFile := range recordsFiles {
 		eps.Log.Tracef("Adding records from %v...", recordsFile)
 		if file, err := os.Open(recordsFile); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error opening records file '%s': %w", recordsFile, err)
 		} else {
 			if data, err := ioutil.ReadAll(file); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error reading records file '%s': %w", recordsFile, err)
 			} else {
 				file.Close()
 				rawRecords := map[string]interface{}{}
 				if err := json.Unmarshal(data, &rawRecords); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("error parsing JSON from file '%s': %w", recordsFile, err)
 				} else if params, err := JSONRecordsForm.Validate(rawRecords); err != nil {
 					return nil, err
 				} else {

@@ -52,26 +52,25 @@ func (c *GRPCServerConnection) Open() error {
 	defer c.mutex.Unlock()
 	if c.connected {
 		if c.establishedAddress == c.Address && c.establishedName == c.Name {
-			eps.Log.Tracef("Connection still good, doing nothing...")
+			eps.Log.Tracef("connection to server '%s' still good...", c.Name)
 			// we're already connected and nothing changed
 			return nil
 		}
-		eps.Log.Tracef("Connection details changed!")
 		// some connection details changed, we reestablish the connection
 		if err := c.Close(); err != nil {
-			return err
+			return fmt.Errorf("error closing connection: %w", err)
 		}
 	} else if c.connecting {
 		return nil
 	} else {
-		eps.Log.Tracef("Opening a new gRPC client connection")
+		eps.Log.Tracef("opening a new gRPC client connection to server '%s'", c.Name)
 	}
 	c.connecting = true
 	defer func() { c.connecting = false }()
 	if client, err := grpc.MakeClient(&c.channel.Settings, c.channel.Directory()); err != nil {
-		return err
+		return fmt.Errorf("error creating gRPC client: %w", err)
 	} else if err := client.Connect(c.Address, c.Name); err != nil {
-		return err
+		return fmt.Errorf("error connecting gRPC client: %w", err)
 	} else {
 		c.client = client
 		c.connected = true
@@ -84,7 +83,7 @@ func (c *GRPCServerConnection) Open() error {
 			for {
 				if !stopping {
 					if err := client.ServerCall(c.channel, c.stop); err != nil {
-						eps.Log.Errorf("Server call failed: %v", err)
+						eps.Log.Errorf("server call failed: %v", err)
 						stopping = true
 						// there was a connection error, we stop the loop
 						go func() {
@@ -276,9 +275,9 @@ func (c *GRPCClientChannel) openConnections() error {
 	if entries, err := c.Directory().Entries(&eps.DirectoryQuery{
 		Channels: []string{"grpc_server"},
 	}); err != nil {
-		return err
+		return fmt.Errorf("error retrieving directory entries: %w", err)
 	} else if ownEntry, err := c.Directory().OwnEntry(); err != nil {
-		return err
+		return fmt.Errorf("error retrieving own entry: %w", err)
 	} else {
 		// we only connect to entries that can actually call services on this
 		// endpoint (incoming requests only, as outgoing ones go through the
@@ -303,7 +302,7 @@ func (c *GRPCClientChannel) openConnections() error {
 			if channel := entry.Channel("grpc_server"); channel == nil {
 				return fmt.Errorf("this should not happen: no grpc_server channel found")
 			} else if settings, err := getEntrySettings(channel.Settings); err != nil {
-				return err
+				return fmt.Errorf("error retrieving entry settings: %w", err)
 			} else {
 				if c.Directory().Name() == entry.Name {
 					// we won't open a channel to ourselves...
@@ -350,7 +349,7 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 	address, err := eps.GetAddress(request.ID)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing address: %w", err)
 	}
 
 	entry, err := c.DirectoryEntry(address, "grpc_server")
@@ -370,13 +369,13 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 	settings, err := getEntrySettings(entry.Channel("grpc_server").Settings)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving entry settings: %w", err)
 	}
 
 	if client, err := grpc.MakeClient(&c.Settings, c.Directory()); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating gRPC client: %w", err)
 	} else if err := client.Connect(settings.Address, entry.Name); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error connecting gRPC client: %w", err)
 	} else {
 
 		// we ensure the client will always be closed
@@ -388,7 +387,7 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 
 		response, err := client.SendRequest(request)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error sending request: %w", err)
 		}
 
 		return response, nil

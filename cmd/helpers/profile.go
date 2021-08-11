@@ -31,11 +31,11 @@ func runWithProfiler(name string, runner func() error) error {
 	fc, err := os.Create(fmt.Sprintf("%s-cpu.pprof", name))
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating CPU profile file: %w", err)
 	}
 
 	if err := pprof.StartCPUProfile(fc); err != nil {
-		return err
+		return fmt.Errorf("error starting CPU profiling: %w", err)
 	}
 
 	defer pprof.StopCPUProfile()
@@ -45,13 +45,13 @@ func runWithProfiler(name string, runner func() error) error {
 	fm, err := os.Create(fmt.Sprintf("%s-mem.pprof", name))
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating MEM profile file: %w", err)
 	}
 
 	runtime.GC() // get up-to-date statistics
 
 	if err := pprof.WriteHeapProfile(fm); err != nil {
-		return err
+		return fmt.Errorf("error writing heap profile: %w", err)
 	}
 
 	fm.Close()

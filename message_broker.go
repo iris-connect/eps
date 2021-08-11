@@ -47,7 +47,7 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 	// we tell the channel that it's part of the message broker
 	if err := channel.SetMessageBroker(b); err != nil {
 		b.channels = b.channels[:len(b.channels)-1]
-		return err
+		return fmt.Errorf("error adding channel: %w", err)
 	}
 	return nil
 }
@@ -89,20 +89,20 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 
 	// we always update the directory entry of the client info struct
 	if remoteEntry, err = b.directory.EntryFor(clientInfo.Name); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving directory entry: %w", err)
 	} else {
 		clientInfo.Entry = remoteEntry
 	}
 
 	if ownEntry, err = b.directory.OwnEntry(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving own entry: %w", err)
 	}
 
 	// we always add the client information to the request
 	if request.Params != nil {
 
 		if clientInfoStruct, err := clientInfo.AsStruct(); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error serializing client info: %w", err)
 		} else {
 			request.Params["_client"] = clientInfoStruct
 		}
@@ -111,7 +111,7 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 	address, err := GetAddress(request.ID)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing address: %w", err)
 	}
 
 	// if the remote entry isn't identical to the local one we check if the
@@ -125,8 +125,10 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 	}
 
 	if address.Operator == ownEntry.Name {
-		if response, err := b.handleInternalRequest(address, request); response != nil || err != nil {
-			return response, err
+		if response, err := b.handleInternalRequest(address, request); err != nil {
+			return nil, fmt.Errorf("error handling internal request: %w", err)
+		} else if response != nil {
+			return response, nil
 		}
 	}
 

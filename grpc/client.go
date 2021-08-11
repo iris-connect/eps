@@ -93,7 +93,7 @@ func (c *VerifyCredentials) checkFingerprint(cert *x509.Certificate, name string
 		if err == eps.NoEntryFound {
 			return nil, false, nil
 		}
-		return nil, false, err
+		return nil, false, fmt.Errorf("error retrieving directory entry for '%s' for fingerprint check: %w", name, err)
 	} else {
 		// we go through all certificates for the entry
 		for _, directoryCert := range entry.Certificates {
@@ -158,7 +158,7 @@ func (c VerifyCredentials) ServerHandshake(conn net.Conn) (net.Conn, credentials
 	conn, authInfo, err := c.TransportCredentials.ServerHandshake(conn)
 
 	if err != nil {
-		return conn, authInfo, err
+		return conn, authInfo, fmt.Errorf("error performing server handshake: %w", err)
 	}
 	// for the server we do not pass a client info object but create a new
 	// one for every handshake, as the client info will change...
@@ -170,7 +170,7 @@ func (c VerifyCredentials) ClientHandshake(ctx context.Context, endpoint string,
 	conn, authInfo, err := c.TransportCredentials.ClientHandshake(ctx, endpoint, conn)
 
 	if err != nil {
-		return conn, authInfo, err
+		return conn, authInfo, fmt.Errorf("error performing client handshake: %w", err)
 	}
 	// for the client we pass the existing client info object as it will be
 	// used only once...
@@ -194,7 +194,7 @@ func (c *Client) Connect(address, serverName string) error {
 	tlsConfig, err := tls.TLSClientConfig(c.settings.TLS)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error retrieving gRPC client TLS config: %w", err)
 	}
 
 	tlsConfig.ServerName = serverName
@@ -231,13 +231,13 @@ func (c *Client) ServerCall(handler Handler, stop chan bool) error {
 	stream, err := client.ServerCall(ctx)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error performing server call: %w", err)
 	}
 
 	announcementStruct, err := structpb.NewStruct(map[string]interface{}{"name": c.directory.Name()})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error serializing directory entry for gRPC: %w", err)
 	}
 
 	pbResponse := &protobuf.Response{
@@ -276,7 +276,7 @@ func (c *Client) ServerCall(handler Handler, stop chan bool) error {
 		}
 
 		if err != nil {
-			return err
+			return fmt.Errorf("error receiving gRPC request: %w", err)
 		}
 
 		request := &eps.Request{
@@ -359,7 +359,7 @@ func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 
 	if err != nil {
 		eps.Log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("error serializing params for gRPC: %w", err)
 	}
 
 	pbRequest := &protobuf.Request{
@@ -373,7 +373,7 @@ func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 
 	if err != nil {
 		eps.Log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("error performing gRPC call: %w", err)
 	}
 
 	var responseError *eps.Error

@@ -36,16 +36,16 @@ func InitializeChannels(broker eps.MessageBroker, directory eps.Directory, setti
 	for _, channel := range settings.Channels {
 		eps.Log.Debugf("Initializing channel '%s' of type '%s'", channel.Name, channel.Type)
 		definition := settings.Definitions.ChannelDefinitions[channel.Type]
-		if channel, err := definition.Maker(channel.Settings); err != nil {
-			return nil, err
+		if channelObj, err := definition.Maker(channel.Settings); err != nil {
+			return nil, fmt.Errorf("error initializing channel '%s': %w", channel.Name, err)
 		} else {
-			if err := broker.AddChannel(channel); err != nil {
-				return nil, err
+			if err := broker.AddChannel(channelObj); err != nil {
+				return nil, fmt.Errorf("error adding channel '%s': %w", channel.Name, err)
 			}
-			if err := channel.SetDirectory(directory); err != nil {
-				return nil, err
+			if err := channelObj.SetDirectory(directory); err != nil {
+				return nil, fmt.Errorf("error setting directory for channel '%s': %w", channel.Name, err)
 			}
-			channels = append(channels, channel)
+			channels = append(channels, channelObj)
 		}
 	}
 	return channels, nil
@@ -56,11 +56,11 @@ func OpenChannels(broker eps.MessageBroker, directory eps.Directory, settings *e
 	channels, err := InitializeChannels(broker, directory, settings)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error initializing channels: %w", err)
 	} else {
-		for _, channel := range channels {
+		for i, channel := range channels {
 			if err := channel.Open(); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error opening channel %d: %w", i, err)
 			}
 		}
 	}
@@ -69,10 +69,10 @@ func OpenChannels(broker eps.MessageBroker, directory eps.Directory, settings *e
 
 func CloseChannels(channels []eps.Channel) error {
 	var lastErr error
-	for _, channel := range channels {
+	for i, channel := range channels {
 		if err := channel.Close(); err != nil {
-			lastErr = err
-			eps.Log.Error(err)
+			lastErr = fmt.Errorf("error closing channel %d: %w", i, err)
+			eps.Log.Error(lastErr)
 		}
 	}
 	return lastErr

@@ -48,11 +48,11 @@ type ClientInfo struct {
 // for inclusion in protobuf... A bit dirty as we use JSON here, but it works...
 func (c *ClientInfo) AsStruct() (map[string]interface{}, error) {
 	if data, err := json.Marshal(c); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error marshalling as JSON: %w", err)
 	} else {
 		var mapStruct map[string]interface{}
 		if err := json.Unmarshal(data, &mapStruct); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error unmarshaling JSON: %w", err)
 		} else {
 			return mapStruct, nil
 		}

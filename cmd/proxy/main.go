@@ -18,6 +18,7 @@ package main
 
 import (
 	"github.com/iris-connect/eps"
+	cmdHelpers "github.com/iris-connect/eps/cmd/helpers"
 	"github.com/iris-connect/eps/metrics"
 	"github.com/iris-connect/eps/proxy"
 	"github.com/iris-connect/eps/proxy/helpers"
@@ -27,50 +28,14 @@ import (
 	"syscall"
 )
 
-type decorator func(f func(c *cli.Context) error) func(c *cli.Context) error
-
-func decorate(commands []cli.Command, decorator decorator) []cli.Command {
-	newCommands := make([]cli.Command, len(commands))
-	for i, command := range commands {
-		if command.Action != nil {
-			command.Action = decorator(command.Action.(func(c *cli.Context) error))
-		}
-		if command.Subcommands != nil {
-			command.Subcommands = decorate(command.Subcommands, decorator)
-		}
-		newCommands[i] = command
-	}
-	return newCommands
-}
-
 func CLI(settings *proxy.Settings) {
 
 	var err error
 
-	init := func(f func(c *cli.Context) error) func(c *cli.Context) error {
-		return func(c *cli.Context) error {
-
-			level := c.GlobalString("level")
-			logLevel, err := eps.ParseLevel(level)
-			if err != nil {
-				return err
-			}
-			eps.Log.SetLevel(logLevel)
-
-			return f(c)
-		}
-	}
-
 	app := cli.NewApp()
 	app.Name = "Proxy Server"
 	app.Usage = "Run all proxy server commands"
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "level",
-			Value: "info",
-			Usage: "The desired log level",
-		},
-	}
+	app.Flags = cmdHelpers.CommonFlags
 
 	bareCommands := []cli.Command{
 		{
@@ -173,7 +138,7 @@ func CLI(settings *proxy.Settings) {
 		},
 	}
 
-	app.Commands = decorate(bareCommands, init)
+	app.Commands = cmdHelpers.Decorate(bareCommands, cmdHelpers.InitCLI, "PRO")
 
 	err = app.Run(os.Args)
 

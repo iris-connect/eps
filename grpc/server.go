@@ -55,7 +55,7 @@ func (s *Server) Start() error {
 	lis, err := net.Listen("tcp", s.settings.BindAddress)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error binding to address '%s': %w", s.settings.BindAddress, err)
 	}
 
 	go func() {
@@ -81,7 +81,7 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 		grpc.KeepaliveParams(keepalive.ServerParameters{MaxConnectionIdle: 60 * time.Second, MaxConnectionAge: 24 * time.Hour, MaxConnectionAgeGrace: 1 * time.Minute, Time: 1 * time.Minute, Timeout: 30 * time.Second}),
 	}
 	if tlsConfig, err := tls.TLSServerConfig(settings.TLS); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving TLS server config: %w", err)
 	} else {
 		opts = append(opts, grpc.Creds(VerifyCredentials{directory: directory, TransportCredentials: credentials.NewTLS(tlsConfig)}))
 	}
@@ -111,7 +111,7 @@ func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, e
 
 	if err != nil {
 		c.Stop <- true
-		return nil, err
+		return nil, fmt.Errorf("error serializing params for gRPC: %w", err)
 	}
 
 	pbRequest := &protobuf.Request{
@@ -124,14 +124,14 @@ func (c *ConnectedClient) DeliverRequest(request *eps.Request) (*eps.Response, e
 	if err := c.CallServer.Send(pbRequest); err != nil {
 		eps.Log.Errorf("Cannot deliver request: %v", err)
 		c.Stop <- true
-		return nil, err
+		return nil, fmt.Errorf("error sending gRPC request: %w", err)
 	}
 
 	if pbResponse, err := c.CallServer.Recv(); err != nil {
 		eps.Log.Errorf("Cannot receive response: %v", err)
 		// we close the connection
 		c.Stop <- true
-		return nil, err
+		return nil, fmt.Errorf("error receiving gRPC response: %w", err)
 	} else {
 
 		var responseError *eps.Error
@@ -164,7 +164,7 @@ func (s *Server) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 	address, err := eps.GetAddress(request.ID)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing address: %w", err)
 	}
 
 	client := s.getClient(address.Operator)
@@ -214,7 +214,7 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 	}
 
 	if response, err := s.handler.HandleRequest(request, clientInfo); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error handling gRPC request: %w", err)
 	} else {
 
 		pbResponse := &protobuf.Response{
@@ -224,7 +224,7 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 			if response.Result != nil {
 				resultStruct, err := structpb.NewStruct(response.Result)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("error serializing response for gRPC: %w", err)
 				}
 				pbResponse.Result = resultStruct
 			}
@@ -237,7 +237,7 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 				if response.Error.Data != nil {
 					errorStruct, err := structpb.NewStruct(response.Error.Data)
 					if err != nil {
-						return nil, err
+						return nil, fmt.Errorf("error serializing error data for gRPC: %w", err)
 					}
 					pbResponse.Error.Data = errorStruct
 				}
