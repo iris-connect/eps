@@ -54,7 +54,7 @@ There are also role-specific development/test settings in the `settings/dev/role
 All EPS servers rely on the service directory (SD) to discover each other and learn about permissions, certificates and other important settings. For development, you can either use a JSON-based service directory, or run the service directory API like this:
 
 ```bash
-SD_SETTINGS=settings/dev/roles/sd-1 sd --level debug run
+SD_SETTINGS=settings/dev/roles/sd-1 sd run
 ```
 
 To initialize the service directory you can upload the JSON-based directory:
