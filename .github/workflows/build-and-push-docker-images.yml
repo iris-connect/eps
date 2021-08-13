@@ -16,10 +16,10 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Check output
         env:
-          VERSION: ${{ env.RELEASE_VERSION }}
+          VERSION: ${{ env.VERSION }}
         run: |
           echo $VERSION
-          echo ${{ env.RELEASE_VERSION }}
+          echo ${{ env.VERSION }}
       - name: Build and push eps
         uses: docker/build-push-action@v1
         with:
