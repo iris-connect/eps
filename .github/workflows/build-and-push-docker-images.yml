@@ -24,7 +24,7 @@ jobs:
         uses: docker/build-push-action@v1
         with:
           build_args: |
-            VERSION=${{ steps.vars.outputs.tag }}
+            VERSION=${{ env.VERSION }}
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/eps
@@ -34,7 +34,7 @@ jobs:
         uses: docker/build-push-action@v1
         with:
           build_args: |
-            VERSION=${{ steps.vars.outputs.tag }}
+            VERSION=${{ env.VERSION }}
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/sd
@@ -44,7 +44,7 @@ jobs:
         uses: docker/build-push-action@v1
         with:
           build_args: |
-            VERSION=${{ steps.vars.outputs.tag }}
+            VERSION=${{ env.VERSION }}
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PW }}        
           repository: inoeg/proxy
