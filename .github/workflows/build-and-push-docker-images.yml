@@ -18,8 +18,8 @@ jobs:
         env:
           VERSION: ${{ env.VERSION }}
         run: |
-          echo $VERSION | xd -c
-          echo ${{ env.VERSION }} | xd -c
+          echo $VERSION
+          echo ${{ env.VERSION }}
       - name: Build and push eps
         uses: docker/build-push-action@v1
         with:
