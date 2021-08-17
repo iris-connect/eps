@@ -86,7 +86,7 @@ func (b *BasicMessageBroker) handleInternalRequest(address *Address, request *Re
 		if ownEntry, err := b.directory.OwnEntry(); err != nil {
 			return nil, fmt.Errorf("error retrieving own entry: %w", err)
 		} else {
-			return &Response{Result: map[string]interface{}{"timestamp": time.Now().Format(time.RFC3339Nano), "params": request.Params, "serverInfo": ownEntry}, Error: nil, ID: &address.ID}, nil
+			return &Response{Result: map[string]interface{}{"version": Version, "timestamp": time.Now().Format(time.RFC3339Nano), "params": request.Params, "serverInfo": ownEntry}, Error: nil, ID: &address.ID}, nil
 		}
 	case "_directory":
 		query := &DirectoryQuery{}
