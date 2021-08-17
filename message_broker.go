@@ -153,12 +153,12 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 
 	address, err := GetAddress(request.ID)
 
-	if _, err := b.directory.EntryFor(address.Operator); err != nil {
-		return nil, fmt.Errorf("error retrieving directory entry for recipient '%s': %w", address.Operator, err)
-	}
-
 	if err != nil {
 		return nil, fmt.Errorf("error parsing address: %w", err)
+	}
+
+	if _, err := b.directory.EntryFor(address.Operator); err != nil {
+		return nil, fmt.Errorf("error retrieving directory entry for recipient '%s': %w", address.Operator, err)
 	}
 
 	// if the remote entry isn't identical to the local one we check if the
