@@ -25,6 +25,14 @@ import (
 var RecordDirectorySettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
+			Name: "datastore",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &epsForms.DatastoreForm,
+				},
+			},
+		},
+		{
 			Name: "metrics",
 			Validators: []forms.Validator{
 				forms.IsOptional{},
@@ -52,12 +60,6 @@ var RecordDirectorySettingsForm = forms.Form{
 						forms.IsString{},
 					},
 				},
-			},
-		},
-		{
-			Name: "database_file",
-			Validators: []forms.Validator{
-				forms.IsString{},
 			},
 		},
 	},

@@ -17,6 +17,7 @@
 package helpers
 
 import (
+	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/proxy"
 	"github.com/kiprotect/go-helpers/settings"
 	"os"
@@ -41,13 +42,15 @@ func SettingsPaths() []string {
 	return sanitizedValues
 }
 
-func Settings(settingsPaths []string) (*proxy.Settings, error) {
+func Settings(settingsPaths []string, definitions *eps.Definitions) (*proxy.Settings, error) {
 	if rawSettings, err := settings.MakeSettings(settingsPaths); err != nil {
 		return nil, err
-	} else if params, err := proxy.SettingsForm.Validate(rawSettings.Values); err != nil {
+	} else if params, err := proxy.SettingsForm.ValidateWithContext(rawSettings.Values, map[string]interface{}{"definitions": definitions}); err != nil {
 		return nil, err
 	} else {
-		settings := &proxy.Settings{}
+		settings := &proxy.Settings{
+			Definitions: definitions,
+		}
 		if err := proxy.SettingsForm.Coerce(settings, params); err != nil {
 			// this should not happen if the forms are correct...
 			return nil, err

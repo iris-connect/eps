@@ -19,6 +19,7 @@ package main
 import (
 	"github.com/iris-connect/eps"
 	cmdHelpers "github.com/iris-connect/eps/cmd/helpers"
+	"github.com/iris-connect/eps/definitions"
 	"github.com/iris-connect/eps/metrics"
 	"github.com/iris-connect/eps/sd"
 	"github.com/iris-connect/eps/sd/helpers"
@@ -92,7 +93,7 @@ func CLI(settings *sd.Settings) {
 }
 
 func main() {
-	if settings, err := helpers.Settings(helpers.SettingsPaths()); err != nil {
+	if settings, err := helpers.Settings(helpers.SettingsPaths(), &definitions.Default); err != nil {
 		eps.Log.Error(err)
 		return
 	} else {

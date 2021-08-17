@@ -20,10 +20,12 @@ import (
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/channels"
 	"github.com/iris-connect/eps/cmd"
+	"github.com/iris-connect/eps/datastores"
 	"github.com/iris-connect/eps/directories"
 )
 
 var Default = eps.Definitions{
+	DatastoreDefinitions: datastores.Definitions,
 	DirectoryDefinitions: directories.Directories,
 	CommandsDefinitions:  cmd.Commands,
 	ChannelDefinitions:   channels.Channels,

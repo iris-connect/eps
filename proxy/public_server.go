@@ -39,7 +39,7 @@ import (
 )
 
 type PublicServer struct {
-	dataStore        helpers.DataStore
+	dataStore        eps.Datastore
 	settings         *PublicServerSettings
 	jsonrpcServer    *jsonrpc.JSONRPCServer
 	jsonrpcClient    *jsonrpc.Client
@@ -195,7 +195,7 @@ connections:
 				return context.InternalError()
 			}
 
-			dataEntry := &helpers.DataEntry{
+			dataEntry := &eps.DataEntry{
 				Type: PublicAnnouncementType,
 				ID:   id,
 				Data: rawData,
@@ -233,14 +233,21 @@ func (c *PublicServer) getAnnouncements(context *jsonrpc.Context, params *GetPub
 	return context.Result(relevantAnnouncements)
 }
 
-func MakePublicServer(settings *PublicServerSettings) (*PublicServer, error) {
+func MakePublicServer(settings *PublicServerSettings, definitions *eps.Definitions) (*PublicServer, error) {
+
+	dataStore, err := helpers.InitializeDatastore(settings.Datastore, definitions)
+
+	if err != nil {
+		return nil, err
+	}
+
 	server := &PublicServer{
 		settings:       settings,
 		jsonrpcClient:  jsonrpc.MakeClient(settings.JSONRPCClient),
 		tlsConnections: make(map[string]net.Conn),
 		tlsHellos:      make(map[string][]byte),
 		announcements:  make([]*PublicAnnouncement, 0),
-		dataStore:      helpers.MakeFileDataStore(settings.DatabaseFile),
+		dataStore:      dataStore,
 	}
 
 	methods := map[string]*jsonrpc.Method{

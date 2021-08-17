@@ -12,7 +12,17 @@ private:
       key_file: "$DIR/../../certs/internal-server.key"
     #verify_service_call: true
   name: private-proxy-1.ga
-  database_file: /tmp/private-proxy-announcements.db
+  datastore:
+    type: redis
+    settings:
+      addresses:
+        - localhost:6379
+      database: 0
+      password: ""
+      key: public-proxy-entries
+#    type: file
+#    settings:
+#      filename: /tmp/private-proxy-announcements.db
   jsonrpc_client:
     endpoint: https://localhost:7766/jsonrpc
     tls:

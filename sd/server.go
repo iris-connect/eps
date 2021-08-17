@@ -161,7 +161,7 @@ func MakeServer(settings *Settings) (*Server, error) {
 
 	var err error
 
-	server.directory, err = MakeRecordDirectory(settings.Directory)
+	server.directory, err = MakeRecordDirectory(settings.Directory, settings.Definitions)
 
 	if err != nil {
 		return nil, err

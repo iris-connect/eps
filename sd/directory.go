@@ -31,15 +31,15 @@ const (
 )
 
 type RecordDirectorySettings struct {
-	DatabaseFile                   string   `json:"database_file"`
-	CACertificateFiles             []string `json:"ca_certificate_files"`
-	CAIntermediateCertificateFiles []string `json:"ca_intermediate_certificate_files"`
+	Datastore                      *eps.DatastoreSettings `json:"datastore"`
+	CACertificateFiles             []string               `json:"ca_certificate_files"`
+	CAIntermediateCertificateFiles []string               `json:"ca_intermediate_certificate_files"`
 }
 
 type RecordDirectory struct {
 	rootCerts         []*x509.Certificate
 	intermediateCerts []*x509.Certificate
-	dataStore         helpers.DataStore
+	dataStore         eps.Datastore
 	settings          *RecordDirectorySettings
 	entries           map[string]*eps.DirectoryEntry
 	recordsByHash     map[string]*eps.SignedChangeRecord
@@ -48,7 +48,7 @@ type RecordDirectory struct {
 	mutex             sync.Mutex
 }
 
-func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, error) {
+func MakeRecordDirectory(settings *RecordDirectorySettings, definitions *eps.Definitions) (*RecordDirectory, error) {
 
 	rootCerts := make([]*x509.Certificate, 0)
 
@@ -80,6 +80,12 @@ func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, e
 
 	}
 
+	dataStore, err := helpers.InitializeDatastore(settings.Datastore, definitions)
+
+	if err != nil {
+		return nil, err
+	}
+
 	f := &RecordDirectory{
 		rootCerts:         rootCerts,
 		intermediateCerts: intermediateCerts,
@@ -87,14 +93,14 @@ func MakeRecordDirectory(settings *RecordDirectorySettings) (*RecordDirectory, e
 		recordsByHash:     make(map[string]*eps.SignedChangeRecord),
 		recordChildren:    make(map[string][]*eps.SignedChangeRecord),
 		settings:          settings,
-		dataStore:         helpers.MakeFileDataStore(settings.DatabaseFile),
+		dataStore:         dataStore,
 	}
 
-	if err := f.dataStore.Init(); err != nil {
+	if err = f.dataStore.Init(); err != nil {
 		return nil, err
 	}
 
-	_, err := f.update()
+	_, err = f.update()
 
 	return f, err
 }
@@ -176,7 +182,7 @@ func (f *RecordDirectory) Append(records []*eps.SignedChangeRecord) error {
 			return err
 		}
 
-		dataEntry := &helpers.DataEntry{
+		dataEntry := &eps.DataEntry{
 			Type: SignedChangeRecordEntry,
 			ID:   id,
 			Data: rawData,

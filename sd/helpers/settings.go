@@ -17,6 +17,7 @@
 package helpers
 
 import (
+	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/sd"
 	"github.com/kiprotect/go-helpers/settings"
 	"os"
@@ -41,13 +42,16 @@ func SettingsPaths() []string {
 	return sanitizedValues
 }
 
-func Settings(settingsPaths []string) (*sd.Settings, error) {
+func Settings(settingsPaths []string, definitions *eps.Definitions) (*sd.Settings, error) {
+
 	if rawSettings, err := settings.MakeSettings(settingsPaths); err != nil {
 		return nil, err
-	} else if params, err := sd.SettingsForm.Validate(rawSettings.Values); err != nil {
+	} else if params, err := sd.SettingsForm.ValidateWithContext(rawSettings.Values, map[string]interface{}{"definitions": definitions}); err != nil {
 		return nil, err
 	} else {
-		settings := &sd.Settings{}
+		settings := &sd.Settings{
+			Definitions: definitions,
+		}
 		if err := sd.SettingsForm.Coerce(settings, params); err != nil {
 			// this should not happen if the forms are correct...
 			return nil, err

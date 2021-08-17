@@ -22,6 +22,7 @@ import (
 )
 
 type Settings struct {
+	Definitions   *eps.Definitions               `json:"definitions"`
 	Metrics       *eps.MetricsSettings           `json:"metrics"`
 	JSONRPCServer *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
 	Directory     *RecordDirectorySettings       `json:"directory"`

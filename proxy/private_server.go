@@ -42,7 +42,7 @@ import (
 )
 
 type PrivateServer struct {
-	dataStore     helpers.DataStore
+	dataStore     eps.Datastore
 	settings      *PrivateServerSettings
 	announcements []*PrivateAnnouncement
 	jsonrpcServer *jsonrpc.JSONRPCServer
@@ -422,12 +422,18 @@ func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *Inc
 	return context.Result(map[string]interface{}{"message": "ok"})
 }
 
-func MakePrivateServer(settings *PrivateServerSettings) (*PrivateServer, error) {
+func MakePrivateServer(settings *PrivateServerSettings, definitions *eps.Definitions) (*PrivateServer, error) {
+
+	dataStore, err := helpers.InitializeDatastore(settings.Datastore, definitions)
+
+	if err != nil {
+		return nil, err
+	}
 
 	server := &PrivateServer{
 		stop:          make(chan bool),
 		settings:      settings,
-		dataStore:     helpers.MakeFileDataStore(settings.DatabaseFile),
+		dataStore:     dataStore,
 		jsonrpcClient: jsonrpc.MakeClient(settings.JSONRPCClient),
 	}
 
@@ -597,7 +603,7 @@ func (c *PrivateServer) announceConnection(context *jsonrpc.Context, params *Pri
 			return context.InternalError()
 		}
 
-		dataEntry := &helpers.DataEntry{
+		dataEntry := &eps.DataEntry{
 			Type: PrivateAnnouncementType,
 			ID:   id,
 			Data: rawData,

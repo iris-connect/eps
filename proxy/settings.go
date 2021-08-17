@@ -29,9 +29,10 @@ const (
 )
 
 type Settings struct {
-	Metrics *eps.MetricsSettings   `json:"metrics"`
-	Private *PrivateServerSettings `json:"private"`
-	Public  *PublicServerSettings  `json:"public"`
+	Definitions *eps.Definitions       `json:"definitions"`
+	Metrics     *eps.MetricsSettings   `json:"metrics"`
+	Private     *PrivateServerSettings `json:"private"`
+	Public      *PublicServerSettings  `json:"public"`
 }
 
 type DirectorySettings struct {
@@ -39,7 +40,7 @@ type DirectorySettings struct {
 }
 
 type PublicServerSettings struct {
-	DatabaseFile        string                         `json:"database_file"`
+	Datastore           *eps.DatastoreSettings         `json:"datastore"`
 	Name                string                         `json:"name"`
 	TLSBindAddress      string                         `json:"tls_bind_address"`
 	InternalBindAddress string                         `json:"internal_bind_address"`
@@ -74,7 +75,7 @@ type InternalEndpointSettings struct {
 }
 
 type PrivateServerSettings struct {
-	DatabaseFile     string                         `json:"database_file"`
+	Datastore        *eps.DatastoreSettings         `json:"datastore"`
 	Name             string                         `json:"name"`
 	Announcements    []*PrivateAnnouncement         `json:"announcements"`
 	InternalEndpoint *InternalEndpointSettings      `json:"internal_endpoint"`

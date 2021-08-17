@@ -1,7 +1,7 @@
 // IRIS Endpoint-Server (EPS)
 // Copyright (C) 2021-2021 The IRIS Endpoint-Server Authors (see AUTHORS.md)
 //
-// This program is free software: you can redistribute it and/or modify
+// This program is free software: you can filetribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package helpers
+package datastores
 
 // Adapted from https://github.com/kiprotect/kodex/blob/master/parameters/file.go
 
@@ -40,6 +40,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/helpers"
+	"github.com/kiprotect/go-helpers/forms"
 	"io"
 	"os"
 	"path/filepath"
@@ -47,21 +49,35 @@ import (
 	"sync"
 )
 
+var FileForm = forms.Form{
+	ErrorMsg: "invalid data encountered in the File config form",
+	Fields: []forms.Field{
+		{
+			Name: "filename",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
+
+func ValidateFileSettings(settings map[string]interface{}) (interface{}, error) {
+	if params, err := FileForm.Validate(settings); err != nil {
+		return nil, err
+	} else {
+		fileSettings := &FileSettings{}
+		if err := FileForm.Coerce(fileSettings, params); err != nil {
+			return nil, err
+		}
+		return fileSettings, nil
+	}
+}
+
 const BUFFER_SIZE = 255
 const CHUNK_ID_LENGTH = 16
 const CHUNK_HEADER_SIZE = 8 + CHUNK_ID_LENGTH
 const CHUNK_VERSION = 1
 const ENTRY_VERSION = 1
-
-const (
-	NullType = 0
-)
-
-type DataEntry struct {
-	Type uint8
-	ID   []byte
-	Data []byte
-}
 
 type DataChunk struct {
 	// The number of chunks for this hash
@@ -204,7 +220,7 @@ func (d *DataChunk) Write(writer io.Writer) error {
 	return nil
 }
 
-func (e *DataEntry) ToBytes() []byte {
+func ToBytes(e *eps.DataEntry) []byte {
 	bytes := make([]byte, len(e.Data)+len(e.ID)+4)
 	bytes[0] = ENTRY_VERSION
 	bytes[1] = e.Type
@@ -214,19 +230,20 @@ func (e *DataEntry) ToBytes() []byte {
 	return bytes
 }
 
-func (e *DataEntry) FromBytes(data []byte) error {
+func FromBytes(data []byte) (*eps.DataEntry, error) {
+	e := &eps.DataEntry{}
 	if data[0] != ENTRY_VERSION {
-		return fmt.Errorf("invalid version")
+		return nil, fmt.Errorf("invalid version")
 	}
 	e.Type = data[1]
 	idLength := binary.LittleEndian.Uint16(data[2:4])
 	if int(idLength) > len(data)+4 {
-		return fmt.Errorf("ID out of bounds")
+		return nil, fmt.Errorf("ID out of bounds")
 	}
 	e.ID = data[4 : 4+idLength]
 	e.Data = data[4+idLength : len(data)]
 
-	return nil
+	return e, nil
 
 }
 
@@ -240,8 +257,8 @@ func MakeDataChunk(id []byte, chunks, index uint16, data []byte) *DataChunk {
 }
 
 // Splits a data entry into multiple data chunks.
-func (e *DataEntry) Split() ([]*DataChunk, error) {
-	bytes := e.ToBytes()
+func Split(e *eps.DataEntry) ([]*DataChunk, error) {
+	bytes := ToBytes(e)
 	effectiveBufferSize := BUFFER_SIZE - CHUNK_HEADER_SIZE
 	chunks := len(bytes) / effectiveBufferSize
 	if len(bytes)%effectiveBufferSize != 0 {
@@ -251,7 +268,7 @@ func (e *DataEntry) Split() ([]*DataChunk, error) {
 		return nil, fmt.Errorf("data is too large")
 	}
 	dataChunks := make([]*DataChunk, chunks)
-	id, err := RandomID(CHUNK_ID_LENGTH)
+	id, err := helpers.RandomID(CHUNK_ID_LENGTH)
 	if err != nil {
 		return nil, err
 	}
@@ -268,27 +285,28 @@ func (e *DataEntry) Split() ([]*DataChunk, error) {
 	return dataChunks, nil
 }
 
-func (e *DataEntry) Reassemble(chunks []*DataChunk) error {
-	e.Type = NullType
+func Reassemble(chunks []*DataChunk) (*eps.DataEntry, error) {
+	e := &eps.DataEntry{}
+	e.Type = eps.NullType
 	e.Data = nil
 	e.ID = nil
 	data := make([]byte, 0, 100)
 	for i, chunk := range chunks {
 		if chunk.Index != uint16(i) {
-			return nil
+			return nil, fmt.Errorf("invalid chunk data")
 		}
 		data = append(data, chunk.Data...)
 	}
 
 	if len(data) < 1 {
-		return fmt.Errorf("invalid entry")
+		return nil, fmt.Errorf("invalid entry")
 	}
 
-	return e.FromBytes(data)
+	return FromBytes(data)
 }
 
 type ByPosition struct {
-	Entries   []*DataEntry
+	Entries   []*eps.DataEntry
 	Positions map[string]int
 }
 
@@ -308,14 +326,14 @@ func (b ByPosition) Less(i, j int) bool {
 
 // Reassembles data entries from a list of data chunks. Returns any remaining
 // data chunks (which might be used later).
-func reassemble(chunks []*DataChunk) ([]*DataEntry, []*DataChunk, error) {
+func reassemble(chunks []*DataChunk) ([]*eps.DataEntry, []*DataChunk, error) {
 	/*
 		We can assume that chunks occur in the right order, but they still can
 		be interleaved within each other.
 	*/
 	chunkPositions := make(map[string]int)
 	entryPositions := make(map[string]int)
-	dataEntries := make([]*DataEntry, 0, 10)
+	dataEntries := make([]*eps.DataEntry, 0, 10)
 	remainingChunks := make([]*DataChunk, 0, 10)
 	chunksByID := make(map[string][]*DataChunk)
 	for i, chunk := range chunks {
@@ -333,8 +351,8 @@ func reassemble(chunks []*DataChunk) ([]*DataEntry, []*DataChunk, error) {
 		chunksByID[id] = existingChunks
 	}
 	for id, idChunks := range chunksByID {
-		dataEntry := &DataEntry{}
-		if err := dataEntry.Reassemble(idChunks); err != nil {
+		dataEntry, err := Reassemble(idChunks)
+		if err != nil {
 			return nil, nil, err
 		}
 		entryPositions[string(dataEntry.ID)] = chunkPositions[id]
@@ -353,37 +371,36 @@ func reassemble(chunks []*DataChunk) ([]*DataEntry, []*DataChunk, error) {
 	return sortedByPosition.Entries, remainingChunks, nil
 }
 
-type DataStore interface {
-	// Write data to the store
-	Write(*DataEntry) error
-	// Read data from the store
-	Read() ([]*DataEntry, error)
-	Init() error
-}
-
 // A file-based data store
-type FileDataStore struct {
-	filename string
+type FileDatastore struct {
+	settings *FileSettings
 	mutex    sync.Mutex
 	wfile    *os.File
 	rfile    *os.File
 	chunks   []*DataChunk
 }
 
-func MakeFileDataStore(filename string) *FileDataStore {
-	return &FileDataStore{
-		filename: filename,
-		mutex:    sync.Mutex{},
-		chunks:   make([]*DataChunk, 0, 10),
-	}
+type FileSettings struct {
+	Filename string `json:"filename"`
 }
 
-func (f *FileDataStore) Init() error {
+func MakeFile(settings interface{}) (eps.Datastore, error) {
+
+	fileSettings := settings.(FileSettings)
+
+	return &FileDatastore{
+		settings: &fileSettings,
+		mutex:    sync.Mutex{},
+		chunks:   make([]*DataChunk, 0, 10),
+	}, nil
+}
+
+func (f *FileDatastore) Init() error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
 	// we try to create the directory if it doesn't exist
-	dir := filepath.Dir(f.filename)
+	dir := filepath.Dir(f.settings.Filename)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 			return err
@@ -392,12 +409,12 @@ func (f *FileDataStore) Init() error {
 		return err
 	}
 
-	wfile, err := os.OpenFile(f.filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0700)
+	wfile, err := os.OpenFile(f.settings.Filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0700)
 	if err != nil {
 		return err
 	}
 	f.wfile = wfile
-	rfile, err := os.OpenFile(f.filename, os.O_CREATE|os.O_RDONLY, 0700)
+	rfile, err := os.OpenFile(f.settings.Filename, os.O_CREATE|os.O_RDONLY, 0700)
 	if err != nil {
 		return err
 	}
@@ -405,7 +422,7 @@ func (f *FileDataStore) Init() error {
 	return nil
 }
 
-func (f *FileDataStore) readChunks() ([]*DataChunk, error) {
+func (f *FileDatastore) readChunks() ([]*DataChunk, error) {
 	chunks := make([]*DataChunk, 0, 10)
 	for {
 		chunk := &DataChunk{}
@@ -428,7 +445,7 @@ func (f *FileDataStore) readChunks() ([]*DataChunk, error) {
 	return chunks, nil
 }
 
-func (f *FileDataStore) Read() ([]*DataEntry, error) {
+func (f *FileDatastore) Read() ([]*eps.DataEntry, error) {
 
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
@@ -448,8 +465,8 @@ func (f *FileDataStore) Read() ([]*DataEntry, error) {
 	return dataEntries, nil
 }
 
-func (f *FileDataStore) Write(entry *DataEntry) error {
-	if chunks, err := entry.Split(); err != nil {
+func (f *FileDatastore) Write(entry *eps.DataEntry) error {
+	if chunks, err := Split(entry); err != nil {
 		return err
 	} else {
 		for _, chunk := range chunks {

@@ -19,6 +19,7 @@ package main
 import (
 	"github.com/iris-connect/eps"
 	cmdHelpers "github.com/iris-connect/eps/cmd/helpers"
+	"github.com/iris-connect/eps/definitions"
 	"github.com/iris-connect/eps/metrics"
 	"github.com/iris-connect/eps/proxy"
 	"github.com/iris-connect/eps/proxy/helpers"
@@ -53,7 +54,7 @@ func CLI(settings *proxy.Settings) {
 							eps.Log.Fatal("Public settings undefined!")
 						}
 
-						server, err := proxy.MakePublicServer(settings.Public)
+						server, err := proxy.MakePublicServer(settings.Public, settings.Definitions)
 
 						if err != nil {
 							eps.Log.Fatal(err)
@@ -99,7 +100,7 @@ func CLI(settings *proxy.Settings) {
 							eps.Log.Fatal("Private settings undefined!")
 						}
 
-						server, err := proxy.MakePrivateServer(settings.Private)
+						server, err := proxy.MakePrivateServer(settings.Private, settings.Definitions)
 
 						if err != nil {
 							eps.Log.Fatal(err)
@@ -149,7 +150,7 @@ func CLI(settings *proxy.Settings) {
 }
 
 func main() {
-	if settings, err := helpers.Settings(helpers.SettingsPaths()); err != nil {
+	if settings, err := helpers.Settings(helpers.SettingsPaths(), &definitions.Default); err != nil {
 		eps.Log.Error(err)
 		return
 	} else {

@@ -128,9 +128,11 @@ var InternalEndpointForm = forms.Form{
 var PrivateSettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "database_file",
+			Name: "datastore",
 			Validators: []forms.Validator{
-				forms.IsString{},
+				forms.IsStringMap{
+					Form: &epsForms.DatastoreForm,
+				},
 			},
 		},
 		{
@@ -169,9 +171,11 @@ var PrivateSettingsForm = forms.Form{
 var PublicSettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
-			Name: "database_file",
+			Name: "datastore",
 			Validators: []forms.Validator{
-				forms.IsString{},
+				forms.IsStringMap{
+					Form: &epsForms.DatastoreForm,
+				},
 			},
 		},
 		{

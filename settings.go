@@ -16,6 +16,11 @@
 
 package eps
 
+type DatastoreSettings struct {
+	Type     string
+	Settings interface{} `json:"settings"`
+}
+
 type ChannelSettings struct {
 	Name     string      `json:"name"`
 	Type     string      `json:"type"`
