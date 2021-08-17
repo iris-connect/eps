@@ -89,15 +89,14 @@ func (c *JSONRPCServerChannel) handler(context *jsonrpc.Context) *jsonrpc.Respon
 	}
 
 	if response, err := c.MessageBroker().DeliverRequest(request, clientInfo); err != nil {
-		eps.Log.Error(err)
-		return context.Error(1, "cannot deliver JSON-RPC request", err)
+		return context.Error(1, err.Error(), err)
 	} else {
 		if response == nil {
 			return context.Result(map[string]interface{}{"message": "submitted"})
 		}
 		jsonrpcResponse := jsonrpc.FromEPSResponse(response)
 		if jsonrpcResponse.Error != nil {
-			return context.Error(2, jsonrpcResponse.Error.Message, jsonrpcResponse.Error.Data)
+			return context.Error(jsonrpcResponse.Error.Code, jsonrpcResponse.Error.Message, jsonrpcResponse.Error.Data)
 		} else {
 			return context.Result(jsonrpcResponse.Result)
 		}

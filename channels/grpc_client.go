@@ -359,7 +359,7 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 	}
 
 	if entry == nil {
-		return nil, fmt.Errorf("cannot deliver gRPC request")
+		return nil, fmt.Errorf("cannot deliver gRPC request: recipient does not have a gRPC server")
 	}
 
 	if len(entry.Channels) == 0 {

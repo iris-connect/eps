@@ -158,8 +158,9 @@ func (d *DirectoryEntry) SettingsFor(service, operator string) *OperatorSettings
 }
 
 type DirectoryQuery struct {
-	Operator string
-	Channels []string
+	Group    string   `json:"group"`
+	Operator string   `json:"operator"`
+	Channels []string `json:"channels"`
 }
 
 type DirectoryEntries []*DirectoryEntry
@@ -306,6 +307,18 @@ func FilterDirectoryEntriesByQuery(entries []*DirectoryEntry, query *DirectoryQu
 		// we filter the entries by the specified operator name
 		if query.Operator != "" && entry.Name != query.Operator {
 			continue
+		}
+		if query.Group != "" {
+			found := false
+			for _, group := range entry.Groups {
+				if group == query.Group {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
 		}
 		// we filter the entries by the specified channel types
 		found := false

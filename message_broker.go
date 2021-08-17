@@ -18,6 +18,7 @@ package eps
 
 import (
 	"fmt"
+	"github.com/kiprotect/go-helpers/forms"
 	"sync"
 	"time"
 )
@@ -53,14 +54,50 @@ func (b *BasicMessageBroker) AddChannel(channel Channel) error {
 	return nil
 }
 
+var DirectoryQueryForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "group",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "operator",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "channels",
+			Validators: []forms.Validator{
+				forms.IsOptional{},
+				forms.IsStringList{},
+			},
+		},
+	},
+}
+
 func (b *BasicMessageBroker) handleInternalRequest(address *Address, request *Request) (*Response, error) {
 	switch address.Method {
 	case "_ping":
-
 		if ownEntry, err := b.directory.OwnEntry(); err != nil {
 			return nil, fmt.Errorf("error retrieving own entry: %w", err)
 		} else {
 			return &Response{Result: map[string]interface{}{"timestamp": time.Now().Format(time.RFC3339Nano), "params": request.Params, "serverInfo": ownEntry}, Error: nil, ID: &address.ID}, nil
+		}
+	case "_directory":
+		query := &DirectoryQuery{}
+		if params, err := DirectoryQueryForm.Validate(request.Params); err != nil {
+			return nil, err
+		} else if err := DirectoryQueryForm.Coerce(query, params); err != nil {
+			return nil, err
+		} else if entries, err := b.directory.Entries(query); err != nil {
+			return nil, err
+		} else {
+			return &Response{Result: map[string]interface{}{"entries": entries}, ID: &address.ID}, nil
 		}
 	}
 	return nil, nil
@@ -95,7 +132,7 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 
 	// we always update the directory entry of the client info struct
 	if remoteEntry, err = b.directory.EntryFor(clientInfo.Name); err != nil {
-		return nil, fmt.Errorf("error retrieving directory entry: %w", err)
+		return nil, fmt.Errorf("error retrieving directory entry for client '%s': %w", clientInfo.Name, err)
 	} else {
 		clientInfo.Entry = remoteEntry
 	}
@@ -116,6 +153,10 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 
 	address, err := GetAddress(request.ID)
 
+	if _, err := b.directory.EntryFor(address.Operator); err != nil {
+		return nil, fmt.Errorf("error retrieving directory entry for recipient '%s': %w", address.Operator, err)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("error parsing address: %w", err)
 	}
@@ -125,8 +166,9 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 	// this endpoint
 	if ownEntry.Name != remoteEntry.Name {
 		if !CanCall(remoteEntry, ownEntry, address.Method) {
-			Log.Warningf("Permission denied for method '%s' and client '%s'", address.Method, clientInfo.Name)
-			return PermissionDenied(&request.ID, nil), nil
+			msg := fmt.Sprintf("Permission denied for method '%s' and client '%s'", address.Method, clientInfo.Name)
+			Log.Warningf(msg)
+			return PermissionDenied(&request.ID, msg, nil), nil
 		}
 	}
 
@@ -148,8 +190,9 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 		}
 		Log.Debug("Trying to deliver message...")
 		if response, err := channel.DeliverRequest(request); err != nil {
-			Log.Errorf("Channel %d encountered an error delivering message", i)
-			continue
+			msg := fmt.Sprintf("Channel %d encountered an error delivering the message: %v", i, err)
+			Log.Errorf(msg)
+			return ChannelError(&request.ID, msg, nil), nil
 		} else {
 			return response, nil
 		}
