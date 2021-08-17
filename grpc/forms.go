@@ -17,6 +17,7 @@
 package grpc
 
 import (
+	"github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
 )
@@ -54,6 +55,7 @@ var GRPCServerSettingsForm = forms.Form{
 				forms.IsString{},
 			},
 		},
+		net.TCPRateLimitsField,
 		{
 			Name: "tls",
 			Validators: []forms.Validator{

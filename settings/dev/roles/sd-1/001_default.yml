@@ -1,5 +1,10 @@
 jsonrpc_server: # the JSON-RPC server that the EPS server uses for communication
   bind_address: "localhost:3322"
+  tcp_rate_limits:
+    - type: second
+      limit: 1
+    - type: minute
+      limit: 1000
   cors:
     allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
   tls:

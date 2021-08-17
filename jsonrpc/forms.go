@@ -17,6 +17,7 @@
 package jsonrpc
 
 import (
+	"github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
 )
@@ -131,6 +132,7 @@ var JSONRPCServerSettingsForm = forms.Form{
 				forms.IsString{}, // to do: add URL validation
 			},
 		},
+		net.TCPRateLimitsField,
 		{
 			Name: "path",
 			Validators: []forms.Validator{

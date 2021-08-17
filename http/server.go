@@ -21,6 +21,7 @@ import (
 	cryptoTls "crypto/tls"
 	"fmt"
 	"github.com/iris-connect/eps"
+	epsNet "github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/tls"
 	"net"
 	"net/http"
@@ -182,20 +183,19 @@ func (s *HTTPServer) Start() error {
 		s.server.TLSConfig = s.tlsConfig
 	}
 
-	if s.listener != nil {
-		listener = func() error {
-			if useTLS {
-				return s.server.ServeTLS(s.listener, "", "")
-			}
-			return s.server.Serve(s.listener)
+	if s.listener == nil {
+		if listener, err := net.Listen("tcp", s.settings.BindAddress); err != nil {
+			return err
+		} else {
+			s.listener = epsNet.MakeRateLimitedListener(listener, s.settings.TCPRateLimits)
 		}
-	} else {
-		listener = func() error {
-			if useTLS {
-				return s.server.ListenAndServeTLS("", "")
-			}
-			return s.server.ListenAndServe()
+	}
+
+	listener = func() error {
+		if useTLS {
+			return s.server.ServeTLS(s.listener, "", "")
 		}
+		return s.server.Serve(s.listener)
 	}
 
 	go func() {

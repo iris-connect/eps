@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/iris-connect/eps"
+	epsNet "github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/protobuf"
 	"github.com/iris-connect/eps/tls"
 	"google.golang.org/grpc"
@@ -56,6 +57,10 @@ func (s *Server) Start() error {
 
 	if err != nil {
 		return fmt.Errorf("error binding to address '%s': %w", s.settings.BindAddress, err)
+	}
+
+	if s.settings.TCPRateLimits != nil {
+		lis = epsNet.MakeRateLimitedListener(lis, s.settings.TCPRateLimits)
 	}
 
 	go func() {

@@ -20,6 +20,9 @@ channels: # defines all the channels that we want to open when starting the serv
     type: grpc_server
     settings:
       bind_address: "localhost:5556"
+      tcp_rate_limits:
+        - type: minute
+          limit: 10
       tls:
         ca_certificate_files: ["$DIR/../../certs/root.crt"]
         certificate_file: "$DIR/../../certs/public-proxy-1.ga.crt"

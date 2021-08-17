@@ -17,6 +17,7 @@
 package jsonrpc
 
 import (
+	"github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/tls"
 )
 
@@ -36,8 +37,9 @@ type CorsSettings struct {
 
 // Settings for the JSON-RPC server
 type JSONRPCServerSettings struct {
-	Cors        *CorsSettings    `json:"cors"`
-	TLS         *tls.TLSSettings `json:"tls"`
-	BindAddress string           `json:"bind_address"`
-	Path        string           `json:"path"`
+	Cors          *CorsSettings    `json:"cors"`
+	TLS           *tls.TLSSettings `json:"tls"`
+	BindAddress   string           `json:"bind_address"`
+	TCPRateLimits []*net.RateLimit `json:"tcp_rate_limits"`
+	Path          string           `json:"path"`
 }

@@ -17,6 +17,7 @@
 package grpc
 
 import (
+	"github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/tls"
 )
 
@@ -28,7 +29,8 @@ type GRPCClientSettings struct {
 
 // Settings for the gRPC server
 type GRPCServerSettings struct {
-	TLS         *tls.TLSSettings `json:"tls"`
-	BindAddress string           `json:"bind_address"`
-	Enabled     bool             `json:"enabled"`
+	TLS           *tls.TLSSettings `json:"tls"`
+	BindAddress   string           `json:"bind_address"`
+	TCPRateLimits []*net.RateLimit `json:"tcp_rate_limits"`
+	Enabled       bool             `json:"enabled"`
 }

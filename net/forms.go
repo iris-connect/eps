@@ -14,16 +14,37 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package http
+package net
 
 import (
-	"github.com/iris-connect/eps/net"
-	"github.com/iris-connect/eps/tls"
+	"github.com/kiprotect/go-helpers/forms"
 )
 
-// Settings for the JSON-RPC server
-type HTTPServerSettings struct {
-	TLS           *tls.TLSSettings `json:"tls"`
-	BindAddress   string           `json:"bind_address"`
-	TCPRateLimits []*net.RateLimit `json:"tcp_rate_limits"`
+var TCPRateLimitsField = forms.Field{
+	Name: "tcp_rate_limits",
+	Validators: []forms.Validator{
+		forms.IsOptional{},
+		forms.IsList{
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &forms.Form{
+						Fields: []forms.Field{
+							{
+								Name: "type",
+								Validators: []forms.Validator{
+									forms.IsIn{Choices: []interface{}{"second", "minute", "hour"}},
+								},
+							},
+							{
+								Name: "limit",
+								Validators: []forms.Validator{
+									forms.IsInteger{HasMin: true, Min: 1},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 }

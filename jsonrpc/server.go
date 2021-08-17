@@ -92,8 +92,9 @@ func MakeJSONRPCServer(settings *JSONRPCServerSettings, handler Handler) (*JSONR
 	}
 
 	httpServerSettings := &http.HTTPServerSettings{
-		TLS:         settings.TLS,
-		BindAddress: settings.BindAddress,
+		TLS:           settings.TLS,
+		BindAddress:   settings.BindAddress,
+		TCPRateLimits: settings.TCPRateLimits,
 	}
 
 	if httpServer, err := http.MakeHTTPServer(httpServerSettings, routeGroups); err != nil {
