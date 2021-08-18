@@ -20,6 +20,7 @@ import (
 	"fmt"
 	epsForms "github.com/iris-connect/eps/forms"
 	"github.com/iris-connect/eps/jsonrpc"
+	"github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
 	"regexp"
@@ -184,6 +185,7 @@ var PublicSettingsForm = forms.Form{
 				forms.IsString{},
 			},
 		},
+		net.TCPRateLimitsField,
 		{
 			Name: "tls_bind_address",
 			Validators: []forms.Validator{

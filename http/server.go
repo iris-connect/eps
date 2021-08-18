@@ -186,8 +186,10 @@ func (s *HTTPServer) Start() error {
 	if s.listener == nil {
 		if listener, err := net.Listen("tcp", s.settings.BindAddress); err != nil {
 			return err
-		} else {
+		} else if s.settings.TCPRateLimits != nil {
 			s.listener = epsNet.MakeRateLimitedListener(listener, s.settings.TCPRateLimits)
+		} else {
+			s.listener = listener
 		}
 	}
 

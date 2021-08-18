@@ -19,6 +19,7 @@ package proxy
 import (
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/jsonrpc"
+	"github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/tls"
 	"time"
 )
@@ -47,6 +48,7 @@ type PublicServerSettings struct {
 	InternalEndpoint    string                         `json:"internal_endpoint"`
 	JSONRPCClient       *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
 	JSONRPCServer       *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
+	TCPRateLimits       []*net.RateLimit               `json:"tcp_rate_limits"`
 }
 
 type PublicAnnouncement struct {

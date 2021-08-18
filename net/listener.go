@@ -38,6 +38,7 @@ type RateLimitedListener struct {
 }
 
 func MakeRateLimitedListener(listener net.Listener, rateLimits []*RateLimit) *RateLimitedListener {
+	eps.Log.Tracef("Creating rate-limited network listener...")
 	rates := make([]map[string]int64, len(rateLimits))
 	for i, _ := range rateLimits {
 		rates[i] = make(map[string]int64)

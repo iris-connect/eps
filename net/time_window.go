@@ -144,33 +144,3 @@ func (t *TimeWindow) Copy() TimeWindow {
 		To:   t.To,
 	}
 }
-
-func (t *TimeWindow) IncreaseBy(n int64) {
-	from := time.Unix(t.From/1e9, t.From%1e9).UTC()
-	to := time.Unix(t.To/1e9, t.To%1e9).UTC()
-	switch t.Type {
-	case "second":
-		from = from.Add(time.Second * time.Duration(n))
-		to = to.Add(time.Second * time.Duration(n))
-	case "minute":
-		from = from.Add(time.Minute * time.Duration(n))
-		to = to.Add(time.Minute * time.Duration(n))
-	case "quarterHour":
-		from = from.Add(time.Minute * time.Duration(15*n))
-		to = to.Add(time.Minute * time.Duration(15*n))
-	case "hour":
-		from = from.Add(time.Hour * time.Duration(n))
-		to = to.Add(time.Hour * time.Duration(n))
-	case "day":
-		from = from.AddDate(0, 0, int(n))
-		to = to.AddDate(0, 0, int(n))
-	case "week":
-		from = from.AddDate(0, 0, 7*int(n))
-		to = to.AddDate(0, 0, 7*int(n))
-	case "month":
-		from = from.AddDate(0, int(n), 0)
-		to = to.AddDate(0, int(n), 0)
-	}
-	t.From = from.UnixNano()
-	t.To = to.UnixNano()
-}

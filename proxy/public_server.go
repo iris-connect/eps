@@ -30,6 +30,7 @@ import (
 	epsForms "github.com/iris-connect/eps/forms"
 	"github.com/iris-connect/eps/helpers"
 	"github.com/iris-connect/eps/jsonrpc"
+	epsNet "github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/tls"
 	"github.com/kiprotect/go-helpers/forms"
 	"net"
@@ -571,14 +572,24 @@ func (s *PublicServer) listenForInternalConnections() {
 
 }
 
+func (s *PublicServer) makeListener(address string) (net.Listener, error) {
+	if listener, err := net.Listen("tcp", address); err != nil {
+		return nil, err
+	} else if s.settings.TCPRateLimits != nil {
+		return epsNet.MakeRateLimitedListener(listener, s.settings.TCPRateLimits), nil
+	} else {
+		return listener, nil
+	}
+
+}
+
 func (s *PublicServer) Start() error {
 	var err error
-	s.tlsListener, err = net.Listen("tcp", s.settings.TLSBindAddress)
-	if err != nil {
-		return err
-	}
+
+	s.tlsListener, err = s.makeListener(s.settings.TLSBindAddress)
 	go s.listenForTlsConnections()
-	s.internalListener, err = net.Listen("tcp", s.settings.InternalBindAddress)
+
+	s.internalListener, err = s.makeListener(s.settings.InternalBindAddress)
 	if err != nil {
 		return err
 	}
