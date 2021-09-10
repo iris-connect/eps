@@ -7,7 +7,8 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content=
 "width=device-width, initial-scale=1">
-<title>EPS documentation | Willkommen</title>
+<title>EPS documentation | Proxy Service - Security & Threat
+Model</title>
 <link rel="stylesheet" type="text/css" href=
 "/eps/docs/static/css/main.css">
 <script>
@@ -134,9 +135,9 @@ data-target="side-menu" data-toggle="collapse"><span>&nbsp;</span>
 <li><a href="/eps/docs/eps-service">Overview</a></li>
 </ul>
 </li>
-<li><a class="" href="#" data-toggle="collapse" data-target=
-"page-proxy-nav">Proxy Service</a>
-<ul class="is-hidden" id="page-proxy-nav">
+<li><a class="is-active" href="#" data-toggle="collapse"
+data-target="page-proxy-nav">Proxy Service</a>
+<ul class="" id="page-proxy-nav">
 <li><a href="/eps/docs/proxy-service">Overview</a></li>
 <li><a href=
 "/eps/docs/proxy-service/installation">Installation</a></li>
@@ -160,7 +161,8 @@ Model</a></li>
 <li><a href="#" data-toggle="collapse" data-target=
 "menu-language-dropdown">Languages</a>
 <ul id="menu-language-dropdown" class="is-hidden">
-<li><a class="is-open is-active" href="/eps/docs">English</a></li>
+<li><a class="is-open is-active" href=
+"/eps/docs/proxy-service/security">English</a></li>
 </ul>
 </li>
 </ul>
@@ -171,35 +173,92 @@ Model</a></li>
 <section class="section first">
 <div class="content">
 <div class="content markdown">
-<h1>Welcome!</h1>
-<p>The <strong>Endpoint System (EPS)</strong> provides several
-server and client components that manage and secure the
-communication in the IRIS ecosystem. Notably, the EPS provides two
-core components:</p>
-<ul>
-<li>A <strong>message broker / mesh router</strong> services that
-transmits requests between different actors in the system and
-ensures mutual authorization and authentication.</li>
-<li>A <strong>distributed service directory</strong> that stores
-cryptographically signed information about actors in the system,
-and is used by the message broker for authentication, service
-discovery and connection establishment.</li>
-</ul>
-<p>In addition it provides a <strong>TLS passthrough proxy
-service</strong> that enables direct, end-to-end encrypted
-communication between client endpoints and health departments.</p>
-<h2>Getting Started</h2>
-<p>To get started please read the <a href=
-"/eps/docs/getting-started">Getting Started Guide</a>. After that
-you can check out the <a href="/eps/docs/eps-service">detailed EPS
-documentation</a>. If you want to run the proxy or service
-directory you can check out the respective <a href=
-"/eps/docs/proxy-service">proxy documentation</a> as well as
-<a href="/eps/docs/service-directory">service directory
-documentation</a>.</p>
-<p>If you encounter a problem please <a href=
-"https://github.com/iris-connect/eps">open an issue on Github</a>
-where our community can help you.</p>
+<h1>Proxy Security & Threat Model</h1>
+<p>The public proxy is designed to mediate communication between a
+client and a private proxy endpoint without breaking up the TLS
+encryption between these two. It achieves this by instrumenting the
+TLS handshake, notably by parsing the <code>ClientHello</code>
+packet sent by the client to initiate the connection to the private
+proxy. This packet is described in RFC-5246 <sup class=
+"footnote-ref" id="fnref-1"><a href="#fn-1">1</a></sup> and
+normally contains a <code>ServerNameList</code> extension as
+described in RFC-6066 <sup class="footnote-ref" id=
+"fnref-2"><a href="#fn-2">2</a></sup> which indicates the server
+name that the client wants to establish a connection to. HTTPs
+servers typcially use this information to select the appropriate
+certificate, as often a single server hosts content for many
+domains. Likewise, the public proxy can use this information to
+determine which private proxy (if any) can handle the connection
+from the client. It can then open a TCP connection to this private
+proxy and forward the entire TCP stream (including the
+<code>HelloClient</code> packet) to it. In doing so the public
+proxy acts as an untrusted man in the middle between the client and
+the private proxy, passing encrypted data between them.</p>
+<h2>Threat Model</h2>
+<p>Our threat model assumes that the public proxy can become fully
+compromised. In scenario 1, an adversary gains full control of the
+public proxy server and is able to replace the server code with his
+own code that aims to e.g. exfiltrate the data exchanged between
+the client and the private proxy. In scenario 2, an adversary
+succeeds in redirecting traffic destined for the public proxy to
+his own server, where like in scenario 1 he can run arbitrary code
+to e.g. exfiltrate data.</p>
+<p>Both scenarios represent a man in the middle (MITM) attack.
+Systems implementing TLS are designed to mitigate such attacks
+using a chain of trust provided by a public-key infrastructure.
+Under ideal circumstances, this will make it impossible for a MITM
+adversary to provide a valid TLS certificate to the client, who
+will then refuse to establish a connection with the server.
+However, with the introduction of the ACME protocol <sup class=
+"footnote-ref" id="fnref-3"><a href="#fn-3">3</a></sup> it has
+become possible for an adversary to easily generate a valid TLS
+certificate for a hostname whose server endpoint he controls. In
+both scenarios above this would enable the adversary to use an ACME
+provider like LetsEncrypt in order to generate a valid TLS
+certificate and then terminate and proxy the client-server TLS
+connection without knowledge of either the client or the
+server.</p>
+<p>In order to mitigate this risk, certificate issuance via ACME
+should be restricted for all hostnames that are mediated through
+the public proxy. In addition, <a href=
+"https://developer.mozilla.org/en-US/docs/Web/Security/Certificate_Transparency">
+certificate transparency (CT) mechanisms</a> should be used to
+enable the client to discover the misissuance of a certificate by a
+MITM adversary.</p>
+<p>An independent risk inherent in scenarios 1 & 2 is the ability
+of the adversary to record the meta-data of the encrypted
+connection, which can also reveal sensitive information. To reduce
+this risk, meta-data obfuscation techniques should be applied to
+the client-server communication.</p>
+<p>Finally, the adversaries from scenarios 1 & 2 can also deny
+service to the client and server by disrupting the communication
+between them. This risk cannot be easily mitigated in these
+scenarios, given the privileged position of the adversaries.
+Denial-of-Service (DoS) attacks by external adversaries can be
+mitigated using common techniques that won't be discussed here.</p>
+<div class="footnotes">
+<hr>
+<ol>
+<li id="fn-1">
+<p><a href=
+"https://datatracker.ietf.org/doc/html/rfc5246">RFC-5264</a>&nbsp;<a href="#fnref-1"
+class="footnoteBackLink" title=
+"Jump back to footnote 1 in the text.">↩</a></p>
+</li>
+<li id="fn-2">
+<p><a href=
+"https://datatracker.ietf.org/doc/html/rfc6066#section-3">RFC-6066</a>&nbsp;<a href="#fnref-2"
+class="footnoteBackLink" title=
+"Jump back to footnote 2 in the text.">↩</a></p>
+</li>
+<li id="fn-3">
+<p><a href=
+"https://datatracker.ietf.org/doc/html/rfc8555">RFC-8555</a>&nbsp;<a href="#fnref-3"
+class="footnoteBackLink" title=
+"Jump back to footnote 3 in the text.">↩</a></p>
+</li>
+</ol>
+</div>
 </div>
 </div>
 </section>
