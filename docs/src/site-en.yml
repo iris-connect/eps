@@ -21,8 +21,6 @@ pages:
   navtitle: EPS Service
   slug: eps-service
   title: EPS Service
-- name: foo
-  title: foo
 - children:
   - name: index
     src: en/proxy/index.md
@@ -33,6 +31,9 @@ pages:
   - name: configuration
     src: en/proxy/configuration.md
     title: Configuration
+  - name: security
+    src: en/proxy/security.md
+    title: Security & Threat Model
   name: proxy
   navtitle: Proxy Service
   slug: proxy-service

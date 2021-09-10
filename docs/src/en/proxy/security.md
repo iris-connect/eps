@@ -1,0 +1,19 @@
+# Proxy Security & Threat Model
+
+The public proxy is designed to mediate communication between a client and a private proxy endpoint without breaking up the TLS encryption between these two. It achieves this by instrumenting the TLS handshake, notably by parsing the `ClientHello` packet sent by the client to initiate the connection to the private proxy. This packet is described in RFC-5246 [^1] and normally contains a `ServerNameList` extension as described in RFC-6066 [^2] which indicates the server name that the client wants to establish a connection to. HTTPs servers typcially use this information to select the appropriate certificate, as often a single server hosts content for many domains. Likewise, the public proxy can use this information to determine which private proxy (if any) can handle the connection from the client. It can then open a TCP connection to this private proxy and forward the entire TCP stream (including the `HelloClient` packet) to it. In doing so the public proxy acts as an untrusted man in the middle between the client and the private proxy, passing encrypted data between them.
+
+## Threat Model
+
+Our threat model assumes that the public proxy can become fully compromised. In scenario 1, an adversary gains full control of the public proxy server and is able to replace the server code with his own code that aims to e.g. exfiltrate the data exchanged between the client and the private proxy. In scenario 2, an adversary succeeds in redirecting traffic destined for the public proxy to his own server, where like in scenario 1 he can run arbitrary code to e.g. exfiltrate data.
+
+Both scenarios represent a man in the middle (MITM) attack. Systems implementing TLS are designed to mitigate such attacks using a chain of trust provided by a public-key infrastructure. Under ideal circumstances, this will make it impossible for a MITM adversary to provide a valid TLS certificate to the client, who will then refuse to establish a connection with the server. However, with the introduction of the ACME protocol [^3] it has become possible for an adversary to easily generate a valid TLS certificate for a hostname whose server endpoint he controls. In both scenarios above this would enable the adversary to use an ACME provider like LetsEncrypt in order to generate a valid TLS certificate and then terminate and proxy the client-server TLS connection without knowledge of either the client or the server.
+
+In order to mitigate this risk, certificate issuance via ACME should be restricted for all hostnames that are mediated through the public proxy. In addition, [certificate transparency (CT) mechanisms](https://developer.mozilla.org/en-US/docs/Web/Security/Certificate_Transparency) should be used to enable the client to discover the misissuance of a certificate by a MITM adversary.
+
+An independent risk inherent in scenarios 1 & 2 is the ability of the adversary to record the meta-data of the encrypted connection, which can also reveal sensitive information. To reduce this risk, meta-data obfuscation techniques should be applied to the client-server communication.
+
+Finally, the adversaries from scenarios 1 & 2 can also deny service to the client and server by disrupting the communication between them. This risk cannot be easily mitigated in these scenarios, given the privileged position of the adversaries. Denial-of-Service (DoS) attacks by external adversaries can be mitigated using common techniques that won't be discussed here.
+
+[^1]: [RFC-5264](https://datatracker.ietf.org/doc/html/rfc5246)
+[^2]: [RFC-6066](https://datatracker.ietf.org/doc/html/rfc6066#section-3)
+[^3]: [RFC-8555](https://datatracker.ietf.org/doc/html/rfc8555)

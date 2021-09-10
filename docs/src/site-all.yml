@@ -38,6 +38,9 @@ pages:
       - src|f|exists?: "{target_language}/proxy/configuration.md"
         title|t: Configuration
         name: configuration
+      - src|f|exists?: "{target_language}/proxy/security.md"
+        title|t: Security & Threat Model
+        name: security
   - name: sd
     title: Service Directory
     navtitle: Service Directory
