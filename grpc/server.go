@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/iris-connect/eps"
+	"github.com/iris-connect/eps/helpers"
 	epsNet "github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/protobuf"
 	"github.com/iris-connect/eps/tls"
@@ -227,7 +228,11 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 		}
 		if response != nil {
 			if response.Result != nil {
-				resultStruct, err := structpb.NewStruct(response.Result)
+				stringMap, err := helpers.ToStringMap(response.Result)
+				if err != nil {
+					return nil, fmt.Errorf("error converting result to string map: %w", err)
+				}
+				resultStruct, err := structpb.NewStruct(stringMap)
 				if err != nil {
 					return nil, fmt.Errorf("error serializing response for gRPC: %w", err)
 				}
@@ -240,7 +245,11 @@ func (s *Server) Call(context context.Context, pbRequest *protobuf.Request) (*pr
 				}
 
 				if response.Error.Data != nil {
-					errorStruct, err := structpb.NewStruct(response.Error.Data)
+					stringMap, err := helpers.ToStringMap(response.Error.Data)
+					if err != nil {
+						return nil, fmt.Errorf("error converting error data to string map: %w", err)
+					}
+					errorStruct, err := structpb.NewStruct(stringMap)
 					if err != nil {
 						return nil, fmt.Errorf("error serializing error data for gRPC: %w", err)
 					}
