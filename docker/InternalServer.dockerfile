@@ -14,6 +14,12 @@ COPY . .
 RUN make examples
 
 FROM alpine:latest
+
+# Create a group and user
+RUN addgroup --gid 9999 iris && adduser --disabled-password --gecos '' --uid 9999 -G iris -s /bin/ash iris
+# Change to non-root privilege
+USER iris:iris
+
 WORKDIR /app
 COPY --from=builder /go/bin/internal-server /app/internal-server
 ENTRYPOINT ["./internal-server"]
