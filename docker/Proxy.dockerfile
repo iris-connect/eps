@@ -14,6 +14,11 @@ COPY . .
 RUN make
 
 FROM alpine:latest
+
+# Create a group and user
+RUN addgroup --gid 9999 iris && adduser --disabled-password --gecos '' --uid 9999 -G iris -s /bin/ash iris
+
 WORKDIR /app
-COPY --from=builder /go/bin/proxy /app/proxy
-ENTRYPOINT ["./proxy"]
+COPY --from=builder /go/bin/proxy /app/.scripts/entrypoint-proxy.sh /app/
+
+ENTRYPOINT ["/bin/sh", "./entrypoint-proxy.sh"]
