@@ -3,25 +3,25 @@
   xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" 
   xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   <url>
-    <loc>https://iris-connect.github.io/eps/docs/eps/docs/proxy-service/security</loc>
-  </url>
-  <url>
-    <loc>https://iris-connect.github.io/eps/docs/eps/docs</loc>
-  </url>
-  <url>
-    <loc>https://iris-connect.github.io/eps/docs/eps/docs/service-directory</loc>
-  </url>
-  <url>
-    <loc>https://iris-connect.github.io/eps/docs/eps/docs/service-directory/configuration</loc>
-  </url>
-  <url>
-    <loc>https://iris-connect.github.io/eps/docs/eps/docs/eps-service</loc>
+    <loc>https://iris-connect.github.io/eps/docs/eps/docs/proxy-service</loc>
   </url>
   <url>
     <loc>https://iris-connect.github.io/eps/docs/eps/docs/getting-started</loc>
   </url>
   <url>
-    <loc>https://iris-connect.github.io/eps/docs/eps/docs/proxy-service</loc>
+    <loc>https://iris-connect.github.io/eps/docs/eps/docs/eps-service</loc>
+  </url>
+  <url>
+    <loc>https://iris-connect.github.io/eps/docs/eps/docs</loc>
+  </url>
+  <url>
+    <loc>https://iris-connect.github.io/eps/docs/eps/docs/service-directory/configuration</loc>
+  </url>
+  <url>
+    <loc>https://iris-connect.github.io/eps/docs/eps/docs/contact</loc>
+  </url>
+  <url>
+    <loc>https://iris-connect.github.io/eps/docs/eps/docs/service-directory</loc>
   </url>
   <url>
     <loc>https://iris-connect.github.io/eps/docs/eps/docs/proxy-service/configuration</loc>
@@ -33,6 +33,6 @@
     <loc>https://iris-connect.github.io/eps/docs/eps/docs/service-directory/installation</loc>
   </url>
   <url>
-    <loc>https://iris-connect.github.io/eps/docs/eps/docs/contact</loc>
+    <loc>https://iris-connect.github.io/eps/docs/eps/docs/proxy-service/security</loc>
   </url>
 </urlset>
