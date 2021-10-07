@@ -35,7 +35,8 @@ func ExtractJSONRequest(c *http.Context) {
 
 	invalidJSONResponse := Response{JSONRPC: "2.0,", Error: &Error{Code: -32700, Message: "JSON required"}}
 	invalidRequestResponse := func(err error) *Response {
-		return &Response{JSONRPC: "2.0,", Error: &Error{Code: -32600, Message: "invalid request", Data: err}}
+		eps.Log.Debugf("invalid JSON request: %v", err)
+		return &Response{JSONRPC: "2.0,", Error: &Error{Code: -32600, Message: fmt.Sprintf("invalid request: %v", err), Data: err}}
 	}
 	serverErrorResponse := Response{JSONRPC: "2.0,", Error: &Error{Code: -32603, Message: "internal server error"}}
 

@@ -66,7 +66,8 @@ func (c *JSONRPCServerChannel) handler(context *jsonrpc.Context) *jsonrpc.Respon
 		"params": context.Request.Params,
 		"id":     context.Request.ID,
 	}); err != nil {
-		return context.Error(400, "invalid request", err)
+		eps.Log.Debug(err)
+		return context.Error(400, fmt.Sprintf("invalid request: %v", err), err)
 	} else if err := forms.RequestForm.Coerce(request, params); err != nil {
 		eps.Log.Error(err)
 		return context.InternalError()
