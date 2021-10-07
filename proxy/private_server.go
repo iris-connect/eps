@@ -278,12 +278,13 @@ func (p *ProxyConnection) TerminateTLS(proxyConnection net.Conn) error {
 		defer server.Stop()
 		select {
 		case <-done:
-		case <-time.After(1 * time.Second):
+		case <-time.After(5 * time.Second):
+			break
 			return fmt.Errorf("timeout handling request")
 		}
-		// we need to wait...
-		return nil
 	}
+
+	proxyConnection.Close()
 
 	return nil
 }
@@ -392,7 +393,7 @@ type IncomingConnectionParams struct {
 
 func (c *PrivateServer) incomingConnection(context *jsonrpc.Context, params *IncomingConnectionParams) *jsonrpc.Response {
 
-	eps.Log.Debugf("Incoming connection for domain '%s' from '%s'", params.Domain, params.Client.Name)
+	eps.Log.Debugf("Incoming connection for domain '%s' from '%s', ID: %s", params.Domain, params.Client.Name, context.Request.ID)
 
 	found := false
 	for _, announcement := range c.announcements {

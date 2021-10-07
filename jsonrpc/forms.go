@@ -61,8 +61,8 @@ var JSONRPCRequestForm = forms.Form{
 						{
 							// we support strings
 							forms.IsString{
-								MinLength: 1,
-								MaxLength: 100,
+								MinLength: 0,
+								MaxLength: 1024,
 							},
 						},
 						{

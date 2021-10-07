@@ -29,6 +29,7 @@ type Request struct {
 }
 
 func MakeRequest(method, id string, params map[string]interface{}) *Request {
+
 	return &Request{
 		Method:  method,
 		Params:  params,
