@@ -123,6 +123,13 @@ var InternalEndpointForm = forms.Form{
 				forms.IsString{},
 			},
 		},
+		{
+			Name: "timeout",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: 30.0},
+				forms.IsFloat{HasMin: true, Min: 0, HasMax: true, Max: 3000},
+			},
+		},
 	},
 }
 
@@ -221,6 +228,13 @@ var PublicSettingsForm = forms.Form{
 				forms.IsStringMap{
 					Form: &jsonrpc.JSONRPCServerSettingsForm,
 				},
+			},
+		},
+		{
+			Name: "accept_timeout",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: 10.0},
+				forms.IsFloat{HasMin: true, Min: 0, HasMax: true, Max: 3000},
 			},
 		},
 	},

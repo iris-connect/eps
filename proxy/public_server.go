@@ -514,6 +514,23 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 		s.tlsHellos[randomStr] = buf[:reqLen]
 		s.mutex.Unlock()
 
+		go func() {
+			time.Sleep(time.Duration(s.settings.AcceptTimeout) * time.Second)
+			s.mutex.Lock()
+			defer s.mutex.Unlock()
+			// connection still waiting, we close it
+			if conn, ok := s.tlsConnections[randomStr]; ok {
+				eps.Log.Warningf("TLS connection not accepted in time by private proxy, closing it...")
+				if err := conn.Close(); err != nil {
+					eps.Log.Error(err)
+				}
+				delete(s.tlsConnections, randomStr)
+				delete(s.tlsHellos, randomStr)
+			} else {
+				eps.Log.Debugf("Connection accepted...")
+			}
+		}()
+
 		// we tell the internal proxy about an incoming connection
 		request := jsonrpc.MakeRequest(fmt.Sprintf("%s.incomingConnection", announcement.Operator), "", map[string]interface{}{
 			"domain":   hostName,

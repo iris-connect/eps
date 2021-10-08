@@ -49,6 +49,7 @@ type PublicServerSettings struct {
 	JSONRPCClient       *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
 	JSONRPCServer       *jsonrpc.JSONRPCServerSettings `json:"jsonrpc_server`
 	TCPRateLimits       []*net.RateLimit               `json:"tcp_rate_limits"`
+	AcceptTimeout       float64                        `json:"accept_timeout"`
 }
 
 type PublicAnnouncement struct {
@@ -74,6 +75,7 @@ type InternalEndpointSettings struct {
 	TLS           *tls.TLSSettings               `json:"tls"`
 	JSONRPCClient *jsonrpc.JSONRPCClientSettings `json:"jsonrpc_client"`
 	JSONRPCPath   string                         `json:"jsonrpc_path"`
+	Timeout       float64                        `json:"timeout"`
 }
 
 type PrivateServerSettings struct {

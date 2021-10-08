@@ -278,7 +278,7 @@ func (p *ProxyConnection) TerminateTLS(proxyConnection net.Conn) error {
 		defer server.Stop()
 		select {
 		case <-done:
-		case <-time.After(5 * time.Second):
+		case <-time.After(time.Duration(p.settings.Timeout) * time.Second):
 			break
 			return fmt.Errorf("timeout handling request")
 		}
