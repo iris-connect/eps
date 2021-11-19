@@ -22,7 +22,7 @@ channels: # defines all the channels that we want to open when starting the serv
       bind_address: "localhost:5556"
       tcp_rate_limits:
         - type: minute
-          limit: 10
+          limit: 1000
       tls:
         ca_certificate_files: ["$DIR/../../certs/root.crt"]
         certificate_file: "$DIR/../../certs/public-proxy-1.ga.crt"

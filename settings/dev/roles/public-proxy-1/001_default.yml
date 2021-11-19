@@ -2,7 +2,7 @@ public:
   name: public-proxy-1.ga
   tcp_rate_limits:
     - type: minute
-      limit: 10
+      limit: 1000
   datastore:
     type: redis
     settings:

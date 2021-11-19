@@ -22,7 +22,7 @@ channels: # defines all the channels that we want to open when starting the serv
       bind_address: "localhost:7776"
       tcp_rate_limits:
         - type: minute
-          limit: 10
+          limit: 1000
       tls:
         ca_certificate_files: ["$DIR/../../certs/root.crt"]
         certificate_file: "$DIR/../../certs/private-proxy-1.ga.crt"
@@ -42,6 +42,7 @@ channels: # defines all the channels that we want to open when starting the serv
       cors:
         allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
       tls:
+        verify_client: false
         ca_certificate_files: ["$DIR/../../certs/root.crt"]
         certificate_file: "$DIR/../../certs/private-proxy-1.ga.crt"
         key_file: "$DIR/../../certs/private-proxy-1.ga.key"
