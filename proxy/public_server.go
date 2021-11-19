@@ -398,7 +398,7 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 	}
 
 	pipe := func(left, right net.Conn) {
-		buf := make([]byte, 1024)
+		buf := make([]byte, 4096)
 		for {
 			n, err := left.Read(buf)
 			if err != nil {
