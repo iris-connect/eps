@@ -101,6 +101,12 @@ func MakeHTTPServer(settings *HTTPServerSettings, routeGroups []*RouteGroup) (*H
 		hooks:       &Hooks{},
 		server: &http.Server{
 			Addr: settings.BindAddress,
+			// we disable HTTP/2 for all servers as there seems to be a bug in the Golang
+			// HTTP/2 implementation that causes EOF errors when reading from the server
+			// response, which in turn causes trouble with our proxy server when terminating
+			// This can be re-eneabled once the bug is fixed upstream...
+			// more info: https://github.com/golang/go/issues/46071
+			TLSNextProto: make(map[string]func(*http.Server, *cryptoTls.Conn, http.Handler)),
 		},
 	}
 
