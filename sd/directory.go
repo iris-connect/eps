@@ -68,8 +68,6 @@ func MakeRecordDirectory(settings *RecordDirectorySettings, definitions *eps.Def
 
 	for _, certificateFile := range settings.CAIntermediateCertificateFiles {
 
-		eps.Log.Info(certificateFile)
-
 		cert, err := helpers.LoadCertificate(certificateFile, false)
 
 		if err != nil {
@@ -277,7 +275,6 @@ func (f *RecordDirectory) buildChains(records []*eps.SignedChangeRecord, visited
 	chains := make([][]*eps.SignedChangeRecord, 0)
 
 	for _, record := range records {
-		eps.Log.Infof("%s", record.Hash)
 		if _, ok := visited[record.Hash]; ok {
 			continue
 		} else {

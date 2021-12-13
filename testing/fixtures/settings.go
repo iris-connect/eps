@@ -56,7 +56,6 @@ func (c Settings) Setup(fixtures map[string]interface{}) (interface{}, error) {
 		for _, pth := range c.Paths {
 			fullPaths = append(fullPaths, path.Join(append(settingsPaths, pth)...))
 		}
-		eps.Log.Info(fullPaths)
 		paths = fullPaths
 	} else {
 		paths = settingsPaths

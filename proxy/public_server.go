@@ -297,7 +297,6 @@ func (s *PublicServer) update() error {
 		for _, entry := range entries {
 			switch entry.Type {
 			case PublicAnnouncementType:
-				eps.Log.Info(string(entry.Data))
 				announcement := &PublicAnnouncement{}
 				if err := json.Unmarshal(entry.Data, &announcement); err != nil {
 					return fmt.Errorf("invalid record format!")
