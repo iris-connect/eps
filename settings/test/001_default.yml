@@ -1,4 +1,4 @@
 directory:
   type: json
   settings:
-    path: "$DIR/directory"
+    path: "/$DIR/directory"

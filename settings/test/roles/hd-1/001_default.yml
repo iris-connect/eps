@@ -10,9 +10,9 @@ channels: # defines all the channels that we want to open when starting the serv
     settings:
       bind_address: "localhost:4444"
       tls:
-        ca_certificate_files: ["$DIR/../../certs/root.crt"]
-        certificate_file: "$DIR/../../certs/$OP.crt"
-        key_file: "$DIR/../../certs/$OP.key"
+        ca_certificate_files: ["/$DIR/../../certs/root.crt"]
+        certificate_file: "/$DIR/../../certs/$OP.crt"
+        key_file: "/$DIR/../../certs/$OP.key"
   - name: main JSON-RPC server # accepts incoming JSONRPC connections to deliver and receive messages
     type: jsonrpc_server 
     settings:
@@ -20,9 +20,9 @@ channels: # defines all the channels that we want to open when starting the serv
       cors:
         allowed_hosts: ["^http(?:s)?://localhost\\:\\d+$"]
       tls:
-        ca_certificate_files: ["$DIR/../../certs/root.crt"]
-        certificate_file: "$DIR/../../certs/$OP.crt"
-        key_file: "$DIR/../../certs/$OP.key"
+        ca_certificate_files: ["/$DIR/../../certs/root.crt"]
+        certificate_file: "/$DIR/../../certs/$OP.crt"
+        key_file: "/$DIR/../../certs/$OP.key"
   - name: main stdout channel
     type: stdout
     settings: {}

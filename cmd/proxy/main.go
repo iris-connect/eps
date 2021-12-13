@@ -20,9 +20,10 @@ import (
 	"github.com/iris-connect/eps"
 	cmdHelpers "github.com/iris-connect/eps/cmd/helpers"
 	"github.com/iris-connect/eps/definitions"
+	"github.com/iris-connect/eps/helpers"
 	"github.com/iris-connect/eps/metrics"
 	"github.com/iris-connect/eps/proxy"
-	"github.com/iris-connect/eps/proxy/helpers"
+	proxyHelpers "github.com/iris-connect/eps/proxy/helpers"
 	"github.com/urfave/cli"
 	"os"
 	"os/signal"
@@ -150,7 +151,10 @@ func CLI(settings *proxy.Settings) {
 }
 
 func main() {
-	if settings, err := helpers.Settings(helpers.SettingsPaths(), &definitions.Default); err != nil {
+	if settingsPaths, fs, err := helpers.SettingsPaths("PROXY_SETTINGS"); err != nil {
+		eps.Log.Error(err)
+		return
+	} else if settings, err := proxyHelpers.Settings(settingsPaths, fs, &definitions.Default); err != nil {
 		eps.Log.Error(err)
 		return
 	} else {

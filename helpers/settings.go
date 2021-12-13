@@ -25,30 +25,44 @@ import (
 	epsForms "github.com/iris-connect/eps/forms"
 	"github.com/kiprotect/go-helpers/forms"
 	"github.com/kiprotect/go-helpers/settings"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
-var EnvSettingsName = "EPS_SETTINGS"
-
-func SettingsPaths() []string {
-	envValue := os.Getenv(EnvSettingsName)
-	if envValue == "" {
-		return []string{}
+func SettingsPaths(envSettingsName string) ([]string, fs.FS, error) {
+	if paths, err := RealSettingsPaths(envSettingsName); err != nil {
+		return nil, nil, err
+	} else {
+		modifiedPaths := make([]string, len(paths))
+		for i, path := range paths {
+			modifiedPaths[i] = path[1:]
+		}
+		return modifiedPaths, os.DirFS("/"), nil
 	}
+}
+
+func RealSettingsPaths(envSettingsName string) ([]string, error) {
+	envValue := os.Getenv(envSettingsName)
 	values := strings.Split(envValue, ":")
 	sanitizedValues := make([]string, 0, len(values))
 	for _, value := range values {
 		if value == "" {
 			continue
 		}
+		var err error
+		if value, err = filepath.Abs(value); err != nil {
+			return nil, err
+		}
 		sanitizedValues = append(sanitizedValues, value)
 	}
-	return sanitizedValues
+	return sanitizedValues, nil
 }
 
-func Settings(settingsPaths []string, definitions *eps.Definitions) (*eps.Settings, error) {
-	if rawSettings, err := settings.MakeSettings(settingsPaths); err != nil {
+func Settings(settingsPaths []string, fs fs.FS, definitions *eps.Definitions) (*eps.Settings, error) {
+	eps.Log.Info(settingsPaths)
+	if rawSettings, err := settings.MakeSettings(settingsPaths, fs); err != nil {
 		return nil, err
 	} else if params, err := epsForms.SettingsForm.ValidateWithContext(rawSettings.Values, map[string]interface{}{"definitions": definitions}); err != nil {
 		return nil, err

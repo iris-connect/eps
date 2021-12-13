@@ -45,7 +45,7 @@ var SignatureForm = forms.Form{
 			Validators: []forms.Validator{
 				forms.IsString{},
 				forms.MatchesRegex{
-					Regex: regexp.MustCompile(`^\d{10,100}$`),
+					Regexp: regexp.MustCompile(`^\d{10,100}$`),
 				},
 			},
 		},
@@ -54,7 +54,7 @@ var SignatureForm = forms.Form{
 			Validators: []forms.Validator{
 				forms.IsString{},
 				forms.MatchesRegex{
-					Regex: regexp.MustCompile(`^\d{10,100}$`),
+					Regexp: regexp.MustCompile(`^\d{10,100}$`),
 				},
 			},
 		},

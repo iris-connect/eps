@@ -35,7 +35,7 @@ var DirectorySettingsForm = forms.Form{
 				forms.IsList{
 					Validators: []forms.Validator{
 						forms.IsString{},
-						forms.MatchesRegex{Regex: regexp.MustCompile(`^\.`)},
+						forms.MatchesRegex{Regexp: regexp.MustCompile(`^\.`)},
 					},
 				},
 			},

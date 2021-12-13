@@ -374,7 +374,7 @@ var SignedChangeRecordForm = forms.Form{
 				forms.IsOptional{Default: ""},
 				forms.IsString{},
 				forms.MatchesRegex{
-					Regex: regexp.MustCompile(`^([a-f0-9]{64}|)$`),
+					Regexp: regexp.MustCompile(`^([a-f0-9]{64}|)$`),
 				},
 			},
 		},

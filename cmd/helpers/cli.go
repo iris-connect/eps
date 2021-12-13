@@ -40,8 +40,11 @@ func Decorate(commands []cli.Command, decorator Decorator, service string) []cli
 }
 
 func Settings(definitions *eps.Definitions) (*eps.Settings, error) {
-	settingsPaths := helpers.SettingsPaths()
-	return helpers.Settings(settingsPaths, definitions)
+	if settingsPaths, fs, err := helpers.SettingsPaths("EPS_SETTINGS"); err != nil {
+		return nil, err
+	} else {
+		return helpers.Settings(settingsPaths, fs, definitions)
+	}
 }
 
 var CommonCommands = []cli.Command{

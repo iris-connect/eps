@@ -20,30 +20,11 @@ import (
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/proxy"
 	"github.com/kiprotect/go-helpers/settings"
-	"os"
-	"strings"
+	"io/fs"
 )
 
-var EnvSettingsName = "PROXY_SETTINGS"
-
-func SettingsPaths() []string {
-	envValue := os.Getenv(EnvSettingsName)
-	if envValue == "" {
-		return []string{}
-	}
-	values := strings.Split(envValue, ":")
-	sanitizedValues := make([]string, 0, len(values))
-	for _, value := range values {
-		if value == "" {
-			continue
-		}
-		sanitizedValues = append(sanitizedValues, value)
-	}
-	return sanitizedValues
-}
-
-func Settings(settingsPaths []string, definitions *eps.Definitions) (*proxy.Settings, error) {
-	if rawSettings, err := settings.MakeSettings(settingsPaths); err != nil {
+func Settings(settingsPaths []string, fs fs.FS, definitions *eps.Definitions) (*proxy.Settings, error) {
+	if rawSettings, err := settings.MakeSettings(settingsPaths, fs); err != nil {
 		return nil, err
 	} else if params, err := proxy.SettingsForm.ValidateWithContext(rawSettings.Values, map[string]interface{}{"definitions": definitions}); err != nil {
 		return nil, err

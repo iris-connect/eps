@@ -20,9 +20,10 @@ import (
 	"github.com/iris-connect/eps"
 	cmdHelpers "github.com/iris-connect/eps/cmd/helpers"
 	"github.com/iris-connect/eps/definitions"
+	"github.com/iris-connect/eps/helpers"
 	"github.com/iris-connect/eps/metrics"
 	"github.com/iris-connect/eps/sd"
-	"github.com/iris-connect/eps/sd/helpers"
+	sdHelpers "github.com/iris-connect/eps/sd/helpers"
 	"github.com/urfave/cli"
 	"os"
 	"os/signal"
@@ -93,7 +94,10 @@ func CLI(settings *sd.Settings) {
 }
 
 func main() {
-	if settings, err := helpers.Settings(helpers.SettingsPaths(), &definitions.Default); err != nil {
+	if settingsPaths, fs, err := helpers.SettingsPaths("SD_SETTINGS"); err != nil {
+		eps.Log.Error(err)
+		return
+	} else if settings, err := sdHelpers.Settings(settingsPaths, fs, &definitions.Default); err != nil {
 		eps.Log.Error(err)
 		return
 	} else {

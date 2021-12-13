@@ -17,7 +17,7 @@
 package eps
 
 type DatastoreSettings struct {
-	Type     string `json:"type"`
+	Type     string      `json:"type"`
 	Settings interface{} `json:"settings"`
 }
 

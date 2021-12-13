@@ -3,15 +3,17 @@ module github.com/iris-connect/eps
 go 1.16
 
 require (
+	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/golang/protobuf v1.5.2
-	github.com/kiprotect/go-helpers v0.0.0-20210719141457-5b87e3cc7847
+	github.com/kiprotect/go-helpers v0.0.0-20211210144244-79ce90e73e79
+	github.com/onsi/ginkgo v1.16.5 // indirect
+	github.com/onsi/gomega v1.17.0 // indirect
 	github.com/prometheus/client_golang v1.11.0
-	github.com/protocolbuffers/protobuf v3.15.8+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.5
+	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
 	google.golang.org/grpc v1.37.0
-	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0 // indirect
 	google.golang.org/protobuf v1.26.0
 )
 

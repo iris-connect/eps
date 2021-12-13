@@ -9,6 +9,6 @@ channels:
     type: grpc_client
     settings:
       tls:
-        ca_certificate_files: ["$DIR/../../certs/root.crt"]
-        certificate_file: "$DIR/../../certs/$OP.crt"
-        key_file: "$DIR/../../certs/$OP.key"
+        ca_certificate_files: ["/$DIR/../../certs/root.crt"]
+        certificate_file: "/$DIR/../../certs/$OP.crt"
+        key_file: "/$DIR/../../certs/$OP.key"

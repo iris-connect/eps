@@ -25,7 +25,8 @@ import (
 )
 
 type Settings struct {
-	Paths []string
+	Paths           []string
+	EnvSettingsName string
 }
 
 func (c Settings) Setup(fixtures map[string]interface{}) (interface{}, error) {
@@ -36,7 +37,17 @@ func (c Settings) Setup(fixtures map[string]interface{}) (interface{}, error) {
 	if defs, ok = fixtures["definitions"].(*eps.Definitions); !ok {
 		defs = &definitions.Default
 	}
-	settingsPaths := helpers.SettingsPaths()
+
+	if c.EnvSettingsName == "" {
+		c.EnvSettingsName = "EPS_SETTINGS"
+	}
+
+	settingsPaths, fs, err := helpers.SettingsPaths(c.EnvSettingsName)
+
+	if err != nil {
+		return nil, err
+	}
+
 	if c.Paths != nil {
 		if len(settingsPaths) != 1 {
 			return nil, fmt.Errorf("expected a single settings path prefix")
@@ -45,12 +56,13 @@ func (c Settings) Setup(fixtures map[string]interface{}) (interface{}, error) {
 		for _, pth := range c.Paths {
 			fullPaths = append(fullPaths, path.Join(append(settingsPaths, pth)...))
 		}
+		eps.Log.Info(fullPaths)
 		paths = fullPaths
 	} else {
 		paths = settingsPaths
 	}
 	eps.Log.SetLevel(eps.DebugLogLevel)
-	return helpers.Settings(paths, defs)
+	return helpers.Settings(paths, fs, defs)
 }
 
 func (c Settings) Teardown(fixture interface{}) error {
