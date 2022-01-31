@@ -79,7 +79,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .codehilite .nt { color: #204a87; font-weight: bold } /* Name.Tag */
 .codehilite .nv { color: #000000 } /* Name.Variable */
 .codehilite .ow { color: #204a87; font-weight: bold } /* Operator.Word */
-.codehilite .w { color: #f8f8f8; text-decoration: underline } /* Text.Whitespace */
+.codehilite .w { color: #f8f8f8 } /* Text.Whitespace */
 .codehilite .mb { color: #0000cf; font-weight: bold } /* Literal.Number.Bin */
 .codehilite .mf { color: #0000cf; font-weight: bold } /* Literal.Number.Float */
 .codehilite .mh { color: #0000cf; font-weight: bold } /* Literal.Number.Hex */
@@ -254,22 +254,28 @@ sdh sign settings/dev/roles/private-proxy-1/sdh/entry.json
 <p>The output should e.g. look like this:</p>
 <div class="codehilite">
 <pre><code><span class="p">{</span>
-  <span class="nt">"signature"</span><span class=
-"p">:</span> <span class="p">{</span>
-    <span class="nt">"r"</span><span class=
-"p">:</span> <span class="s2">"67488385997031737348502334621054744305438368369525250023542608571625588981387"</span><span class="p">,</span>
-    <span class="nt">"s"</span><span class=
-"p">:</span> <span class="s2">"110557266089828975725234959115295121652814407881082688883738138814924173982570"</span><span class="p">,</span>
-    <span class="nt">"c"</span><span class=
-"p">:</span> <span class="s2">"-----BEGIN CERTIFICATE-----\nMIIC1TCCAb2gAwIBAgIUe3+081Bi4Z0DXDdeBhfZZOAs4OwwDQYJKoZIhvcNAQEL\nBQAwaTELMAkGA1UEBhMCREUxDzANBgNVBAgMBkJlcmxpbjEPMA0GA1UEBwwGQmVy\nbGluMQ0wCwYDVQQKDARJUklTMQswCQYDVQQLDAJJVDEcMBoGA1UEAwwTVGVzdGlu\nZy1EZXZlbG9wbWVudDAeFw0yMTA1MTExMTMzNDBaFw0yMjA5MjMxMTMzNDBaMGUx\nCzAJBgNVBAYTAkRFMQ8wDQYDVQQIDAZCZXJsaW4xDzANBgNVBAcMBkJlcmxpbjEN\nMAsGA1UECgwESVJJUzELMAkGA1UECwwCSVQxGDAWBgNVBAMMD3ByaXZhdGUtcHJv\neHktMTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLHlILI5POvEDJc96W0dbag7\nFt8BVmitGqwS5jarYRwOUe/PiQ8tMBkMw9X/2U8G1qGYQb/CiRDh1DDy/Eh/mGKj\nRDBCMDMGA1UdEQQsMCqCD3ByaXZhdGUtcHJveHktMYIXKi5wcml2YXRlLXByb3h5\nLTEubG9jYWwwCwYDVR0PBAQDAgeAMA0GCSqGSIb3DQEBCwUAA4IBAQAmUESzD1ls\nmpECtRlinhiUduif9nVddtLeW/Ui86PHkS50vjSOVHY7ZHrfWbFB4/p4bwm8Sp1/\npFHx4WyuHiow5Ah3HV9afDcgyWBd1V8ijIFOlNF27u/caVsa9gV7iDVJ+6mBXKkf\nCgNI2bA2WoOVXQMwRoow4vSYrVAdM/Eyq8PHYOHkGqdd4uASG5df4vE+gnB2z9WD\nFuxkVYkncVP5OB+N7EAkQrVjrITdiSN0yYAVWFKz1IEnPF7GRW6KsPHW9lJeePeD\n1gLNh2KF6drrXT2PIIYVB31uepSoCqFnUUDcC/PX0qHu8jilvr/pTzhFUWbuX+Ja\nfaIRxqWB0frZ\n-----END CERTIFICATE-----\n"</span>
-  <span class="p">},</span>
-  <span class="nt">"data"</span><span class=
-"p">:</span> <span class="p">{</span>
-    <span class="nt">"foo"</span><span class=
-"p">:</span> <span class="s2">"bar"</span><span class="p">,</span>
-    <span class="nt">"name"</span><span class=
-"p">:</span> <span class="s2">"private-proxy-1"</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class=
+"nt">"signature"</span><span class="p">:</span><span class=
+"w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"r"</span><span class=
+"p">:</span><span class="w"> </span><span class=
+"s2">"67488385997031737348502334621054744305438368369525250023542608571625588981387"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"s"</span><span class=
+"p">:</span><span class="w"> </span><span class=
+"s2">"110557266089828975725234959115295121652814407881082688883738138814924173982570"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"c"</span><span class=
+"p">:</span><span class="w"> </span><span class=
+"s2">"-----BEGIN CERTIFICATE-----\nMIIC1TCCAb2gAwIBAgIUe3+081Bi4Z0DXDdeBhfZZOAs4OwwDQYJKoZIhvcNAQEL\nBQAwaTELMAkGA1UEBhMCREUxDzANBgNVBAgMBkJlcmxpbjEPMA0GA1UEBwwGQmVy\nbGluMQ0wCwYDVQQKDARJUklTMQswCQYDVQQLDAJJVDEcMBoGA1UEAwwTVGVzdGlu\nZy1EZXZlbG9wbWVudDAeFw0yMTA1MTExMTMzNDBaFw0yMjA5MjMxMTMzNDBaMGUx\nCzAJBgNVBAYTAkRFMQ8wDQYDVQQIDAZCZXJsaW4xDzANBgNVBAcMBkJlcmxpbjEN\nMAsGA1UECgwESVJJUzELMAkGA1UECwwCSVQxGDAWBgNVBAMMD3ByaXZhdGUtcHJv\neHktMTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLHlILI5POvEDJc96W0dbag7\nFt8BVmitGqwS5jarYRwOUe/PiQ8tMBkMw9X/2U8G1qGYQb/CiRDh1DDy/Eh/mGKj\nRDBCMDMGA1UdEQQsMCqCD3ByaXZhdGUtcHJveHktMYIXKi5wcml2YXRlLXByb3h5\nLTEubG9jYWwwCwYDVR0PBAQDAgeAMA0GCSqGSIb3DQEBCwUAA4IBAQAmUESzD1ls\nmpECtRlinhiUduif9nVddtLeW/Ui86PHkS50vjSOVHY7ZHrfWbFB4/p4bwm8Sp1/\npFHx4WyuHiow5Ah3HV9afDcgyWBd1V8ijIFOlNF27u/caVsa9gV7iDVJ+6mBXKkf\nCgNI2bA2WoOVXQMwRoow4vSYrVAdM/Eyq8PHYOHkGqdd4uASG5df4vE+gnB2z9WD\nFuxkVYkncVP5OB+N7EAkQrVjrITdiSN0yYAVWFKz1IEnPF7GRW6KsPHW9lJeePeD\n1gLNh2KF6drrXT2PIIYVB31uepSoCqFnUUDcC/PX0qHu8jilvr/pTzhFUWbuX+Ja\nfaIRxqWB0frZ\n-----END CERTIFICATE-----\n"</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"data"</span><span class=
+"p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class=
+"nt">"foo"</span><span class="p">:</span><span class=
+"w"> </span><span class="s2">"bar"</span><span class="p">,</span>
+<span class="w">    </span><span class=
+"nt">"name"</span><span class="p">:</span><span class=
+"w"> </span><span class="s2">"private-proxy-1"</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Before importing such data, we can check the signature using the
