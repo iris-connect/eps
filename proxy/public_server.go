@@ -47,9 +47,29 @@ type PublicServer struct {
 	tlsListener      net.Listener
 	internalListener net.Listener
 	tlsConnections   map[string]net.Conn
+	epsConnections   map[string]net.Conn
 	announcements    []*PublicAnnouncement
 	tlsHellos        map[string][]byte
 	mutex            sync.Mutex
+}
+
+var PublicRequestConnectionForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "_client",
+			Validators: []forms.Validator{
+				forms.IsStringMap{
+					Form: &epsForms.ClientInfoForm,
+				},
+			},
+		},
+		{
+			Name: "to",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
 }
 
 var PublicAnnounceConnectionsForm = forms.Form{
@@ -99,6 +119,11 @@ var PublicConnectionForm = forms.Form{
 	},
 }
 
+type PublicRequestConnectionParams struct {
+	To         string          `json:"to"`
+	ClientInfo *eps.ClientInfo `json:"_client"`
+}
+
 type PublicAnnounceConnectionsParams struct {
 	Connections []*PublicProxyConnection
 	ClientInfo  *eps.ClientInfo `json:"_client"`
@@ -107,6 +132,53 @@ type PublicAnnounceConnectionsParams struct {
 type PublicProxyConnection struct {
 	Domain    string     `json:"domain"`
 	ExpiresAt *time.Time `json:"expires_at"`
+}
+
+func (c *PublicServer) requestConnection(context *jsonrpc.Context, params *PublicRequestConnectionParams) *jsonrpc.Response {
+
+	randomBytes, err := helpers.RandomBytes(32)
+
+	if err != nil {
+		eps.Log.Error(err)
+		return context.InternalError()
+	}
+
+	randomStr := base64.StdEncoding.EncodeToString(randomBytes)
+
+	// we tell the target EPS about the connection request
+	request := jsonrpc.MakeRequest(fmt.Sprintf("%s.connectionRequested", params.To), "", map[string]interface{}{
+		"client": params.ClientInfo,
+		"token":  randomStr,
+	})
+
+	if result, err := c.jsonrpcClient.Call(request); err != nil {
+		eps.Log.Errorf("RPC error when announcing connection request: %v", err)
+		return context.InternalError()
+	} else {
+		if result.Error != nil {
+			eps.Log.Errorf("Error when requesting connection: %v (%v)", result.Error.Message, result.Error.Data)
+			return context.Error(result.Error.Code, result.Error.Message, result.Error.Data)
+		}
+	}
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// we initialize the connection with a nil value
+	c.epsConnections[randomStr] = nil
+
+	go func() {
+		time.Sleep(time.Duration(c.settings.AcceptTimeout) * time.Second)
+		c.mutex.Lock()
+		defer c.mutex.Unlock()
+		// connection still waiting, we close it
+		if conn, ok := c.epsConnections[randomStr]; ok && conn == nil {
+			eps.Log.Warningf("TLS connection not initiated by a single party, closing it...")
+			delete(c.epsConnections, randomStr)
+		}
+	}()
+
+	return context.Result(map[string]interface{}{"token": randomStr})
 }
 
 func (c *PublicServer) announceConnections(context *jsonrpc.Context, params *PublicAnnounceConnectionsParams) *jsonrpc.Response {
@@ -252,6 +324,10 @@ func MakePublicServer(settings *PublicServerSettings, definitions *eps.Definitio
 	}
 
 	methods := map[string]*jsonrpc.Method{
+		"requestConnection": {
+			Form:    &PublicRequestConnectionForm,
+			Handler: server.requestConnection,
+		},
 		"announceConnections": {
 			Form:    &PublicAnnounceConnectionsForm,
 			Handler: server.announceConnections,
@@ -338,7 +414,7 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 		internalConnection.Close()
 	}
 
-	// we give the client 1 second to announce itself
+	// we give the client some time to announce itself
 	internalConnection.SetReadDeadline(time.Now().Add(5 * time.Second))
 	// we expect a secret token to be transmitted over the connection
 	tokenBuf := make([]byte, 32)
@@ -362,38 +438,77 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 	eps.Log.Debugf("Received token '%s'", tokenStr)
 
 	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
-	tlsConnection, connectionOk := s.tlsConnections[tokenStr]
-	delete(s.tlsConnections, tokenStr)
-	tlsHello, helloOk := s.tlsHellos[tokenStr]
-	delete(s.tlsHellos, tokenStr)
+	var tlsConnection net.Conn
+	var ok bool
 
-	s.mutex.Unlock()
+	if tlsConnection, ok = s.epsConnections[tokenStr]; ok {
+		// this is an EPS-EPS connection
+		if tlsConnection == nil {
+			// this is the first party to request a connection, we store it
+			// and wait for the other party to connect...
+			s.epsConnections[tokenStr] = internalConnection
 
-	if !connectionOk {
-		eps.Log.Error("No connection found for token, closing...")
-		internalConnection.Close()
-		return
-	}
+			go func() {
+				time.Sleep(time.Duration(s.settings.AcceptTimeout) * time.Second)
+				s.mutex.Lock()
+				defer s.mutex.Unlock()
+				// connection still waiting, we close it
+				if conn, ok := s.epsConnections[tokenStr]; ok && conn != nil {
+					eps.Log.Warningf("TLS connection not accepted in time by other EPS, closing it...")
+					if err := conn.Close(); err != nil {
+						eps.Log.Error(err)
+					}
+					delete(s.epsConnections, tokenStr)
+				}
+			}()
 
-	close = func() {
-		internalConnection.Close()
-		tlsConnection.Close()
-	}
+			return
+		}
 
-	if !helloOk {
-		close()
-		return
-	}
+		// we delete the connection
+		delete(s.epsConnections, tokenStr)
 
-	if n, err := internalConnection.Write(tlsHello); err != nil {
-		eps.Log.Error(err)
-		close()
-		return
-	} else if n != len(tlsHello) {
-		eps.Log.Error("Can't forward TLS HelloClient")
-		close()
-		return
+		close = func() {
+			internalConnection.Close()
+			tlsConnection.Close()
+		}
+
+	} else {
+
+		// this is a regular client-EPS connection
+		tlsConnection, ok = s.tlsConnections[tokenStr]
+		delete(s.tlsConnections, tokenStr)
+		tlsHello, helloOk := s.tlsHellos[tokenStr]
+		delete(s.tlsHellos, tokenStr)
+
+		if !ok {
+			eps.Log.Error("No connection found for token, closing...")
+			internalConnection.Close()
+			return
+		}
+
+		close = func() {
+			internalConnection.Close()
+			tlsConnection.Close()
+		}
+
+		if !helloOk {
+			close()
+			return
+		}
+
+		if n, err := internalConnection.Write(tlsHello); err != nil {
+			eps.Log.Error(err)
+			close()
+			return
+		} else if n != len(tlsHello) {
+			eps.Log.Error("Can't forward TLS HelloClient")
+			close()
+			return
+		}
+
 	}
 
 	pipe := func(left, right net.Conn) {
@@ -525,8 +640,6 @@ func (s *PublicServer) handleTlsConnection(conn net.Conn) {
 				}
 				delete(s.tlsConnections, randomStr)
 				delete(s.tlsHellos, randomStr)
-			} else {
-				eps.Log.Debugf("Connection accepted...")
 			}
 		}()
 
