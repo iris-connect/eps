@@ -46,6 +46,10 @@ func MakeJSONRPCClientChannel(settings interface{}) (eps.Channel, error) {
 	}, nil
 }
 
+func (c *JSONRPCClientChannel) Type() string {
+	return "jsonrpc_client"
+}
+
 func (c *JSONRPCClientChannel) Open() error {
 	return nil
 }

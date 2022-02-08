@@ -17,8 +17,12 @@
 package channels
 
 import (
+	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/grpc"
+	epsNet "github.com/iris-connect/eps/net"
+	"net"
+	"sync"
 )
 
 type GRPCServerChannel struct {
@@ -49,9 +53,43 @@ func (c *GRPCServerChannel) HandleRequest(request *eps.Request, clientInfo *eps.
 	return c.MessageBroker().DeliverRequest(request, clientInfo)
 }
 
+type ProxyListener struct {
+	net.Listener
+	listener net.Listener
+	mutex    sync.Mutex
+}
+
+// Accept a connection, ensuring that rate limits are enforced
+func (l *ProxyListener) Accept() (net.Conn, error) {
+	return l.Listener.Accept()
+}
+
+func MakeProxyListener(listener net.Listener) *ProxyListener {
+	return &ProxyListener{
+		Listener: listener,
+	}
+}
+
+func (c *GRPCServerChannel) Type() string {
+	return "grpc_server"
+}
+
 func (c *GRPCServerChannel) Open() error {
 	var err error
-	if c.server, err = grpc.MakeServer(&c.Settings, c, c.Directory()); err != nil {
+
+	lis, err := net.Listen("tcp", c.Settings.BindAddress)
+
+	if err != nil {
+		return fmt.Errorf("error binding to address '%s': %w", c.Settings.BindAddress, err)
+	}
+
+	if c.Settings.TCPRateLimits != nil {
+		lis = epsNet.MakeRateLimitedListener(lis, c.Settings.TCPRateLimits)
+	}
+
+	lis = MakeProxyListener(lis)
+
+	if c.server, err = grpc.MakeServer(&c.Settings, c, lis, c.Directory()); err != nil {
 		return err
 	}
 	return c.server.Start()

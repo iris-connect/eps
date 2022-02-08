@@ -69,6 +69,12 @@ var PublicRequestConnectionForm = forms.Form{
 				forms.IsString{},
 			},
 		},
+		{
+			Name: "channel",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
 	},
 }
 
@@ -121,6 +127,7 @@ var PublicConnectionForm = forms.Form{
 
 type PublicRequestConnectionParams struct {
 	To         string          `json:"to"`
+	Channel    string          `json:"channel"`
 	ClientInfo *eps.ClientInfo `json:"_client"`
 }
 
@@ -146,9 +153,10 @@ func (c *PublicServer) requestConnection(context *jsonrpc.Context, params *Publi
 	randomStr := base64.StdEncoding.EncodeToString(randomBytes)
 
 	// we tell the target EPS about the connection request
-	request := jsonrpc.MakeRequest(fmt.Sprintf("%s.connectionRequested", params.To), "", map[string]interface{}{
-		"client": params.ClientInfo,
-		"token":  randomStr,
+	request := jsonrpc.MakeRequest(fmt.Sprintf("%s._connectionRequest", params.To), "", map[string]interface{}{
+		"client":  params.ClientInfo,
+		"channel": params.Channel,
+		"token":   randomStr,
 	})
 
 	if result, err := c.jsonrpcClient.Call(request); err != nil {

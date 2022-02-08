@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/helpers"
-	epsNet "github.com/iris-connect/eps/net"
 	"github.com/iris-connect/eps/protobuf"
 	"github.com/iris-connect/eps/tls"
 	"google.golang.org/grpc"
@@ -44,6 +43,7 @@ type ConnectedClient struct {
 
 type Server struct {
 	protobuf.UnimplementedEPSServer
+	listener         net.Listener
 	server           *grpc.Server
 	settings         *GRPCServerSettings
 	connectedClients []*ConnectedClient
@@ -54,18 +54,8 @@ type Server struct {
 
 func (s *Server) Start() error {
 
-	lis, err := net.Listen("tcp", s.settings.BindAddress)
-
-	if err != nil {
-		return fmt.Errorf("error binding to address '%s': %w", s.settings.BindAddress, err)
-	}
-
-	if s.settings.TCPRateLimits != nil {
-		lis = epsNet.MakeRateLimitedListener(lis, s.settings.TCPRateLimits)
-	}
-
 	go func() {
-		s.server.Serve(lis)
+		s.server.Serve(s.listener)
 	}()
 
 	return nil
@@ -79,7 +69,7 @@ func (s *Server) Stop() error {
 // currently we allow messages up to 4MB in size
 var MaxMessageSize = 1024 * 1024 * 4
 
-func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Directory) (*Server, error) {
+func MakeServer(settings *GRPCServerSettings, handler Handler, listener net.Listener, directory eps.Directory) (*Server, error) {
 	opts := []grpc.ServerOption{
 		grpc.MaxRecvMsgSize(MaxMessageSize),
 		grpc.MaxSendMsgSize(MaxMessageSize),
@@ -95,6 +85,7 @@ func MakeServer(settings *GRPCServerSettings, handler Handler, directory eps.Dir
 	server := &Server{
 		handler:          handler,
 		directory:        directory,
+		listener:         listener,
 		connectedClients: []*ConnectedClient{},
 		server:           grpc.NewServer(opts...),
 		settings:         settings,

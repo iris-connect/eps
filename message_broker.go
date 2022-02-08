@@ -45,6 +45,13 @@ func MakeBasicMessageBroker(directory Directory) (*BasicMessageBroker, error) {
 }
 
 func (b *BasicMessageBroker) AddChannel(channel Channel) error {
+
+	for _, ec := range b.channels {
+		if ec.Type() == channel.Type() {
+			return fmt.Errorf("channel of same type already exists")
+		}
+	}
+
 	b.channels = append(b.channels, channel)
 	// we tell the channel that it's part of the message broker
 	if err := channel.SetMessageBroker(b); err != nil {
@@ -80,8 +87,49 @@ var DirectoryQueryForm = forms.Form{
 	},
 }
 
+var ConnectionRequestForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "channel",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+		{
+			Name: "token",
+			Validators: []forms.Validator{
+				forms.IsBytes{Encoding: "base64"},
+			},
+		},
+		{
+			Name: "client",
+			Validators: []forms.Validator{
+				forms.IsStringMap{},
+			},
+		},
+	},
+}
+
+type ConnectionRequest struct {
+	Channel string                 `json:"channel"`
+	Token   []byte                 `json:"token"`
+	Client  map[string]interface{} `json:"client"`
+}
+
 func (b *BasicMessageBroker) handleInternalRequest(address *Address, request *Request) (*Response, error) {
 	switch address.Method {
+	case "_connectionRequest":
+		var connectionRequest ConnectionRequest
+		if params, err := ConnectionRequestForm.Validate(request.Params); err != nil {
+			return nil, err
+		} else if err := ConnectionRequestForm.Coerce(&connectionRequest, params); err != nil {
+			return nil, err
+		}
+		for _, channel := range b.channels {
+			if channel.Type() == connectionRequest.Channel {
+				Log.Info("Found it")
+			}
+		}
 	case "_ping":
 		if ownEntry, err := b.directory.OwnEntry(); err != nil {
 			return nil, fmt.Errorf("error retrieving own entry: %w", err)
@@ -179,9 +227,6 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 			return response, nil
 		}
 	}
-
-	// To do: Check if a client can actually call the service method of the
-	// given operator, reject the request if that's not the case.
 
 	for i, channel := range b.channels {
 		Log.Debugf("Checking whether channel %d can deliver message with method '%s' to '%s'...", i, address.Method, address.Operator)

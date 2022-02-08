@@ -34,10 +34,13 @@ import (
 	"time"
 )
 
+type Dialer func(context context.Context, addr string) (net.Conn, error)
+
 type Client struct {
 	directory   eps.Directory
 	connection  *grpc.ClientConn
 	clientInfos *ClientInfos
+	dialer      Dialer
 	settings    *GRPCClientSettings
 	mutex       sync.Mutex
 }
@@ -203,6 +206,10 @@ func (c *Client) Connect(address, serverName string) error {
 
 	vc := &VerifyCredentials{directory: c.directory, ClientInfos: c.clientInfos, TransportCredentials: credentials.NewTLS(tlsConfig)}
 	opts = append(opts, grpc.WithTransportCredentials(vc))
+
+	if c.dialer != nil {
+		opts = append(opts, grpc.WithContextDialer(c.dialer))
+	}
 
 	c.connection, err = grpc.Dial(address, opts...)
 
@@ -396,10 +403,11 @@ func (c *Client) SendRequest(request *eps.Request) (*eps.Response, error) {
 
 }
 
-func MakeClient(settings *GRPCClientSettings, directory eps.Directory) (*Client, error) {
+func MakeClient(settings *GRPCClientSettings, dialer Dialer, directory eps.Directory) (*Client, error) {
 
 	return &Client{
 		settings:  settings,
+		dialer:    dialer,
 		directory: directory,
 	}, nil
 

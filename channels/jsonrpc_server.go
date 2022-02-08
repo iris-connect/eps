@@ -104,6 +104,10 @@ func (c *JSONRPCServerChannel) handler(context *jsonrpc.Context) *jsonrpc.Respon
 	}
 }
 
+func (c *JSONRPCServerChannel) Type() string {
+	return "jsonrpc_server"
+}
+
 func (c *JSONRPCServerChannel) Open() error {
 	return c.Server.Start()
 }

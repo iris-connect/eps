@@ -5,7 +5,7 @@
 # operator. The name of the operator will be added as the common name as well
 # as the subject alternative name (SAN), which is required for some newer
 # TLS libraries.
-declare -a certs=("op-1" "op-2" "hd-1" "ls-1" "internal-server" "public-proxy-1.ga" "private-proxy-1.ga" "sd-1" "demo-app")
+declare -a certs=("op-1" "op-2" "hd-1" "hd-2" "ls-1" "internal-server" "public-proxy-1.ga" "private-proxy-1.ga" "sd-1" "demo-app")
 declare -A groups=(["hd-1"]="sd-admin")
 
 O="IRIS"

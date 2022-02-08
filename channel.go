@@ -32,6 +32,7 @@ type ChannelMaker func(settings interface{}) (Channel, error)
 
 // A channel can deliver and accept message
 type Channel interface {
+	Type() string
 	MessageBroker() MessageBroker
 	SetMessageBroker(MessageBroker) error
 	CanDeliverTo(*Address) bool

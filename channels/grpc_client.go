@@ -67,7 +67,7 @@ func (c *GRPCServerConnection) Open() error {
 	}
 	c.connecting = true
 	defer func() { c.connecting = false }()
-	if client, err := grpc.MakeClient(&c.channel.Settings, c.channel.Directory()); err != nil {
+	if client, err := grpc.MakeClient(&c.channel.Settings, nil, c.channel.Directory()); err != nil {
 		return fmt.Errorf("error creating gRPC client: %w", err)
 	} else if err := client.Connect(c.Address, c.Name); err != nil {
 		return fmt.Errorf("error connecting gRPC client: %w", err)
@@ -136,6 +136,7 @@ func (c *GRPCServerConnection) Close() error {
 type GRPCServerEntrySettings struct {
 	Address  string `json:"address"`
 	Internal bool   `json:"internal"`
+	Proxied  bool   `json:"proxied"`
 }
 
 var GRPCServerEntrySettingsForm = forms.Form{
@@ -148,6 +149,13 @@ var GRPCServerEntrySettingsForm = forms.Form{
 		},
 		{
 			Name: "internal",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: false},
+				forms.IsBoolean{},
+			},
+		},
+		{
+			Name: "proxied",
 			Validators: []forms.Validator{
 				forms.IsOptional{Default: false},
 				forms.IsBoolean{},
@@ -254,6 +262,10 @@ func (c *GRPCClientChannel) closeConnections() error {
 	return lastErr
 }
 
+func (c *GRPCClientChannel) Type() string {
+	return "grpc_client"
+}
+
 func (c *GRPCClientChannel) backgroundTask() {
 	for {
 		// we continuously watch for changes in the service directory and
@@ -293,7 +305,7 @@ func (c *GRPCClientChannel) openConnections() error {
 				if settings, err := getEntrySettings(ownEntry.Channel("grpc_server").Settings); err != nil {
 					eps.Log.Trace(err)
 					continue
-				} else if settings.Internal == false {
+				} else if settings.Internal == false && settings.Proxied == false {
 					eps.Log.Debugf("Skipping gRPC client connection from '%s' to '%s' as the latter has a gRPC client and the former a publicly available gRPC server", ownEntry.Name, entry.Name)
 					continue
 				}
@@ -372,7 +384,7 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 		return nil, fmt.Errorf("error retrieving entry settings: %w", err)
 	}
 
-	if client, err := grpc.MakeClient(&c.Settings, c.Directory()); err != nil {
+	if client, err := grpc.MakeClient(&c.Settings, nil, c.Directory()); err != nil {
 		return nil, fmt.Errorf("error creating gRPC client: %w", err)
 	} else if err := client.Connect(settings.Address, entry.Name); err != nil {
 		return nil, fmt.Errorf("error connecting gRPC client: %w", err)

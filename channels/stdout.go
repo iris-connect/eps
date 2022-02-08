@@ -56,6 +56,10 @@ func MakeStdoutChannel(settings interface{}) (eps.Channel, error) {
 	}, nil
 }
 
+func (c *StdoutChannel) Type() string {
+	return "stdout"
+}
+
 func (c *StdoutChannel) Open() error {
 	return nil
 }
