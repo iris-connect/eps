@@ -36,7 +36,7 @@ pages:
     title: Security & Threat Model
   - name: p2p
     src: en/proxy/p2p.md
-    title: Peer-To-Peer Proxy (P2P)
+    title: Peer-To-Peer (P2P) Proxy
   name: proxy
   navtitle: Proxy Service
   slug: proxy-service

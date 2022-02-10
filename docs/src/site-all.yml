@@ -41,6 +41,9 @@ pages:
       - src|f|exists?: "{target_language}/proxy/security.md"
         title|t: Security & Threat Model
         name: security
+      - src|f|exists?: "{target_language}/proxy/p2p.md"
+        title|t: Peer-To-Peer (P2P) Proxy
+        name: p2p
   - name: sd
     title: Service Directory
     navtitle: Service Directory
