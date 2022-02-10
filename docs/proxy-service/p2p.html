@@ -7,8 +7,8 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content=
 "width=device-width, initial-scale=1">
-<title>EPS documentation | Service Directory -
-Configuration</title>
+<title>EPS documentation | Proxy Service - Peer-To-Peer Proxy
+(P2P)</title>
 <link rel="stylesheet" type="text/css" href=
 "/eps/docs/static/css/main.css">
 <script>
@@ -135,9 +135,9 @@ data-target="side-menu" data-toggle="collapse"><span>&nbsp;</span>
 <li><a href="/eps/docs/eps-service">Overview</a></li>
 </ul>
 </li>
-<li><a class="" href="#" data-toggle="collapse" data-target=
-"page-proxy-nav">Proxy Service</a>
-<ul class="is-hidden" id="page-proxy-nav">
+<li><a class="is-active" href="#" data-toggle="collapse"
+data-target="page-proxy-nav">Proxy Service</a>
+<ul class="" id="page-proxy-nav">
 <li><a href="/eps/docs/proxy-service">Overview</a></li>
 <li><a href=
 "/eps/docs/proxy-service/installation">Installation</a></li>
@@ -149,9 +149,9 @@ Model</a></li>
 (P2P)</a></li>
 </ul>
 </li>
-<li><a class="is-active" href="#" data-toggle="collapse"
-data-target="page-sd-nav">Service Directory</a>
-<ul class="" id="page-sd-nav">
+<li><a class="" href="#" data-toggle="collapse" data-target=
+"page-sd-nav">Service Directory</a>
+<ul class="is-hidden" id="page-sd-nav">
 <li><a href="/eps/docs/service-directory">Overview</a></li>
 <li><a href=
 "/eps/docs/service-directory/installation">Installation</a></li>
@@ -164,7 +164,7 @@ data-target="page-sd-nav">Service Directory</a>
 "menu-language-dropdown">Languages</a>
 <ul id="menu-language-dropdown" class="is-hidden">
 <li><a class="is-open is-active" href=
-"/eps/docs/service-directory/configuration">English</a></li>
+"/eps/docs/proxy-service/p2p">English</a></li>
 </ul>
 </li>
 </ul>
@@ -174,7 +174,60 @@ data-target="page-sd-nav">Service Directory</a>
 <div class="comments"></div>
 <section class="section first">
 <div class="content">
-<div class="content markdown"></div>
+<div class="content markdown">
+<h1>Peer To Peer (P2P) Proxy</h1>
+<p>The proxy also supports a peer-to-peer (P2P) mode, which enables
+two EPS servers to establish a secure connection through the
+proxy.</p>
+<h2>Connection Brokering</h2>
+<p>The brokering process for a P2P connection is as follows:</p>
+<ul>
+<li>EPS server A wants to connect to EPS server B.</li>
+<li>A recognizes through the directory entry of B that it can only
+be reached through proxy P.</li>
+<li>A sends a <code>connectionRequest</code> message to P over the
+EPS system, specifying B's gRPC server channel as the
+recipient.</li>
+<li>P creates a token and send a message to B over the EPS system,
+forwarding A's request and specifying a proxy endpoint to connect
+to.</li>
+<li>B receives the message and forwards it to the appropriate
+channel, which handles it and connects to P's endpoint, sending the
+token as the routing key.</li>
+<li>P receives the connection from B and stores it.</li>
+<li>P returns a confirmation to A containing the token and same
+endpoint.</li>
+<li>A connects to P's endpoint and also sends the token.</li>
+<li>P accepts A's connection, retrieves B's matching connection and
+proxies traffic between them.</li>
+</ul>
+<h2>Testing</h2>
+<p>To set up a test infrastructure, simply run (in different
+shells):</p>
+<div class="codehilite">
+<pre><code><span class="c1"># run the service directory</span>
+<span class="nv">SD_SETTINGS</span><span class=
+"o">=</span>settings/dev/roles/sd-1 sd run
+<span class="c1"># run the public proxy</span>
+<span class="nv">PROXY_SETTINGS</span><span class=
+"o">=</span>settings/dev/roles/public-proxy-1 proxy run public
+
+<span class="c1"># run all EPS servers</span>
+<span class="nv">EPS_SETTINGS</span><span class=
+"o">=</span>settings/dev/roles/hd-1 eps server run
+<span class="nv">EPS_SETTINGS</span><span class=
+"o">=</span>settings/dev/roles/hd-2 eps server run
+<span class="nv">EPS_SETTINGS</span><span class=
+"o">=</span>settings/dev/roles/public-proxy-eps-1 eps server run
+</code></pre></div>
+<p>Make sure you run <code>make sd-setup</code> to update the
+service directory with the necessary entries. Then you should be
+able to request a ping from the HD-2 server through the proxy via
+the HD-1 JSON-RPC server:</p>
+<div class="codehilite">
+<pre><code>curl --cert settings/dev/certs/hd-1.crt --key settings/dev/certs/hd-1.key --cacert settings/dev/certs/root.crt --resolve hd-1:5555:127.0.0.1 https://hd-1:5555/jsonrpc --header <span class="s2">"Content-Type: application/json"</span> --data <span class="s1">'{"method": "hd-2._ping", "id": "1", "params": {}, "jsonrpc": "2.0"}'</span> <span class="p">|</span> jq .
+</code></pre></div>
+</div>
 </div>
 </section>
 </div>
