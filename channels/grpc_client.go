@@ -417,7 +417,7 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 
 	if settings.Proxy != "" {
 		dialer = func(context context.Context, addr string) (net.Conn, error) {
-			eps.Log.Info("Dialing through proxy...")
+			eps.Log.Tracef("Dialing to %s through proxy...", address.Operator)
 
 			// this request comes from ourselves
 			clientInfo := &eps.ClientInfo{
