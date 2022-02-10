@@ -43,6 +43,10 @@ type Channel interface {
 	Open() error
 }
 
+type ProxyChannel interface {
+	HandleConnectionRequest(address *Address, request *Request) (*Response, error)
+}
+
 type BaseChannel struct {
 	broker    MessageBroker
 	directory Directory

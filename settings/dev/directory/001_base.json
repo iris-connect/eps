@@ -47,7 +47,7 @@
           "type" : "grpc_server",
           "settings" : {
             "address" : "localhost:8888",
-            "proxied" : true
+            "proxy" : "public-proxy-1.ga"
           }
         }
       ]
@@ -70,7 +70,7 @@
           "type" : "grpc_server",
           "settings" : {
             "address" : "localhost:8889",
-            "proxied" : true
+            "proxy" : "public-proxy-1.ga"
           }
         }
       ]
@@ -227,10 +227,21 @@
               "name": "announceConnections"
             },
             {
-              "name": "requestConnection"
-            },
-            {
               "name": "getAnnouncements"
+            }
+          ]
+        },
+        {
+          "name": "hd-proxy",
+          "permissions": [
+            {
+              "group": "health-departments",
+              "rights": ["call"]
+            }
+          ],
+          "methods": [
+            {
+              "name": "requestConnection"
             }
           ]
         }
@@ -252,6 +263,55 @@
           "methods": [
             {
               "name": "_connectionRequest"
+            }
+          ]
+        },
+        {
+          "name": "internals",
+          "permissions": [
+            {
+              "group": "health-departments",
+              "rights": ["call"]
+            }
+          ],
+          "methods": [
+            {
+              "name": "_ping"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "created_at": "2021-05-17T10:00:00Z",
+      "section": "services",
+      "name": "hd-2",
+      "data" : [
+        {
+          "name": "connection-requests",
+          "permissions": [
+            {
+              "group": "proxy-providers",
+              "rights": ["call"]
+            }
+          ],
+          "methods": [
+            {
+              "name": "_connectionRequest"
+            }
+          ]
+        },
+        {
+          "name": "internals",
+          "permissions": [
+            {
+              "group": "health-departments",
+              "rights": ["call"]
+            }
+          ],
+          "methods": [
+            {
+              "name": "_ping"
             }
           ]
         }

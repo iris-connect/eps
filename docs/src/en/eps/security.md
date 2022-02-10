@@ -1,0 +1,3 @@
+# Security
+
+The EPS system relies on gRPC to facilitate communication between different actors. EPS servers identify and authenticate peers that they communicate with over gRPC using mutual TLS, which at also ensures the confidentiality and integrity of the exchanged data. The certificate fingerprints of all actors are pinned in the service directory using signed directory entries. All acceptable root & intermediate certificates used for encryption and signature verification are explictly configured for every EPS server. Authorizations of peers is based on signed permission records that are also stored in the service dirctory and grant permissions based on group memembership. Memberships are assigned to actors using signed service directory entries as well.

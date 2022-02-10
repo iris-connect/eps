@@ -45,6 +45,13 @@ type ClientInfo struct {
 	Entry *DirectoryEntry `json:"entry"`
 }
 
+type ConnectionRequest struct {
+	Endpoint string      `json:"endpoint"`
+	Channel  string      `json:"channel"`
+	Token    []byte      `json:"token"`
+	Client   *ClientInfo `json:"client"`
+}
+
 // for inclusion in protobuf... A bit dirty as we use JSON here, but it works...
 func (c *ClientInfo) AsStruct() (map[string]interface{}, error) {
 	if data, err := json.Marshal(c); err != nil {

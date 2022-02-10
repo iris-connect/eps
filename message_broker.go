@@ -87,49 +87,19 @@ var DirectoryQueryForm = forms.Form{
 	},
 }
 
-var ConnectionRequestForm = forms.Form{
-	Fields: []forms.Field{
-		{
-			Name: "channel",
-			Validators: []forms.Validator{
-				forms.IsString{},
-			},
-		},
-		{
-			Name: "token",
-			Validators: []forms.Validator{
-				forms.IsBytes{Encoding: "base64"},
-			},
-		},
-		{
-			Name: "client",
-			Validators: []forms.Validator{
-				forms.IsStringMap{},
-			},
-		},
-	},
-}
-
-type ConnectionRequest struct {
-	Channel string                 `json:"channel"`
-	Token   []byte                 `json:"token"`
-	Client  map[string]interface{} `json:"client"`
-}
-
 func (b *BasicMessageBroker) handleInternalRequest(address *Address, request *Request) (*Response, error) {
 	switch address.Method {
 	case "_connectionRequest":
-		var connectionRequest ConnectionRequest
-		if params, err := ConnectionRequestForm.Validate(request.Params); err != nil {
-			return nil, err
-		} else if err := ConnectionRequestForm.Coerce(&connectionRequest, params); err != nil {
-			return nil, err
-		}
 		for _, channel := range b.channels {
-			if channel.Type() == connectionRequest.Channel {
-				Log.Info("Found it")
+			if proxyChannel, ok := channel.(ProxyChannel); !ok {
+				continue
+			} else if response, err := proxyChannel.HandleConnectionRequest(address, request); err != nil {
+				return nil, err
+			} else if response != nil {
+				return response, nil
 			}
 		}
+		return nil, fmt.Errorf("no channel accepted the request")
 	case "_ping":
 		if ownEntry, err := b.directory.OwnEntry(); err != nil {
 			return nil, fmt.Errorf("error retrieving own entry: %w", err)
@@ -172,8 +142,6 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 	if clientInfo == nil {
 		return nil, fmt.Errorf("client info missing")
 	}
-
-	Log.Debug("Checking request details...")
 
 	var ownEntry, remoteEntry *DirectoryEntry
 	var err error

@@ -17,10 +17,12 @@
 package channels
 
 import (
+	"context"
 	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/grpc"
 	"github.com/kiprotect/go-helpers/forms"
+	"net"
 	"sync"
 	"time"
 )
@@ -136,7 +138,7 @@ func (c *GRPCServerConnection) Close() error {
 type GRPCServerEntrySettings struct {
 	Address  string `json:"address"`
 	Internal bool   `json:"internal"`
-	Proxied  bool   `json:"proxied"`
+	Proxy    string `json:"proxy"`
 }
 
 var GRPCServerEntrySettingsForm = forms.Form{
@@ -155,10 +157,10 @@ var GRPCServerEntrySettingsForm = forms.Form{
 			},
 		},
 		{
-			Name: "proxied",
+			Name: "proxy",
 			Validators: []forms.Validator{
-				forms.IsOptional{Default: false},
-				forms.IsBoolean{},
+				forms.IsOptional{Default: ""},
+				forms.IsString{},
 			},
 		},
 	},
@@ -305,7 +307,7 @@ func (c *GRPCClientChannel) openConnections() error {
 				if settings, err := getEntrySettings(ownEntry.Channel("grpc_server").Settings); err != nil {
 					eps.Log.Trace(err)
 					continue
-				} else if settings.Internal == false && settings.Proxied == false {
+				} else if settings.Internal == false && settings.Proxy == "" {
 					eps.Log.Debugf("Skipping gRPC client connection from '%s' to '%s' as the latter has a gRPC client and the former a publicly available gRPC server", ownEntry.Name, entry.Name)
 					continue
 				}
@@ -318,6 +320,11 @@ func (c *GRPCClientChannel) openConnections() error {
 			} else {
 				if c.Directory().Name() == entry.Name {
 					// we won't open a channel to ourselves...
+					continue
+				}
+				if settings.Internal == true || settings.Proxy != "" {
+					// we won't try to connect to an internal gRPC server or a gRPC server
+					// only reachable through a proxy...
 					continue
 				}
 				eps.Log.Tracef("Maintaining connection to %s at %s", entry.Name, settings.Address)
@@ -356,6 +363,28 @@ func (c *GRPCClientChannel) HandleRequest(request *eps.Request, clientInfo *eps.
 	return c.MessageBroker().DeliverRequest(request, clientInfo)
 }
 
+type RequestConnectionResponse struct {
+	Token    []byte `json:"token"`
+	Endpoint string `json:"endpoint"`
+}
+
+var RequestConnectionResponseForm = forms.Form{
+	Fields: []forms.Field{
+		{
+			Name: "token",
+			Validators: []forms.Validator{
+				forms.IsBytes{Encoding: "base64"},
+			},
+		},
+		{
+			Name: "endpoint",
+			Validators: []forms.Validator{
+				forms.IsString{},
+			},
+		},
+	},
+}
+
 func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response, error) {
 
 	address, err := eps.GetAddress(request.ID)
@@ -384,7 +413,63 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 		return nil, fmt.Errorf("error retrieving entry settings: %w", err)
 	}
 
-	if client, err := grpc.MakeClient(&c.Settings, nil, c.Directory()); err != nil {
+	var dialer grpc.Dialer
+
+	if settings.Proxy != "" {
+		dialer = func(context context.Context, addr string) (net.Conn, error) {
+			eps.Log.Info("Dialing through proxy...")
+
+			// this request comes from ourselves
+			clientInfo := &eps.ClientInfo{
+				Name: c.Directory().Name(),
+			}
+
+			if entry, err := c.Directory().OwnEntry(); err != nil {
+				return nil, err
+			} else {
+				clientInfo.Entry = entry
+			}
+
+			method := fmt.Sprintf("%s.requestConnection", settings.Proxy)
+			request := &eps.Request{
+				Method: method,
+				ID:     fmt.Sprintf("%s(1)", method),
+				Params: map[string]interface{}{
+					"to":      address.Operator,
+					"channel": "grpc_server",
+				},
+			}
+
+			if response, err := c.MessageBroker().DeliverRequest(request, clientInfo); err != nil {
+				return nil, err
+			} else if response.Error != nil {
+				return nil, fmt.Errorf(response.Error.Message)
+			} else if requestConnectionResponse, err := parseRequestConnectionResponse(response.Result); err != nil {
+				return nil, err
+			} else {
+
+				proxyConnection, err := net.Dial("tcp", requestConnectionResponse.Endpoint)
+
+				if err != nil {
+					return nil, err
+				}
+
+				if n, err := proxyConnection.Write(requestConnectionResponse.Token); err != nil {
+					proxyConnection.Close()
+					return nil, err
+				} else if n != len(requestConnectionResponse.Token) {
+					proxyConnection.Close()
+					return nil, fmt.Errorf("could not write token")
+				}
+
+				eps.Log.Infof("Successfully established gRPC client connection to proxy %s", requestConnectionResponse.Endpoint)
+
+				return proxyConnection, nil
+			}
+		}
+	}
+
+	if client, err := grpc.MakeClient(&c.Settings, dialer, c.Directory()); err != nil {
 		return nil, fmt.Errorf("error creating gRPC client: %w", err)
 	} else if err := client.Connect(settings.Address, entry.Name); err != nil {
 		return nil, fmt.Errorf("error connecting gRPC client: %w", err)
@@ -416,6 +501,14 @@ func (c *GRPCClientChannel) CanDeliverTo(address *eps.Address) bool {
 
 	// we check if the requested service offers a gRPC server
 	if entry, err := c.DirectoryEntry(address, "grpc_server"); entry != nil {
+		if settings, err := getEntrySettings(entry.Channel("grpc_server").Settings); err != nil {
+			eps.Log.Error(err)
+			return false
+		} else if settings.Internal {
+			return false
+		} else if settings.Proxy == c.Directory().Name() {
+			return false
+		}
 		return true
 	} else if err != nil {
 		// we log this error

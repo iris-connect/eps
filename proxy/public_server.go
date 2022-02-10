@@ -152,11 +152,17 @@ func (c *PublicServer) requestConnection(context *jsonrpc.Context, params *Publi
 
 	randomStr := base64.StdEncoding.EncodeToString(randomBytes)
 
+	c.mutex.Lock()
+	// we initialize the connection with a nil value
+	c.epsConnections[randomStr] = nil
+	c.mutex.Unlock()
+
 	// we tell the target EPS about the connection request
 	request := jsonrpc.MakeRequest(fmt.Sprintf("%s._connectionRequest", params.To), "", map[string]interface{}{
-		"client":  params.ClientInfo,
-		"channel": params.Channel,
-		"token":   randomStr,
+		"endpoint": c.settings.InternalEndpoint,
+		"client":   params.ClientInfo,
+		"channel":  params.Channel,
+		"token":    randomStr,
 	})
 
 	if result, err := c.jsonrpcClient.Call(request); err != nil {
@@ -169,12 +175,6 @@ func (c *PublicServer) requestConnection(context *jsonrpc.Context, params *Publi
 		}
 	}
 
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	// we initialize the connection with a nil value
-	c.epsConnections[randomStr] = nil
-
 	go func() {
 		time.Sleep(time.Duration(c.settings.AcceptTimeout) * time.Second)
 		c.mutex.Lock()
@@ -186,7 +186,7 @@ func (c *PublicServer) requestConnection(context *jsonrpc.Context, params *Publi
 		}
 	}()
 
-	return context.Result(map[string]interface{}{"token": randomStr})
+	return context.Result(map[string]interface{}{"token": randomStr, "endpoint": c.settings.InternalEndpoint})
 }
 
 func (c *PublicServer) announceConnections(context *jsonrpc.Context, params *PublicAnnounceConnectionsParams) *jsonrpc.Response {
@@ -326,6 +326,7 @@ func MakePublicServer(settings *PublicServerSettings, definitions *eps.Definitio
 		settings:       settings,
 		jsonrpcClient:  jsonrpc.MakeClient(settings.JSONRPCClient),
 		tlsConnections: make(map[string]net.Conn),
+		epsConnections: make(map[string]net.Conn),
 		tlsHellos:      make(map[string][]byte),
 		announcements:  make([]*PublicAnnouncement, 0),
 		dataStore:      dataStore,
@@ -463,7 +464,7 @@ func (s *PublicServer) handleInternalConnection(internalConnection net.Conn) {
 				s.mutex.Lock()
 				defer s.mutex.Unlock()
 				// connection still waiting, we close it
-				if conn, ok := s.epsConnections[tokenStr]; ok && conn != nil {
+				if conn, ok := s.epsConnections[tokenStr]; ok {
 					eps.Log.Warningf("TLS connection not accepted in time by other EPS, closing it...")
 					if err := conn.Close(); err != nil {
 						eps.Log.Error(err)

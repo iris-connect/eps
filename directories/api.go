@@ -46,7 +46,7 @@ var APIDirectorySettingsForm = forms.Form{
 		{
 			Name: "cache_entries_for",
 			Validators: []forms.Validator{
-				forms.IsOptional{Default: 60},
+				forms.IsOptional{Default: 5},
 				forms.IsInteger{
 					HasMin: true,
 					Min:    0,
