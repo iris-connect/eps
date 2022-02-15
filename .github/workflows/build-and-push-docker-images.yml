@@ -21,7 +21,7 @@ jobs:
           echo $VERSION
           echo ${{ env.VERSION }}
       - name: Build and push eps
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2.9.0
         with:
           build_args: VERSION=${{ env.VERSION }}
           username: ${{ secrets.DOCKER_HUB_USER }}
@@ -29,6 +29,15 @@ jobs:
           repository: inoeg/eps
           tag_with_ref: true
           dockerfile: ./docker/Eps.dockerfile
+          push: false
+          load: true
+      - name: Sign and push docker image
+        uses: sudo-bot/action-docker-sign@latest
+        with:
+          image-ref: 'inoeg/eps:${{ env.VERSION }}'
+          private-key-id: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY_IDENTIFIER }}
+          private-key: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY }}
+          private-key-passphrase: ${{ secrets.DOCKER_HUB_DCT_PASSPHRASE }}
       - name: Build and push sd
         uses: docker/build-push-action@v1
         with:
