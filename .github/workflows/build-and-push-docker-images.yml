@@ -20,17 +20,22 @@ jobs:
         run: |
           echo $VERSION
           echo ${{ env.VERSION }}
+      - name: Create image tag
+        id: meta_eps
+        uses: docker/metadata-action@v3
+        with:
+          images: inoeg/eps
       - name: Build and push eps
         uses: docker/build-push-action@v2.9.0
         with:
-          build_args: VERSION=${{ env.VERSION }}
-          username: ${{ secrets.DOCKER_HUB_USER }}
-          password: ${{ secrets.DOCKER_HUB_PW }}        
-          repository: inoeg/eps
-          tag_with_ref: true
-          dockerfile: ./docker/Eps.dockerfile
+          build-args: VERSION=${{ env.VERSION }}
+          context: ./docker/
+          file: Eps.dockerfile
+          tags: ${{ steps.meta_eps.outputs.tags }}
           push: false
           load: true
+          labels: |
+            iris.client-eps.image.revision=${{ github.sha }}
       - name: Sign and push docker image
         uses: sudo-bot/action-docker-sign@latest
         with:
