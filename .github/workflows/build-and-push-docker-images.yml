@@ -30,7 +30,7 @@ jobs:
         with:
           build-args: VERSION=${{ env.VERSION }}
           context: ./docker/
-          file: Eps.dockerfile
+          file: {context}/Eps.dockerfile
           tags: ${{ steps.meta_eps.outputs.tags }}
           push: false
           load: true
