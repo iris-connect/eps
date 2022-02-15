@@ -52,7 +52,7 @@ jobs:
       - name: Sign and push latest eps image
         uses: sudo-bot/action-docker-sign@latest
         with:
-          image-ref: ${{steps.meta_eps.outputs.tags[1]}}
+          image-ref: ${{fromJSON(steps.meta_eps.outputs.json).tags[1]}}
           private-key-id: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY_IDENTIFIER }}
           private-key: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY }}
           private-key-passphrase: ${{ secrets.DOCKER_HUB_DCT_PASSPHRASE }}
@@ -72,10 +72,17 @@ jobs:
           load: true
           labels: |
             iris.sd.image.revision=${{ github.sha }}
-      - name: Sign and push sd image
+      - name: Sign and push sd versioned image
         uses: sudo-bot/action-docker-sign@latest
         with:
-          image-ref: ${{steps.meta_sd.outputs.tags}}
+          image-ref: ${{fromJSON(steps.meta_sd.outputs.json).tags[0]}}
+          private-key-id: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY_IDENTIFIER }}
+          private-key: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY }}
+          private-key-passphrase: ${{ secrets.DOCKER_HUB_DCT_PASSPHRASE }}
+      - name: Sign and push sd latest image
+        uses: sudo-bot/action-docker-sign@latest
+        with:
+          image-ref: ${{fromJSON(steps.meta_sd.outputs.json).tags[1]}}
           private-key-id: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY_IDENTIFIER }}
           private-key: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY }}
           private-key-passphrase: ${{ secrets.DOCKER_HUB_DCT_PASSPHRASE }}
@@ -95,10 +102,17 @@ jobs:
           load: true
           labels: |
             iris.proxy.image.revision=${{ github.sha }}
-      - name: Sign and push proxy image
+      - name: Sign and push proxy versioned image
         uses: sudo-bot/action-docker-sign@latest
         with:
-          image-ref: ${{steps.meta_proxy.outputs.tags}}
+          image-ref: ${{fromJSON(steps.meta_proxy.outputs.json).tags[0]}}
+          private-key-id: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY_IDENTIFIER }}
+          private-key: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY }}
+          private-key-passphrase: ${{ secrets.DOCKER_HUB_DCT_PASSPHRASE }}
+      - name: Sign and push proxy latest image
+        uses: sudo-bot/action-docker-sign@latest
+        with:
+          image-ref: ${{fromJSON(steps.meta_proxy.outputs.json).tags[1]}}
           private-key-id: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY_IDENTIFIER }}
           private-key: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY }}
           private-key-passphrase: ${{ secrets.DOCKER_HUB_DCT_PASSPHRASE }}
