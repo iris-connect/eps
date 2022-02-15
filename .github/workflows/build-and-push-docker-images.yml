@@ -42,10 +42,17 @@ jobs:
           load: true
           labels: |
             iris.eps.image.revision=${{ github.sha }}
-      - name: Sign and push docker image
+      - name: Sign and push versioned eps image
         uses: sudo-bot/action-docker-sign@latest
         with:
-          image-ref: ${{steps.meta_eps.outputs.tags}}
+          image-ref: ${{steps.meta_eps.outputs.tags[0]}}
+          private-key-id: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY_IDENTIFIER }}
+          private-key: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY }}
+          private-key-passphrase: ${{ secrets.DOCKER_HUB_DCT_PASSPHRASE }}
+      - name: Sign and push latest eps image
+        uses: sudo-bot/action-docker-sign@latest
+        with:
+          image-ref: ${{steps.meta_eps.outputs.tags[1]}}
           private-key-id: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY_IDENTIFIER }}
           private-key: ${{ secrets.DOCKER_HUB_DCT_PRIVATE_KEY }}
           private-key-passphrase: ${{ secrets.DOCKER_HUB_DCT_PASSPHRASE }}
