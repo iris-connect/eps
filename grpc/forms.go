@@ -36,6 +36,13 @@ var AnnouncementForm = forms.Form{
 var GRPCClientSettingsForm = forms.Form{
 	Fields: []forms.Field{
 		{
+			Name: "useProxy",
+			Validators: []forms.Validator{
+				forms.IsOptional{Default: true},
+				forms.IsBoolean{},
+			},
+		},
+		{
 			Name: "tls",
 			Validators: []forms.Validator{
 				forms.IsStringMap{

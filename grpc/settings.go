@@ -23,8 +23,9 @@ import (
 
 // Settings for the gRPC client
 type GRPCClientSettings struct {
-	TLS     *tls.TLSSettings `json:"tls"`
-	Enabled bool             `json:"enabled"`
+	TLS      *tls.TLSSettings `json:"tls"`
+	UseProxy bool             `json:"useProxy"`
+	Enabled  bool             `json:"enabled"`
 }
 
 // Settings for the gRPC server

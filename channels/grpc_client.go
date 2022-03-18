@@ -416,6 +416,11 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 	var dialer grpc.Dialer
 
 	if settings.Proxy != "" {
+
+		if !c.Settings.UseProxy {
+			return nil, fmt.Errorf("destination is only reachable via proxy but proxying is disabled")
+		}
+
 		dialer = func(context context.Context, addr string) (net.Conn, error) {
 			eps.Log.Tracef("Dialing to %s through proxy...", address.Operator)
 
