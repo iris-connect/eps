@@ -18,9 +18,11 @@ package channels
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/iris-connect/eps"
 	"github.com/iris-connect/eps/grpc"
+	"github.com/iris-connect/eps/helpers"
 	"github.com/kiprotect/go-helpers/forms"
 	"net"
 	"sync"
@@ -436,9 +438,17 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 			}
 
 			method := fmt.Sprintf("%s.requestConnection", settings.Proxy)
+
+			// does not need to be secure just unique for this EPS server...
+			id, err := helpers.RandomID(8)
+
+			if err != nil {
+				return nil, err
+			}
+
 			request := &eps.Request{
 				Method: method,
-				ID:     fmt.Sprintf("%s(1)", method),
+				ID:     fmt.Sprintf("%s(%s)", method, hex.EncodeToString(id)),
 				Params: map[string]interface{}{
 					"to":      address.Operator,
 					"channel": "grpc_server",
