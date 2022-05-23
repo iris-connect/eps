@@ -234,9 +234,13 @@ func (c *GRPCClientChannel) clearStaleConnections() error {
 				eps.Log.Error(err)
 				lastErr = err
 			}
+			eps.Log.Tracef("Removing stale connection with name '%s' and address '%s'...", connection.Name, connection.Address)
 			delete(c.connections, key)
+		} else {
+			eps.Log.Tracef("Keeping connection with name '%s' and address '%s' open...", connection.Name, connection.Address)
 		}
 	}
+	eps.Log.Tracef("%d open gRPC server-client connections in total...", len(c.connections))
 	return lastErr
 }
 
@@ -342,6 +346,8 @@ func (c *GRPCClientChannel) openConnections() error {
 
 func (c *GRPCClientChannel) openConnection(address, name string) error {
 
+	eps.Log.Tracef("Opening gRPC client connection to name '%s' and address '%s'...", name, address)
+
 	conn := c.getConnection(name)
 
 	if conn == nil {
@@ -419,12 +425,14 @@ func (c *GRPCClientChannel) DeliverRequest(request *eps.Request) (*eps.Response,
 
 	if settings.Proxy != "" {
 
+		eps.Log.Tracef("Destination is only reachable via proxy '%s'...", settings.Proxy)
+
 		if !c.Settings.UseProxy {
 			return nil, fmt.Errorf("destination is only reachable via proxy but proxying is disabled")
 		}
 
 		dialer = func(context context.Context, addr string) (net.Conn, error) {
-			eps.Log.Tracef("Dialing to %s through proxy...", address.Operator)
+			eps.Log.Tracef("Dialing operator '%s' through proxy...", address.Operator)
 
 			// this request comes from ourselves
 			clientInfo := &eps.ClientInfo{

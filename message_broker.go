@@ -143,6 +143,8 @@ func (b *BasicMessageBroker) DeliverRequest(request *Request, clientInfo *Client
 		return nil, fmt.Errorf("client info missing")
 	}
 
+	Log.Tracef("Delivering request with method '%s' from client '%s'...", request.Method, clientInfo.Name)
+
 	var ownEntry, remoteEntry *DirectoryEntry
 	var err error
 

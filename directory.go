@@ -36,6 +36,7 @@ func MakeDirectoryEntry() *DirectoryEntry {
 		Certificates: []*OperatorCertificate{},
 		Settings:     []*OperatorSettings{},
 		Records:      []*SignedChangeRecord{},
+		Properties:   &OperatorProperties{},
 	}
 }
 
