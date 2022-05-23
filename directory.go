@@ -48,6 +48,11 @@ type DirectoryEntry struct {
 	Settings     []*OperatorSettings    `json:"settings"`
 	Preferences  []*OperatorPreferences `json:"preferences"`
 	Records      []*SignedChangeRecord  `json:"records"`
+	Properties   *OperatorProperties    `json:"properties"`
+}
+
+type OperatorProperties struct {
+	DisplayName string `json:"displayName"`
 }
 
 // preferences may be set by the corresponding operator itself
